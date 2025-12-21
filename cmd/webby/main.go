@@ -16,6 +16,7 @@ import (
 func main() {
 	// Command-line flags
 	urlFlag := flag.String("url", "", "Server bind address (e.g., :8080 or 0.0.0.0:8080)")
+	disableRegFlag := flag.Bool("disable-registration", false, "Disable new user registration")
 	flag.Parse()
 
 	// Configuration
@@ -28,6 +29,9 @@ func main() {
 	if *urlFlag != "" {
 		bindAddr = *urlFlag
 	}
+
+	// Check if registration is disabled (flag or env var)
+	disableRegistration := *disableRegFlag || getEnv("WEBBY_DISABLE_REGISTRATION", "") == "true"
 
 	// Ensure data directory exists
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
@@ -49,7 +53,7 @@ func main() {
 
 	// Initialize handlers
 	handler := api.NewHandler(db, files)
-	authHandler := api.NewAuthHandler(db)
+	authHandler := api.NewAuthHandler(db, disableRegistration)
 
 	// Set up Gin router
 	r := gin.Default()
@@ -69,6 +73,7 @@ func main() {
 		// Auth routes (public)
 		authGroup := apiGroup.Group("/auth")
 		{
+			authGroup.GET("/status", authHandler.GetAuthStatus)
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)
 			authGroup.POST("/refresh", authHandler.RefreshToken)

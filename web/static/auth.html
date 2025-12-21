@@ -540,8 +540,26 @@
             }
         });
 
+        // Check if registration is enabled
+        async function checkRegistrationStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/auth/status`);
+                const data = await res.json();
+                if (!data.registration_enabled) {
+                    // Hide registration tab and form
+                    document.getElementById('registerTab').style.display = 'none';
+                    document.getElementById('registerForm').remove();
+                    // Update skip link text
+                    document.querySelector('.skip-link').textContent = 'Continue without signing in';
+                }
+            } catch (err) {
+                console.error('Failed to check registration status', err);
+            }
+        }
+
         // Check existing auth on page load
         checkExistingAuth();
+        checkRegistrationStatus();
     </script>
 </body>
 </html>

@@ -16,18 +16,25 @@ import (
 
 // AuthHandler contains authentication handlers
 type AuthHandler struct {
-	db *storage.Database
+	db                  *storage.Database
+	disableRegistration bool
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(db *storage.Database) *AuthHandler {
-	return &AuthHandler{db: db}
+func NewAuthHandler(db *storage.Database, disableRegistration bool) *AuthHandler {
+	return &AuthHandler{db: db, disableRegistration: disableRegistration}
 }
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 // Register handles user registration
 func (h *AuthHandler) Register(c *gin.Context) {
+	// Check if registration is disabled
+	if h.disableRegistration {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Registration is disabled"})
+		return
+	}
+
 	var req struct {
 		Username string `json:"username" binding:"required"`
 		Email    string `json:"email" binding:"required"`
@@ -207,4 +214,11 @@ func (h *AuthHandler) SearchUsers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
+// GetAuthStatus returns authentication configuration status
+func (h *AuthHandler) GetAuthStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"registration_enabled": !h.disableRegistration,
+	})
 }
