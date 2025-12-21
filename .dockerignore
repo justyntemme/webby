@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Data directory (runtime only)
+data/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+*.md
+!web/**/*.md
+
+# Docker files
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Test files
+*_test.go
+
+# MCP config
+.mcp.json
+
+# OS files
+.DS_Store
+Thumbs.db

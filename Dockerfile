@@ -1,8 +1,8 @@
 # Build stage
-FROM golang:1.23-alpine AS builder
+FROM golang:latest AS builder
 
 # Install build dependencies for CGO (required by go-sqlite3)
-RUN apk add --no-cache gcc musl-dev
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
