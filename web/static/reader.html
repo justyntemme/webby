@@ -393,8 +393,32 @@
         const pathParts = window.location.pathname.split('/');
         bookId = pathParts[pathParts.length - 1];
 
+        // Check authentication
+        async function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/auth';
+                return false;
+            }
+            try {
+                const res = await fetch('/api/auth/me', { headers: getHeaders() });
+                if (!res.ok) {
+                    localStorage.removeItem('webby-token');
+                    window.location.href = '/auth';
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                window.location.href = '/auth';
+                return false;
+            }
+        }
+
         // Initialize
         async function init() {
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) return;
+
             loadSettings();
             await loadBook();
             await loadTOC();

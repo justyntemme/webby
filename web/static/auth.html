@@ -186,42 +186,6 @@
             display: block;
         }
 
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            position: relative;
-        }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        .divider span {
-            background: var(--card-bg);
-            padding: 0 15px;
-            position: relative;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .skip-link {
-            display: block;
-            text-align: center;
-            color: var(--accent-color);
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .skip-link:hover {
-            text-decoration: underline;
-        }
-
         .password-requirements {
             font-size: 12px;
             color: #666;
@@ -266,9 +230,6 @@
             </div>
 
             <button type="submit" class="submit-btn" id="loginBtn">Sign In</button>
-
-            <div class="divider"><span>or</span></div>
-            <a href="/" class="skip-link">Continue without signing in</a>
         </form>
 
         <!-- Register Form -->
@@ -305,9 +266,6 @@
             </div>
 
             <button type="submit" class="submit-btn" id="registerBtn">Create Account</button>
-
-            <div class="divider"><span>or</span></div>
-            <a href="/" class="skip-link">Continue without signing in</a>
         </form>
     </div>
 
@@ -548,9 +506,8 @@
                 if (!data.registration_enabled) {
                     // Hide registration tab and form
                     document.getElementById('registerTab').style.display = 'none';
-                    document.getElementById('registerForm').remove();
-                    // Update skip link text
-                    document.querySelector('.skip-link').textContent = 'Continue without signing in';
+                    const registerForm = document.getElementById('registerForm');
+                    if (registerForm) registerForm.remove();
                 }
             } catch (err) {
                 console.error('Failed to check registration status', err);

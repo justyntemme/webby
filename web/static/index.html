@@ -421,8 +421,9 @@
         async function checkAuth() {
             const token = getAuthToken();
             if (!token) {
-                renderUserSection(null);
-                return;
+                // No token, redirect to login
+                window.location.href = '/auth';
+                return false;
             }
 
             try {
@@ -433,14 +434,17 @@
                     const data = await res.json();
                     currentUser = data.user;
                     renderUserSection(currentUser);
+                    return true;
                 } else {
-                    // Token invalid
+                    // Token invalid, redirect to login
                     clearAuthToken();
-                    currentUser = null;
-                    renderUserSection(null);
+                    window.location.href = '/auth';
+                    return false;
                 }
             } catch (err) {
-                renderUserSection(null);
+                // Error checking auth, redirect to login
+                window.location.href = '/auth';
+                return false;
             }
         }
 
@@ -692,8 +696,10 @@
 
         // Initialize
         async function init() {
-            await checkAuth();
-            loadBooks();
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                loadBooks();
+            }
         }
         init();
     </script>
