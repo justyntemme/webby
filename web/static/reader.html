@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Webby Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #fefefe;
+            --text-color: #333;
+            --accent-color: #4a90d9;
+            --header-bg: #f5f5f5;
+            --border-color: #ddd;
+        }
+
+        .dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #6eb5ff;
+            --header-bg: #2a2a2a;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .header.hidden {
+            transform: translateY(-100%);
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 10px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            color: var(--text-color);
+        }
+
+        .content {
+            padding: 60px 20px 80px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        .content h1, .content h2, .content h3 {
+            margin: 1em 0 0.5em;
+            line-height: 1.3;
+        }
+
+        .content p {
+            margin-bottom: 1em;
+            text-align: justify;
+        }
+
+        .content img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--header-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .footer.hidden {
+            transform: translateY(100%);
+        }
+
+        .nav-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        /* Touch zones for navigation */
+        .touch-zone {
+            position: fixed;
+            top: 50px;
+            bottom: 60px;
+            width: 25%;
+            z-index: 50;
+            cursor: pointer;
+        }
+
+        .touch-zone.left {
+            left: 0;
+        }
+
+        .touch-zone.right {
+            right: 0;
+        }
+
+        .touch-zone.center {
+            left: 25%;
+            width: 50%;
+        }
+
+        /* TOC Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .toc-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .toc-item:hover {
+            background: var(--header-bg);
+        }
+
+        .toc-item.current {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* Settings Modal */
+        .settings-option {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .font-size-control button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: var(--border-color);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-color);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 26px;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 50vh;
+            font-size: 18px;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <button class="header-btn" id="backBtn" title="Back to Library">&#8592;</button>
+        <button class="header-btn" id="tocBtn" title="Table of Contents">&#9776;</button>
+        <div class="header-title" id="bookTitle">Loading...</div>
+        <button class="header-btn" id="settingsBtn" title="Settings">&#9881;</button>
+    </header>
+
+    <div class="touch-zone left" id="touchLeft"></div>
+    <div class="touch-zone center" id="touchCenter"></div>
+    <div class="touch-zone right" id="touchRight"></div>
+
+    <main class="content" id="content">
+        <div class="loading">Loading book...</div>
+    </main>
+
+    <footer class="footer">
+        <button class="nav-btn" id="prevBtn">&larr; Prev</button>
+        <div class="progress">
+            <div id="chapterProgress">Chapter 1 of 1</div>
+        </div>
+        <button class="nav-btn" id="nextBtn">Next &rarr;</button>
+    </footer>
+
+    <!-- TOC Modal -->
+    <div class="modal" id="tocModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Contents</h2>
+                <button class="modal-close" id="tocClose">&times;</button>
+            </div>
+            <ul class="toc-list" id="tocList"></ul>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" id="settingsClose">&times;</button>
+            </div>
+            <div class="settings-option">
+                <span>Font Size</span>
+                <div class="font-size-control">
+                    <button id="fontDecrease">-</button>
+                    <span id="fontSize">18</span>
+                    <button id="fontIncrease">+</button>
+                </div>
+            </div>
+            <div class="settings-option">
+                <span>Dark Mode</span>
+                <div class="toggle-switch" id="darkModeToggle"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let bookId = null;
+        let chapters = [];
+        let currentChapter = 0;
+        let fontSize = 18;
+        let darkMode = false;
+        let uiVisible = true;
+
+        // Get book ID from URL
+        const pathParts = window.location.pathname.split('/');
+        bookId = pathParts[pathParts.length - 1];
+
+        // Initialize
+        async function init() {
+            loadSettings();
+            await loadBook();
+            await loadTOC();
+            await loadSavedPosition();
+            await loadChapter(currentChapter);
+            setupEventListeners();
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('webby-settings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                fontSize = settings.fontSize || 18;
+                darkMode = settings.darkMode || false;
+            }
+            applySettings();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('webby-settings', JSON.stringify({ fontSize, darkMode }));
+        }
+
+        function applySettings() {
+            document.getElementById('content').style.fontSize = fontSize + 'px';
+            document.getElementById('fontSize').textContent = fontSize;
+            document.body.classList.toggle('dark-mode', darkMode);
+            document.getElementById('darkModeToggle').classList.toggle('active', darkMode);
+        }
+
+        async function loadBook() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}`);
+                if (!res.ok) throw new Error('Book not found');
+                const book = await res.json();
+                document.getElementById('bookTitle').textContent = book.title;
+                document.title = `${book.title} - Webby Reader`;
+            } catch (err) {
+                showError('Failed to load book');
+            }
+        }
+
+        async function loadTOC() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/toc`);
+                const data = await res.json();
+                chapters = data.chapters || [];
+                renderTOC();
+            } catch (err) {
+                console.error('Failed to load TOC', err);
+            }
+        }
+
+        function renderTOC() {
+            const list = document.getElementById('tocList');
+            list.innerHTML = chapters.map((ch, i) => `
+                <li class="toc-item ${i === currentChapter ? 'current' : ''}" data-index="${i}">
+                    ${ch.title}
+                </li>
+            `).join('');
+        }
+
+        async function loadSavedPosition() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/position`);
+                const data = await res.json();
+                if (data.position) {
+                    currentChapter = parseInt(data.position.chapter) || 0;
+                }
+            } catch (err) {
+                console.error('Failed to load position', err);
+            }
+        }
+
+        async function savePosition() {
+            try {
+                const scrollPos = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+                await fetch(`${API_BASE}/books/${bookId}/position`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chapter: String(currentChapter),
+                        position: scrollPos || 0
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to save position', err);
+            }
+        }
+
+        async function loadChapter(index) {
+            if (index < 0 || index >= chapters.length) return;
+
+            currentChapter = index;
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/content/${index}`);
+                if (!res.ok) throw new Error('Failed to load chapter');
+                const html = await res.text();
+
+                // Extract body content and clean up
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                content.innerHTML = doc.body.innerHTML;
+
+                window.scrollTo(0, 0);
+                updateProgress();
+                renderTOC();
+                savePosition();
+            } catch (err) {
+                showError('Failed to load chapter');
+            }
+
+            updateNavButtons();
+        }
+
+        function updateProgress() {
+            document.getElementById('chapterProgress').textContent =
+                `Chapter ${currentChapter + 1} of ${chapters.length}`;
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentChapter === 0;
+            document.getElementById('nextBtn').disabled = currentChapter >= chapters.length - 1;
+        }
+
+        function showError(message) {
+            document.getElementById('content').innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function toggleUI() {
+            uiVisible = !uiVisible;
+            document.querySelector('.header').classList.toggle('hidden', !uiVisible);
+            document.querySelector('.footer').classList.toggle('hidden', !uiVisible);
+        }
+
+        function setupEventListeners() {
+            // Navigation
+            document.getElementById('prevBtn').addEventListener('click', () => loadChapter(currentChapter - 1));
+            document.getElementById('nextBtn').addEventListener('click', () => loadChapter(currentChapter + 1));
+
+            // Touch zones
+            document.getElementById('touchLeft').addEventListener('click', () => loadChapter(currentChapter - 1));
+            document.getElementById('touchRight').addEventListener('click', () => loadChapter(currentChapter + 1));
+            document.getElementById('touchCenter').addEventListener('click', toggleUI);
+
+            // Back to Library
+            document.getElementById('backBtn').addEventListener('click', () => {
+                savePosition();
+                window.location.href = '/';
+            });
+
+            // TOC Modal
+            document.getElementById('tocBtn').addEventListener('click', () => {
+                document.getElementById('tocModal').classList.add('active');
+            });
+            document.getElementById('tocClose').addEventListener('click', () => {
+                document.getElementById('tocModal').classList.remove('active');
+            });
+            document.getElementById('tocList').addEventListener('click', (e) => {
+                if (e.target.classList.contains('toc-item')) {
+                    const index = parseInt(e.target.dataset.index);
+                    loadChapter(index);
+                    document.getElementById('tocModal').classList.remove('active');
+                }
+            });
+
+            // Settings Modal
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.add('active');
+            });
+            document.getElementById('settingsClose').addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.remove('active');
+            });
+            document.getElementById('fontDecrease').addEventListener('click', () => {
+                if (fontSize > 12) {
+                    fontSize -= 2;
+                    applySettings();
+                    saveSettings();
+                }
+            });
+            document.getElementById('fontIncrease').addEventListener('click', () => {
+                if (fontSize < 32) {
+                    fontSize += 2;
+                    applySettings();
+                    saveSettings();
+                }
+            });
+            document.getElementById('darkModeToggle').addEventListener('click', () => {
+                darkMode = !darkMode;
+                applySettings();
+                saveSettings();
+            });
+
+            // Close modals on background click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('active');
+                });
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') loadChapter(currentChapter - 1);
+                if (e.key === 'ArrowRight') loadChapter(currentChapter + 1);
+            });
+
+            // Save position on page leave
+            window.addEventListener('beforeunload', savePosition);
+
+            // Swipe navigation
+            let touchStartX = 0;
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].clientX;
+                const diff = touchStartX - touchEndX;
+
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) {
+                        loadChapter(currentChapter + 1);
+                    } else {
+                        loadChapter(currentChapter - 1);
+                    }
+                }
+            }, { passive: true });
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>

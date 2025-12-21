@@ -1,0 +1,436 @@
+{
+  "projectPath": "/Users/justyntemme/Documents/code/webby",
+  "stories": [
+    {
+      "id": "STORY-001",
+      "title": "Upload EPUBs to Server",
+      "description": "As a user, I want to upload EPUB files to the server so that I can store my ebook collection in one place and access it from any device. The system should validate that uploaded files are valid EPUBs, extract metadata (title, author, series info), and store them securely. Users should receive feedback on upload progress and success/failure status.",
+      "acceptanceCriteria": [
+        "User can upload EPUB files via API endpoint",
+        "System validates uploaded file is a valid EPUB",
+        "Metadata (title, author, series) is automatically extracted and stored",
+        "Upload returns book ID and extracted metadata on success",
+        "Invalid files return appropriate error messages",
+        "Files are stored persistently and survive server restart"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-001",
+          "title": "Set up Go project structure with gin/echo framework",
+          "description": "Initialize Go module, set up directory structure (cmd, internal, pkg), and configure web framework",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-002",
+          "title": "Create EPUB file storage system",
+          "description": "Implement file storage for uploaded EPUBs with unique IDs and organized directory structure",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-003",
+          "title": "Build EPUB metadata parser",
+          "description": "Parse EPUB files to extract title, author, series, cover image, and other metadata from OPF file",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-004",
+          "title": "Create upload API endpoint",
+          "description": "POST /api/books endpoint that accepts multipart file uploads, validates EPUB format, extracts metadata, and stores the file",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-005",
+          "title": "Implement SQLite database for book metadata",
+          "description": "Create database schema and repository for storing book metadata (id, title, author, series, file_path, upload_date)",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-006",
+          "title": "Add upload validation and error handling",
+          "description": "Validate file size limits, EPUB format, and return appropriate error responses",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "medium",
+      "status": "completed",
+      "createdAt": "2025-12-21T11:35:38-06:00",
+      "updatedAt": "2025-12-21T11:35:38-06:00"
+    },
+    {
+      "id": "STORY-002",
+      "title": "Move and Organize EPUBs",
+      "description": "As a user, I want to organize my EPUB collection into folders/collections so that I can keep my library structured. This includes creating collections, moving books between collections, renaming collections, and deleting empty collections. The organization should persist across sessions and be accessible from any device.",
+      "acceptanceCriteria": [
+        "User can create named collections",
+        "User can move books into collections",
+        "User can remove books from collections",
+        "User can rename and delete collections",
+        "Collections persist across sessions",
+        "A book can belong to multiple collections"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-007",
+          "title": "Create collections database schema",
+          "description": "Add collections table and book_collections junction table to support organizing books into collections",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-008",
+          "title": "Build collection CRUD API endpoints",
+          "description": "POST/GET/PUT/DELETE /api/collections endpoints for managing collections",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-009",
+          "title": "Implement move book to collection endpoint",
+          "description": "PUT /api/books/:id/collection endpoint to assign/move books between collections",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-010",
+          "title": "Add bulk operations for organizing",
+          "description": "Support moving multiple books at once and bulk collection assignment",
+          "status": "pending"
+        }
+      ],
+      "priority": 4,
+      "complexity": "medium",
+      "status": "completed",
+      "dependencies": [
+        "STORY-001"
+      ],
+      "createdAt": "2025-12-21T11:35:38-06:00",
+      "updatedAt": "2025-12-21T11:35:38-06:00"
+    },
+    {
+      "id": "STORY-003",
+      "title": "Quick Sort by Author/Series",
+      "description": "As a user, I want to quickly sort and filter my EPUB library by author or series so that I can easily find books by a specific author or continue reading a series. The sorting should be fast and responsive, with options to toggle between different sort modes. Series books should display in proper reading order.",
+      "acceptanceCriteria": [
+        "User can sort library by author, series, title, or upload date",
+        "User can toggle ascending/descending order",
+        "Books in a series display in proper reading order",
+        "User can view books grouped by author",
+        "User can view books grouped by series",
+        "User can search/filter books by text query"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-011",
+          "title": "Add sorting query parameters to book list API",
+          "description": "Support ?sort=author|series|title|date and ?order=asc|desc on GET /api/books",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-012",
+          "title": "Implement author grouping endpoint",
+          "description": "GET /api/books/by-author returns books grouped by author",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-013",
+          "title": "Implement series grouping endpoint",
+          "description": "GET /api/books/by-series returns books grouped by series with proper reading order",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-014",
+          "title": "Add search/filter functionality",
+          "description": "Support ?search=query parameter for filtering books by title, author, or series",
+          "status": "pending"
+        }
+      ],
+      "priority": 3,
+      "complexity": "low",
+      "status": "completed",
+      "dependencies": [
+        "STORY-001"
+      ],
+      "createdAt": "2025-12-21T11:35:39-06:00",
+      "updatedAt": "2025-12-21T11:35:39-06:00"
+    },
+    {
+      "id": "STORY-004",
+      "title": "Read Rendered EPUB in Browser",
+      "description": "As a user, I want to tap on a book in my library to open and read it in a mobile-friendly reader so that I can read my EPUBs directly in the browser without downloading them. The reader should render EPUB content properly, support page navigation, remember reading position, and be optimized for mobile phone screens with touch-friendly controls.",
+      "acceptanceCriteria": [
+        "Tapping a book opens the reader view",
+        "EPUB content renders correctly in browser",
+        "User can navigate between chapters",
+        "Reading position is saved and restored on return",
+        "Reader is responsive and works well on mobile phones",
+        "Touch gestures work for page navigation"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-015",
+          "title": "Create EPUB content extraction API",
+          "description": "GET /api/books/:id/content/:chapter endpoint to serve individual chapters as HTML",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-016",
+          "title": "Build EPUB table of contents API",
+          "description": "GET /api/books/:id/toc returns the book's table of contents with chapter links",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-017",
+          "title": "Implement reading position persistence",
+          "description": "POST/GET /api/books/:id/position to save and retrieve last reading position",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-018",
+          "title": "Serve book cover images",
+          "description": "GET /api/books/:id/cover returns the book's cover image",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-019",
+          "title": "Create static file server for web reader",
+          "description": "Serve HTML/CSS/JS for the mobile-friendly EPUB reader frontend",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-020",
+          "title": "Build mobile-friendly reader UI",
+          "description": "Create responsive HTML/CSS/JS reader with touch navigation, font sizing, and chapter selection",
+          "status": "pending"
+        }
+      ],
+      "priority": 2,
+      "complexity": "high",
+      "status": "completed",
+      "dependencies": [
+        "STORY-001"
+      ],
+      "createdAt": "2025-12-21T11:35:39-06:00",
+      "updatedAt": "2025-12-21T11:35:39-06:00"
+    },
+    {
+      "id": "STORY-005",
+      "title": "User Authentication",
+      "description": "As a user, I want to register and login to the application so that my library is private and secure. Use well-established authentication libraries (like bcrypt for password hashing, JWT for sessions) rather than custom crypto implementations. Support basic registration, login, logout, and session management.",
+      "tasks": [
+        {
+          "id": "TASK-021",
+          "title": "Add User model and database schema",
+          "description": "Create users table with id, username, email, password_hash, created_at fields",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-022",
+          "title": "Implement password hashing with bcrypt",
+          "description": "Use golang.org/x/crypto/bcrypt for secure password hashing",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-023",
+          "title": "Create registration endpoint",
+          "description": "POST /api/auth/register for new user signup with validation",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-024",
+          "title": "Create login endpoint with JWT",
+          "description": "POST /api/auth/login returns JWT token on successful auth",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-025",
+          "title": "Implement JWT middleware",
+          "description": "Middleware to validate JWT tokens and extract user context",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-026",
+          "title": "Add logout and token refresh",
+          "description": "POST /api/auth/logout and token refresh mechanisms",
+          "status": "pending"
+        }
+      ],
+      "priority": 2,
+      "complexity": "medium",
+      "status": "completed",
+      "createdAt": "2025-12-21T11:54:26-06:00",
+      "updatedAt": "2025-12-21T11:54:26-06:00"
+    },
+    {
+      "id": "STORY-006",
+      "title": "User-Based Libraries",
+      "description": "As a user, I want my own private library with a separate storage folder so that my books are isolated from other users. Each user should have their own books directory, and all book operations (upload, list, read, organize) should be scoped to the authenticated user's library.",
+      "tasks": [
+        {
+          "id": "TASK-027",
+          "title": "Add user_id foreign key to books table",
+          "description": "Migrate database to associate books with users",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-028",
+          "title": "Create per-user storage directories",
+          "description": "Organize file storage as data/users/{user_id}/books/",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-029",
+          "title": "Update all book endpoints to scope by user",
+          "description": "Filter all book queries by authenticated user's ID",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-030",
+          "title": "Update collections to be user-scoped",
+          "description": "Add user_id to collections and filter accordingly",
+          "status": "pending"
+        }
+      ],
+      "priority": 3,
+      "complexity": "medium",
+      "status": "completed",
+      "dependencies": [
+        "STORY-005"
+      ],
+      "createdAt": "2025-12-21T11:54:26-06:00",
+      "updatedAt": "2025-12-21T11:54:26-06:00"
+    },
+    {
+      "id": "STORY-007",
+      "title": "Book Sharing Between Users",
+      "description": "As a user, I want to share specific books with other users so they can read books from my library. Implement sharing via metadata (allowed_users field on books) rather than symlinks. Users should be able to share/unshare books and see books shared with them in a separate \"Shared with me\" view.",
+      "tasks": [
+        {
+          "id": "TASK-031",
+          "title": "Create book_shares table",
+          "description": "Table with book_id, owner_id, shared_with_user_id, created_at",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-032",
+          "title": "Add share/unshare book endpoints",
+          "description": "POST/DELETE /api/books/:id/share/:userId",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-033",
+          "title": "Create shared books list endpoint",
+          "description": "GET /api/books/shared returns books shared with current user",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-034",
+          "title": "Update book access to check sharing permissions",
+          "description": "Allow reading books if owner OR shared with user",
+          "status": "pending"
+        }
+      ],
+      "priority": 4,
+      "complexity": "medium",
+      "status": "completed",
+      "dependencies": [
+        "STORY-006"
+      ],
+      "createdAt": "2025-12-21T11:54:26-06:00",
+      "updatedAt": "2025-12-21T11:54:26-06:00"
+    },
+    {
+      "id": "STORY-008",
+      "title": "Reader Navigation Improvement",
+      "description": "As a user, when reading a book I want a clear way to navigate back to my library so I don't feel trapped in the reader. Add a visible \"Back to Library\" button/link in the reader header that returns to the main library view.",
+      "tasks": [
+        {
+          "id": "TASK-035",
+          "title": "Add back to library button in reader header",
+          "description": "Add home/back icon button that navigates to / in reader.html",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T11:54:26-06:00",
+      "updatedAt": "2025-12-21T11:54:26-06:00"
+    },
+    {
+      "id": "STORY-009",
+      "title": "Unit Test Coverage",
+      "description": "As a developer, I want comprehensive unit tests for all API endpoints and core business logic so that the codebase is reliable and regressions are caught early. Cover database operations, EPUB parsing, API handlers, and authentication flows.",
+      "tasks": [
+        {
+          "id": "TASK-036",
+          "title": "Set up testing framework",
+          "description": "Configure Go testing with testify assertions",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-037",
+          "title": "Write database layer tests",
+          "description": "Test all CRUD operations for books, users, collections",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-038",
+          "title": "Write EPUB parser tests",
+          "description": "Test metadata extraction and validation",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-039",
+          "title": "Write API handler tests",
+          "description": "HTTP tests for all endpoints with mock data",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-040",
+          "title": "Write auth middleware tests",
+          "description": "Test JWT validation and user context extraction",
+          "status": "pending"
+        }
+      ],
+      "priority": 5,
+      "complexity": "medium",
+      "status": "completed",
+      "dependencies": [
+        "STORY-005"
+      ],
+      "createdAt": "2025-12-21T11:54:26-06:00",
+      "updatedAt": "2025-12-21T11:54:26-06:00"
+    },
+    {
+      "id": "STORY-010",
+      "title": "TUI Client API Support",
+      "description": "As a TUI client developer, I want the API to return clean JSON responses suitable for terminal display. The API already returns JSON, but ensure consistent response format, proper error codes, and no HTML/markup in data fields. Support pagination for large lists and provide endpoints optimized for terminal workflows.",
+      "tasks": [
+        {
+          "id": "TASK-041",
+          "title": "Add pagination to book list endpoints",
+          "description": "Support ?page=N\u0026limit=N query parameters on GET /api/books",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-042",
+          "title": "Add plain text chapter endpoint",
+          "description": "GET /api/books/:id/content/:chapter/text returns stripped HTML as plain text",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-043",
+          "title": "Add API documentation endpoint",
+          "description": "GET /api returns list of available endpoints for TUI discovery",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T12:05:54-06:00",
+      "updatedAt": "2025-12-21T12:05:54-06:00"
+    }
+  ],
+  "lastUpdated": "2025-12-21T12:09:58-06:00",
+  "nextStoryId": 11,
+  "nextTaskId": 44
+}

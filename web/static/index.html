@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webby - EPUB Library</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --accent-color: #4a90d9;
+            --border-color: #ddd;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .sort-select {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+            background: var(--card-bg);
+        }
+
+        .view-toggle {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .view-toggle button {
+            padding: 10px 15px;
+            border: none;
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .view-toggle button.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .upload-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .upload-btn:hover {
+            opacity: 0.9;
+        }
+
+        .library {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .group-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        /* Grid View */
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .book-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .book-cover {
+            width: 100%;
+            aspect-ratio: 2/3;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .book-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .book-info {
+            padding: 10px;
+        }
+
+        .book-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .book-author {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .book-series {
+            font-size: 11px;
+            color: var(--accent-color);
+            margin-top: 3px;
+        }
+
+        /* List View */
+        .books-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .books-list .book-card {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .books-list .book-cover {
+            width: 80px;
+            aspect-ratio: 2/3;
+            flex-shrink: 0;
+        }
+
+        .books-list .book-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .books-list .book-title {
+            font-size: 16px;
+        }
+
+        .books-list .book-author {
+            font-size: 14px;
+        }
+
+        /* Upload Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 40px 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent-color);
+            background: rgba(74, 144, 217, 0.1);
+        }
+
+        .drop-zone p {
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-progress {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0;
+            transition: width 0.3s;
+        }
+
+        .cancel-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Webby Library</h1>
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search books...">
+            <select class="sort-select" id="sortSelect">
+                <option value="title">Sort by Title</option>
+                <option value="author">Sort by Author</option>
+                <option value="series">Sort by Series</option>
+                <option value="date">Sort by Date Added</option>
+            </select>
+            <div class="view-toggle">
+                <button id="gridViewBtn" class="active">Grid</button>
+                <button id="listViewBtn">List</button>
+            </div>
+            <button class="upload-btn" id="uploadBtn">+ Upload</button>
+        </div>
+    </header>
+
+    <main class="library" id="library">
+        <div class="loading">Loading library...</div>
+    </main>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>Upload EPUB</h2>
+            <div class="drop-zone" id="dropZone">
+                <p>Drag & drop EPUB file here</p>
+                <p>or click to browse</p>
+                <input type="file" class="file-input" id="fileInput" accept=".epub">
+            </div>
+            <div class="upload-progress" id="uploadProgress">
+                <p id="uploadStatus">Uploading...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            <button class="cancel-btn" id="cancelBtn">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let books = [];
+        let viewMode = 'grid';
+        let groupBy = null;
+
+        async function loadBooks() {
+            const library = document.getElementById('library');
+            const sortBy = document.getElementById('sortSelect').value;
+            const search = document.getElementById('searchBox').value;
+
+            try {
+                let url = `${API_BASE}/books?sort=${sortBy}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+                books = data.books || [];
+                renderBooks();
+            } catch (err) {
+                library.innerHTML = '<div class="empty-state"><h2>Failed to load library</h2></div>';
+            }
+        }
+
+        async function loadGrouped(type) {
+            const library = document.getElementById('library');
+
+            try {
+                const res = await fetch(`${API_BASE}/books/by-${type}`);
+                const data = await res.json();
+                const groups = data[type === 'author' ? 'authors' : 'series'] || {};
+                renderGrouped(groups);
+            } catch (err) {
+                library.innerHTML = '<div class="empty-state"><h2>Failed to load library</h2></div>';
+            }
+        }
+
+        function renderBooks() {
+            const library = document.getElementById('library');
+
+            if (books.length === 0) {
+                library.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No books yet</h2>
+                        <p>Upload your first EPUB to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const containerClass = viewMode === 'grid' ? 'books-grid' : 'books-list';
+            library.innerHTML = `<div class="${containerClass}">${books.map(renderBook).join('')}</div>`;
+        }
+
+        function renderGrouped(groups) {
+            const library = document.getElementById('library');
+
+            if (Object.keys(groups).length === 0) {
+                library.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No books found</h2>
+                    </div>
+                `;
+                return;
+            }
+
+            const containerClass = viewMode === 'grid' ? 'books-grid' : 'books-list';
+            library.innerHTML = Object.entries(groups).map(([name, groupBooks]) => `
+                <h2 class="group-header">${name}</h2>
+                <div class="${containerClass}">${groupBooks.map(renderBook).join('')}</div>
+            `).join('');
+        }
+
+        function renderBook(book) {
+            const coverUrl = `${API_BASE}/books/${book.id}/cover`;
+            return `
+                <div class="book-card" onclick="openReader('${book.id}')">
+                    <div class="book-cover">
+                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${book.title}'">
+                    </div>
+                    <div class="book-info">
+                        <div class="book-title">${book.title}</div>
+                        <div class="book-author">${book.author}</div>
+                        ${book.series ? `<div class="book-series">${book.series} #${book.series_index}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openReader(bookId) {
+            window.location.href = `/reader/${bookId}`;
+        }
+
+        async function uploadFile(file) {
+            const progress = document.getElementById('uploadProgress');
+            const status = document.getElementById('uploadStatus');
+            const fill = document.getElementById('progressFill');
+
+            progress.style.display = 'block';
+            fill.style.width = '0%';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        fill.style.width = percent + '%';
+                    }
+                });
+
+                xhr.onload = function() {
+                    if (xhr.status === 201) {
+                        status.textContent = 'Upload complete!';
+                        fill.style.width = '100%';
+                        setTimeout(() => {
+                            closeUploadModal();
+                            loadBooks();
+                        }, 1000);
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        status.textContent = 'Error: ' + (error.error || 'Upload failed');
+                    }
+                };
+
+                xhr.onerror = function() {
+                    status.textContent = 'Upload failed';
+                };
+
+                xhr.open('POST', `${API_BASE}/books`);
+                xhr.send(formData);
+            } catch (err) {
+                status.textContent = 'Upload failed';
+            }
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').classList.remove('active');
+            document.getElementById('uploadProgress').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+        }
+
+        // Event Listeners
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('uploadModal').classList.add('active');
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', closeUploadModal);
+
+        document.getElementById('uploadModal').addEventListener('click', (e) => {
+            if (e.target.id === 'uploadModal') closeUploadModal();
+        });
+
+        document.getElementById('dropZone').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                uploadFile(e.target.files[0]);
+            }
+        });
+
+        document.getElementById('dropZone').addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        });
+
+        document.getElementById('dropZone').addEventListener('dragleave', (e) => {
+            e.currentTarget.classList.remove('dragover');
+        });
+
+        document.getElementById('dropZone').addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                uploadFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        document.getElementById('sortSelect').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === 'author') {
+                groupBy = 'author';
+                loadGrouped('author');
+            } else if (val === 'series') {
+                groupBy = 'series';
+                loadGrouped('series');
+            } else {
+                groupBy = null;
+                loadBooks();
+            }
+        });
+
+        document.getElementById('searchBox').addEventListener('input', debounce(() => {
+            groupBy = null;
+            loadBooks();
+        }, 300));
+
+        document.getElementById('gridViewBtn').addEventListener('click', () => {
+            viewMode = 'grid';
+            document.getElementById('gridViewBtn').classList.add('active');
+            document.getElementById('listViewBtn').classList.remove('active');
+            if (groupBy) loadGrouped(groupBy);
+            else renderBooks();
+        });
+
+        document.getElementById('listViewBtn').addEventListener('click', () => {
+            viewMode = 'list';
+            document.getElementById('listViewBtn').classList.add('active');
+            document.getElementById('gridViewBtn').classList.remove('active');
+            if (groupBy) loadGrouped(groupBy);
+            else renderBooks();
+        });
+
+        function debounce(fn, delay) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // Initialize
+        loadBooks();
+    </script>
+</body>
+</html>
