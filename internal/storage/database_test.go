@@ -389,3 +389,141 @@ func TestReadingPositionNotFound(t *testing.T) {
 	_, err := db.GetReadingPosition(book.ID, "nonexistent-user")
 	assert.Error(t, err)
 }
+
+func TestGetBooksByAuthorForUser(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create books for two different users with same author
+	book1 := &models.Book{
+		ID:         "book-1",
+		UserID:     "user-1",
+		Title:      "Book 1",
+		Author:     "Author A",
+		FilePath:   "/path/1.epub",
+		UploadedAt: time.Now(),
+	}
+	book2 := &models.Book{
+		ID:         "book-2",
+		UserID:     "user-1",
+		Title:      "Book 2",
+		Author:     "Author A",
+		FilePath:   "/path/2.epub",
+		UploadedAt: time.Now(),
+	}
+	book3 := &models.Book{
+		ID:         "book-3",
+		UserID:     "user-2",
+		Title:      "Book 3",
+		Author:     "Author A",
+		FilePath:   "/path/3.epub",
+		UploadedAt: time.Now(),
+	}
+	book4 := &models.Book{
+		ID:         "book-4",
+		UserID:     "user-1",
+		Title:      "Book 4",
+		Author:     "Author B",
+		FilePath:   "/path/4.epub",
+		UploadedAt: time.Now(),
+	}
+
+	require.NoError(t, db.CreateBook(book1))
+	require.NoError(t, db.CreateBook(book2))
+	require.NoError(t, db.CreateBook(book3))
+	require.NoError(t, db.CreateBook(book4))
+
+	// Get books by author for user-1
+	grouped, err := db.GetBooksByAuthorForUser("user-1")
+	require.NoError(t, err)
+
+	// Should have 2 authors for user-1
+	assert.Len(t, grouped, 2)
+
+	// Author A should have 2 books for user-1
+	assert.Len(t, grouped["Author A"], 2)
+
+	// Author B should have 1 book for user-1
+	assert.Len(t, grouped["Author B"], 1)
+
+	// Get books by author for user-2
+	grouped2, err := db.GetBooksByAuthorForUser("user-2")
+	require.NoError(t, err)
+
+	// Should have 1 author for user-2
+	assert.Len(t, grouped2, 1)
+	assert.Len(t, grouped2["Author A"], 1)
+}
+
+func TestGetBooksBySeriesForUser(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create books with series for two users
+	book1 := &models.Book{
+		ID:          "book-1",
+		UserID:      "user-1",
+		Title:       "Book 1",
+		Author:      "Author",
+		Series:      "Series X",
+		SeriesIndex: 1,
+		FilePath:    "/path/1.epub",
+		UploadedAt:  time.Now(),
+	}
+	book2 := &models.Book{
+		ID:          "book-2",
+		UserID:      "user-1",
+		Title:       "Book 2",
+		Author:      "Author",
+		Series:      "Series X",
+		SeriesIndex: 2,
+		FilePath:    "/path/2.epub",
+		UploadedAt:  time.Now(),
+	}
+	book3 := &models.Book{
+		ID:          "book-3",
+		UserID:      "user-2",
+		Title:       "Book 3",
+		Author:      "Author",
+		Series:      "Series X",
+		SeriesIndex: 3,
+		FilePath:    "/path/3.epub",
+		UploadedAt:  time.Now(),
+	}
+	book4 := &models.Book{
+		ID:         "book-4",
+		UserID:     "user-1",
+		Title:      "Book 4",
+		Author:     "Author",
+		Series:     "",  // No series
+		FilePath:   "/path/4.epub",
+		UploadedAt: time.Now(),
+	}
+
+	require.NoError(t, db.CreateBook(book1))
+	require.NoError(t, db.CreateBook(book2))
+	require.NoError(t, db.CreateBook(book3))
+	require.NoError(t, db.CreateBook(book4))
+
+	// Get books by series for user-1
+	grouped, err := db.GetBooksBySeriesForUser("user-1")
+	require.NoError(t, err)
+
+	// Should have 1 series for user-1 (book4 has no series)
+	assert.Len(t, grouped, 1)
+
+	// Series X should have 2 books for user-1
+	assert.Len(t, grouped["Series X"], 2)
+
+	// Verify series order
+	assert.Equal(t, float64(1), grouped["Series X"][0].SeriesIndex)
+	assert.Equal(t, float64(2), grouped["Series X"][1].SeriesIndex)
+
+	// Get books by series for user-2
+	grouped2, err := db.GetBooksBySeriesForUser("user-2")
+	require.NoError(t, err)
+
+	// Should have 1 series for user-2
+	assert.Len(t, grouped2, 1)
+	assert.Len(t, grouped2["Series X"], 1)
+}

@@ -215,7 +215,8 @@ func (h *Handler) DeleteBook(c *gin.Context) {
 
 // GetBooksByAuthor returns books grouped by author
 func (h *Handler) GetBooksByAuthor(c *gin.Context) {
-	grouped, err := h.db.GetBooksByAuthor()
+	userID := auth.GetUserID(c)
+	grouped, err := h.db.GetBooksByAuthorForUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch books"})
 		return
@@ -226,7 +227,8 @@ func (h *Handler) GetBooksByAuthor(c *gin.Context) {
 
 // GetBooksBySeries returns books grouped by series
 func (h *Handler) GetBooksBySeries(c *gin.Context) {
-	grouped, err := h.db.GetBooksBySeries()
+	userID := auth.GetUserID(c)
+	grouped, err := h.db.GetBooksBySeriesForUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch books"})
 		return

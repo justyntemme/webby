@@ -620,9 +620,454 @@
       "status": "completed",
       "createdAt": "2025-12-21T14:33:02-06:00",
       "updatedAt": "2025-12-21T14:33:02-06:00"
+    },
+    {
+      "id": "STORY-017",
+      "title": "Fix sorting by author showing blank results",
+      "description": "As a user, when I sort by author, the library shows blank/empty results. This is a bug that needs investigation - likely related to how books without author metadata are handled or how the grouping query works.",
+      "acceptanceCriteria": [
+        "Sorting by author displays all books that have author metadata",
+        "Books without author metadata are displayed at the end of the list (or in a separate 'Unknown Author' group)",
+        "Author sort is case-insensitive for consistent ordering",
+        "Author names display correctly in the book cards when sorted",
+        "No blank/empty results when author field exists in EPUB metadata"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-061",
+          "title": "Investigate author sorting bug",
+          "description": "Debug the frontend sorting logic and API response to identify why author sort returns blank. Check if author field is being extracted from EPUB metadata and stored in database correctly.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-062",
+          "title": "Fix author field extraction from EPUB",
+          "description": "Ensure the EPUB parser correctly extracts the dc:creator field and stores it in the books table author column.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-063",
+          "title": "Update frontend sorting logic",
+          "description": "Fix the JavaScript sorting function to properly handle books with missing author data and sort alphabetically by author name.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-064",
+          "title": "Add tests for author sorting",
+          "description": "Write unit tests to verify author extraction and sorting behavior with various EPUB files.",
+          "status": "pending"
+        }
+      ],
+      "priority": 3,
+      "complexity": "low",
+      "status": "completed",
+      "dependencies": [
+        "STORY-021"
+      ],
+      "createdAt": "2025-12-21T15:26:56-06:00",
+      "updatedAt": "2025-12-21T15:26:56-06:00"
+    },
+    {
+      "id": "STORY-018",
+      "title": "Automatic metadata lookup for books",
+      "description": "As a user, I want the system to automatically look up and fill in missing metadata (title, author, series, cover) for my uploaded books using external data sources like Google Books API, Open Library, or Goodreads. This ensures books can be properly sorted and organized even if the EPUB has incomplete metadata.",
+      "acceptanceCriteria": [
+        "System can lookup book metadata using ISBN, title, and/or author from Open Library API",
+        "Lookup returns: title, author(s), description, cover image URL, publish date, publisher, series info",
+        "Automatic lookup triggers on book upload when EPUB metadata is incomplete",
+        "User can manually trigger lookup for any book from the UI",
+        "API rate limiting is implemented to avoid being blocked by metadata providers",
+        "Fallback logic tries multiple search strategies (ISBN first, then title+author, then title only)",
+        "Metadata confidence score indicates match quality to user",
+        "Failed lookups are logged and don't crash the application"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-065",
+          "title": "Research and select metadata API providers",
+          "description": "Evaluate Open Library, Google Books, and other free metadata APIs. Document rate limits, data quality, and required authentication. Select primary and fallback providers.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-066",
+          "title": "Create metadata provider interface",
+          "description": "Design Go interface for metadata providers to allow swapping between different APIs. Include methods for search by ISBN, title, author, and combined searches.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-067",
+          "title": "Implement Open Library API client",
+          "description": "Build HTTP client for Open Library API with search, ISBN lookup, and cover image retrieval. Handle rate limiting with exponential backoff.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-068",
+          "title": "Add metadata matching algorithm",
+          "description": "Create fuzzy matching logic to compare API results with existing book data. Calculate confidence score based on title similarity, author match, and other factors.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-069",
+          "title": "Integrate lookup into book upload flow",
+          "description": "Trigger automatic metadata lookup when a book is uploaded and has missing fields. Run asynchronously to not block upload response.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-070",
+          "title": "Add manual lookup trigger endpoint",
+          "description": "Create API endpoint POST /api/books/:id/lookup-metadata that triggers metadata search for a specific book and returns results.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-071",
+          "title": "Build metadata preview UI",
+          "description": "Create frontend component showing metadata search results with confidence scores. Allow user to accept/reject suggested metadata before applying.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-072",
+          "title": "Add database fields for metadata source",
+          "description": "Track where metadata came from (epub, open_library, manual) and last lookup timestamp in books table.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-073",
+          "title": "Write integration tests for metadata lookup",
+          "description": "Test API client, matching algorithm, and end-to-end lookup flow with mocked HTTP responses.",
+          "status": "pending"
+        }
+      ],
+      "priority": 4,
+      "complexity": "high",
+      "status": "ready",
+      "dependencies": [
+        "STORY-017",
+        "STORY-024"
+      ],
+      "createdAt": "2025-12-21T15:26:56-06:00",
+      "updatedAt": "2025-12-21T15:26:56-06:00"
+    },
+    {
+      "id": "STORY-019",
+      "title": "Manual metadata editing for books",
+      "description": "As a user, I want to manually edit book metadata (title, author, series, series index) through the web UI when automatic lookup fails or returns incorrect data. This gives users control over how their books are organized.",
+      "acceptanceCriteria": [
+        "User can edit book metadata fields: title, author, description, series, series index, publisher, publish date",
+        "Edit form is accessible from book detail view via 'Edit Metadata' button",
+        "Changes are validated before saving (e.g., series index must be numeric)",
+        "Original EPUB file is not modified - metadata stored only in database",
+        "User can upload a custom cover image to replace extracted cover",
+        "Edit history is preserved showing when metadata was last modified",
+        "Cancel button discards unsaved changes with confirmation if edits were made"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-074",
+          "title": "Add metadata edit API endpoint",
+          "description": "Create PUT /api/books/:id/metadata endpoint that accepts JSON body with editable fields. Validate input and update books table.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-075",
+          "title": "Extend book model with editable fields",
+          "description": "Add series, series_index, publisher, publish_date, description fields to books table if not present. Add updated_at timestamp.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-076",
+          "title": "Build metadata edit modal/form UI",
+          "description": "Create form component with fields for all editable metadata. Include validation feedback and save/cancel buttons.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-077",
+          "title": "Add custom cover upload endpoint",
+          "description": "Create POST /api/books/:id/cover endpoint to upload custom cover image. Store in covers directory and update book record.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-078",
+          "title": "Integrate edit button in book detail view",
+          "description": "Add 'Edit Metadata' button to book card or detail view. Open edit modal when clicked with current values pre-filled.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-079",
+          "title": "Write tests for metadata editing",
+          "description": "Test API endpoint validation, database updates, and cover upload functionality.",
+          "status": "pending"
+        }
+      ],
+      "priority": 5,
+      "complexity": "medium",
+      "status": "ready",
+      "dependencies": [
+        "STORY-017",
+        "STORY-024"
+      ],
+      "createdAt": "2025-12-21T15:26:56-06:00",
+      "updatedAt": "2025-12-21T15:26:56-06:00"
+    },
+    {
+      "id": "STORY-020",
+      "title": "Bulk metadata refresh for library",
+      "description": "As a user, I want to trigger a bulk metadata refresh for all books in my library that have missing or incomplete information, so I don't have to update each book individually.",
+      "acceptanceCriteria": [
+        "User can trigger bulk metadata refresh for all books or selected books",
+        "Progress indicator shows current book being processed and overall progress",
+        "Bulk operation runs in background without blocking UI",
+        "User can cancel bulk operation mid-process",
+        "Results summary shows: books updated, books skipped (already complete), books failed",
+        "Rate limiting prevents API abuse during bulk operations",
+        "Only books with incomplete metadata are processed by default (option to force refresh all)"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-080",
+          "title": "Create bulk refresh API endpoint",
+          "description": "Create POST /api/books/bulk-refresh endpoint that accepts list of book IDs or 'all' flag. Returns job ID for progress tracking.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-081",
+          "title": "Implement background job queue",
+          "description": "Build simple in-memory job queue for processing bulk operations. Track job status, progress, and allow cancellation.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-082",
+          "title": "Add job status endpoint",
+          "description": "Create GET /api/jobs/:id endpoint to check bulk operation progress, current item, and results.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-083",
+          "title": "Build bulk refresh UI controls",
+          "description": "Add 'Refresh All Metadata' button to library view. Show progress modal with current book, percentage, and cancel button.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-084",
+          "title": "Add selection mode for bulk operations",
+          "description": "Allow user to select multiple books and trigger refresh for selection only. Add checkboxes to book cards.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-085",
+          "title": "Implement rate-limited batch processing",
+          "description": "Process books with configurable delay between API calls. Default 1 second between lookups to respect API limits.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-086",
+          "title": "Write tests for bulk operations",
+          "description": "Test job queue, progress tracking, cancellation, and rate limiting behavior.",
+          "status": "pending"
+        }
+      ],
+      "priority": 6,
+      "complexity": "medium",
+      "status": "ready",
+      "dependencies": [
+        "STORY-018"
+      ],
+      "createdAt": "2025-12-21T15:26:56-06:00",
+      "updatedAt": "2025-12-21T15:26:56-06:00"
+    },
+    {
+      "id": "STORY-021",
+      "title": "Research: Investigate author sorting bug",
+      "description": "Research and document the root cause of the author sorting bug. Analyze how EPUB metadata is currently extracted, stored in the database, and used by the frontend sorting logic. Document findings before implementing any fixes.",
+      "acceptanceCriteria": [
+        "Root cause of blank author sorting is identified and documented",
+        "Current EPUB parser author extraction logic is analyzed",
+        "Database schema for author field is documented",
+        "Frontend sorting logic for authors is analyzed",
+        "Findings documented in .controlflow/research/author-sorting-bug.md"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-087",
+          "title": "Trace EPUB author extraction code path",
+          "description": "Read internal/epub/parser.go and trace how dc:creator is extracted from EPUB files. Document the extraction logic.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-088",
+          "title": "Analyze database author storage",
+          "description": "Check books table schema and how author field is populated during upload. Query existing books to see author data state.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-089",
+          "title": "Debug frontend author sorting",
+          "description": "Analyze index.html JavaScript sorting logic. Identify why author sort returns blank - is it API, data, or display issue?",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-090",
+          "title": "Document findings in research file",
+          "description": "Create .controlflow/research/author-sorting-bug.md with root cause analysis and recommended fix approach.",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T16:02:35-06:00",
+      "updatedAt": "2025-12-21T16:02:35-06:00"
+    },
+    {
+      "id": "STORY-022",
+      "title": "Research: Evaluate metadata API providers",
+      "description": "Research and evaluate free metadata API providers for book information lookup. Compare Open Library, Google Books API, and other options. Document rate limits, data quality, authentication requirements, and available fields. Recommend primary and fallback providers.",
+      "acceptanceCriteria": [
+        "Open Library API capabilities and limits documented",
+        "Google Books API capabilities and limits documented",
+        "At least one additional alternative API evaluated",
+        "Comparison matrix created with: rate limits, auth requirements, data fields, reliability",
+        "Primary and fallback provider recommendations made",
+        "Findings documented in .controlflow/research/metadata-api-providers.md"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-091",
+          "title": "Research Open Library API",
+          "description": "Document Open Library search API, ISBN lookup, covers API. Note rate limits, authentication, response format, and available fields.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-092",
+          "title": "Research Google Books API",
+          "description": "Document Google Books API capabilities, API key requirements, quota limits, and data quality compared to Open Library.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-093",
+          "title": "Research alternative APIs",
+          "description": "Evaluate alternatives: Goodreads (if available), ISBNdb, LibraryThing, or others. Note any that are free and suitable.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-094",
+          "title": "Create comparison matrix",
+          "description": "Build comparison table of all evaluated APIs with: rate limits, auth, fields available, reliability, terms of service.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-095",
+          "title": "Write recommendation document",
+          "description": "Create .controlflow/research/metadata-api-providers.md with findings and primary/fallback provider recommendations.",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "medium",
+      "status": "completed",
+      "createdAt": "2025-12-21T16:02:35-06:00",
+      "updatedAt": "2025-12-21T16:02:35-06:00"
+    },
+    {
+      "id": "STORY-023",
+      "title": "Research: Analyze current EPUB metadata extraction",
+      "description": "Document the current EPUB parsing implementation. Identify which metadata fields are extracted (title, author, description, ISBN, etc.), how they're stored in the database, and what fields are missing or incomplete. Create a gap analysis for metadata enhancement.",
+      "acceptanceCriteria": [
+        "All currently extracted EPUB metadata fields documented",
+        "Database books table schema fully documented",
+        "Gap analysis: fields available in EPUB vs fields we extract",
+        "Gap analysis: fields we need vs fields we have",
+        "List of missing fields that need external lookup",
+        "Findings documented in .controlflow/research/epub-metadata-analysis.md"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-096",
+          "title": "Document EPUB parser implementation",
+          "description": "Read internal/epub/parser.go and document all metadata fields currently extracted: title, author, description, cover, etc.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-097",
+          "title": "Document database schema",
+          "description": "Analyze internal/storage/database.go schema creation. Document all columns in books table and their purposes.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-098",
+          "title": "Analyze sample EPUBs for available metadata",
+          "description": "Examine OPF files in sample EPUBs to identify what metadata fields are typically available (ISBN, publisher, series, etc.).",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-099",
+          "title": "Create metadata gap analysis",
+          "description": "Create .controlflow/research/epub-metadata-analysis.md documenting current state and gaps that need external lookup.",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T16:02:36-06:00",
+      "updatedAt": "2025-12-21T16:02:36-06:00"
+    },
+    {
+      "id": "STORY-024",
+      "title": "Research: Design metadata system architecture",
+      "description": "Based on research findings, design the architecture for the metadata lookup system. Define interfaces, data flow, database schema changes, and API contracts. Create technical design document before implementation begins.",
+      "acceptanceCriteria": [
+        "Go interface design for metadata providers documented",
+        "Database schema changes required are specified",
+        "API endpoint contracts defined (request/response formats)",
+        "Data flow diagram from upload to metadata enrichment",
+        "Error handling and retry strategy defined",
+        "Technical design documented in .controlflow/research/metadata-system-design.md"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-100",
+          "title": "Design metadata provider interface",
+          "description": "Define Go interface for metadata providers with methods for search, ISBN lookup, and cover retrieval. Document in design doc.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-101",
+          "title": "Design database schema changes",
+          "description": "Specify new columns needed: series, series_index, publisher, publish_date, isbn, metadata_source, metadata_updated_at.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-102",
+          "title": "Define API contracts",
+          "description": "Document new endpoints: POST /api/books/:id/lookup-metadata, PUT /api/books/:id/metadata, POST /api/books/:id/cover.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-103",
+          "title": "Create data flow diagram",
+          "description": "Document the flow: upload -\u003e extract EPUB metadata -\u003e check completeness -\u003e trigger lookup -\u003e preview -\u003e apply.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-104",
+          "title": "Write technical design document",
+          "description": "Create .controlflow/research/metadata-system-design.md consolidating all architecture decisions.",
+          "status": "pending"
+        }
+      ],
+      "priority": 2,
+      "complexity": "medium",
+      "status": "completed",
+      "dependencies": [
+        "STORY-021",
+        "STORY-022",
+        "STORY-023"
+      ],
+      "createdAt": "2025-12-21T16:02:36-06:00",
+      "updatedAt": "2025-12-21T16:02:36-06:00"
     }
   ],
-  "lastUpdated": "2025-12-21T14:34:57-06:00",
-  "nextStoryId": 17,
-  "nextTaskId": 61
+  "lastUpdated": "2025-12-21T16:27:47-06:00",
+  "nextStoryId": 25,
+  "nextTaskId": 105
 }

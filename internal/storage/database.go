@@ -245,9 +245,14 @@ func (d *Database) SearchBooksForUser(query, userID string) ([]models.Book, erro
 	return books, nil
 }
 
-// GetBooksByAuthor returns books grouped by author
+// GetBooksByAuthor returns books grouped by author (legacy - no user filter)
 func (d *Database) GetBooksByAuthor() (map[string][]models.Book, error) {
-	books, err := d.ListBooks("author", "asc")
+	return d.GetBooksByAuthorForUser("")
+}
+
+// GetBooksByAuthorForUser returns books grouped by author for a specific user
+func (d *Database) GetBooksByAuthorForUser(userID string) (map[string][]models.Book, error) {
+	books, err := d.ListBooksForUser(userID, "author", "asc")
 	if err != nil {
 		return nil, err
 	}
@@ -260,13 +265,30 @@ func (d *Database) GetBooksByAuthor() (map[string][]models.Book, error) {
 	return grouped, nil
 }
 
-// GetBooksBySeries returns books grouped by series
+// GetBooksBySeries returns books grouped by series (legacy - no user filter)
 func (d *Database) GetBooksBySeries() (map[string][]models.Book, error) {
-	rows, err := d.db.Query(`
-		SELECT id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
-		FROM books
-		WHERE series != ''
-		ORDER BY series, series_index`)
+	return d.GetBooksBySeriesForUser("")
+}
+
+// GetBooksBySeriesForUser returns books grouped by series for a specific user
+func (d *Database) GetBooksBySeriesForUser(userID string) (map[string][]models.Book, error) {
+	var rows *sql.Rows
+	var err error
+
+	if userID != "" {
+		rows, err = d.db.Query(`
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
+			FROM books
+			WHERE user_id = ? AND series != ''
+			ORDER BY series, series_index`, userID)
+	} else {
+		rows, err = d.db.Query(`
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
+			FROM books
+			WHERE user_id = '' AND series != ''
+			ORDER BY series, series_index`)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +297,7 @@ func (d *Database) GetBooksBySeries() (map[string][]models.Book, error) {
 	grouped := make(map[string][]models.Book)
 	for rows.Next() {
 		var book models.Book
-		err := rows.Scan(&book.ID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
+		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
 			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt)
 		if err != nil {
 			return nil, err
