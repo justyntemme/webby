@@ -1,0 +1,76 @@
+{
+  "projectPath": "/Users/justyntemme/Documents/code/webby",
+  "workflows": {
+    "WF-1766345266256056000": {
+      "id": "WF-1766345266256056000",
+      "status": "pending",
+      "currentStep": 0,
+      "totalSteps": 5,
+      "steps": [
+        {
+          "id": "STEP-1",
+          "name": "Get Story Details",
+          "agentName": "projectManager",
+          "action": "getBacklog",
+          "status": "pending",
+          "input": {
+            "storyId": "STORY-011"
+          }
+        },
+        {
+          "id": "STEP-2",
+          "name": "Break Down Story",
+          "agentName": "projectManager",
+          "action": "breakdownStory",
+          "status": "pending",
+          "input": {
+            "storyId": "STORY-011"
+          },
+          "dependsOn": [
+            "STEP-1"
+          ]
+        },
+        {
+          "id": "STEP-3",
+          "name": "Implement Tasks",
+          "agentName": "controlFlowMonitor",
+          "action": "executeTasks",
+          "status": "pending",
+          "dependsOn": [
+            "STEP-2"
+          ]
+        },
+        {
+          "id": "STEP-4",
+          "name": "Review Code",
+          "agentName": "codeReview",
+          "action": "reviewCommit",
+          "status": "pending",
+          "dependsOn": [
+            "STEP-3"
+          ]
+        },
+        {
+          "id": "STEP-5",
+          "name": "Complete Story",
+          "agentName": "projectManager",
+          "action": "updateStoryStatus",
+          "status": "pending",
+          "input": {
+            "status": "completed",
+            "storyId": "STORY-011"
+          },
+          "dependsOn": [
+            "STEP-4"
+          ]
+        }
+      ],
+      "startedAt": "2025-12-21T13:27:46.256057-06:00",
+      "lastUpdated": "2025-12-21T13:27:46.256057-06:00",
+      "retryCount": 0,
+      "maxRetries": 3
+    }
+  },
+  "activeId": "WF-1766345266256056000",
+  "lastUpdated": "2025-12-21T13:27:46.256063-06:00"
+}

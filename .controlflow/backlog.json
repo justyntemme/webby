@@ -428,9 +428,201 @@
       "status": "completed",
       "createdAt": "2025-12-21T12:05:54-06:00",
       "updatedAt": "2025-12-21T12:05:54-06:00"
+    },
+    {
+      "id": "STORY-011",
+      "title": "Reading Position Sync (Bookmarks)",
+      "description": "As a user, I want my reading position to be saved automatically when I exit a book, so that I can resume reading from the same spot on any device (laptop, phone, etc.). This feature should persist the reading position to the backend so it syncs across all my devices.",
+      "acceptanceCriteria": [
+        "Reading position is saved per-user in the database (using user_id in reading_positions table)",
+        "When user exits a book (back button, page close, or chapter change), position is saved to backend",
+        "When user opens a book, their saved position is fetched from backend and reader resumes at that chapter",
+        "Reading position syncs across devices - reading on laptop saves position, opening on phone resumes from same spot",
+        "Position includes both chapter index and scroll position within chapter",
+        "Frontend passes authentication token when saving/loading positions",
+        "Unauthenticated users can still save positions (using empty user_id, local-only)"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-044",
+          "title": "Fix database layer to use user_id in reading positions",
+          "description": "Update SaveReadingPosition to include user_id in INSERT and ON CONFLICT clause. Update GetReadingPosition to accept userID parameter and filter by both book_id and user_id.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-045",
+          "title": "Update API handlers to pass user context to reading position operations",
+          "description": "Modify GetReadingPosition and SaveReadingPosition handlers to extract user_id from auth context and pass it to database methods.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-046",
+          "title": "Update frontend to include auth token in position API calls",
+          "description": "Modify reader.html to store/retrieve JWT token and include Authorization header when calling /api/books/:id/position endpoints.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-047",
+          "title": "Add scroll position restoration on chapter load",
+          "description": "When loading saved position, also restore scroll position within the chapter (not just chapter index).",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-048",
+          "title": "Write tests for user-scoped reading positions",
+          "description": "Add unit tests to verify positions are correctly scoped per-user and sync works across simulated devices.",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "medium",
+      "status": "completed",
+      "createdAt": "2025-12-21T12:46:27-06:00",
+      "updatedAt": "2025-12-21T12:46:27-06:00"
+    },
+    {
+      "id": "STORY-012",
+      "title": "User Authentication System",
+      "description": "As a user, I want to be required to sign up and log in before accessing the application, so that my data is secure and I have a personalized experience. Currently, navigating to / assumes a user is created and anyone can access the default user's data without authentication.",
+      "acceptanceCriteria": [
+        "Login page with username/email and password fields",
+        "Registration page with username, email, and password fields with validation",
+        "Use industry-standard secure auth library (bcrypt for passwords, JWT for tokens)",
+        "Auth middleware properly validates JWT tokens on protected routes",
+        "JWT tokens stored securely in localStorage with proper expiry handling",
+        "Password requirements enforced (minimum 8 characters)",
+        "Error handling for invalid credentials and duplicate users",
+        "Do NOT force login until auth pages are complete and tested",
+        "Logout functionality that clears tokens"
+      ],
+      "tasks": [
+        {
+          "id": "TASK-049",
+          "title": "Create login/signup frontend page",
+          "description": "Build auth.html with forms for login and registration, including validation and error handling.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-050",
+          "title": "Add auth state management to frontend",
+          "description": "Store JWT token in localStorage, add helper functions for checking auth state and including token in requests.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-051",
+          "title": "Implement auth redirect logic on index page",
+          "description": "Check for valid JWT on page load, redirect to auth page if missing or expired.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-052",
+          "title": "Add logout functionality",
+          "description": "Add logout button to library UI that clears JWT and redirects to auth page.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-053",
+          "title": "Update all API calls to include auth headers",
+          "description": "Modify fetch calls throughout frontend to include Authorization: Bearer token header.",
+          "status": "pending"
+        }
+      ],
+      "priority": 2,
+      "complexity": "high",
+      "status": "completed",
+      "createdAt": "2025-12-21T12:46:27-06:00",
+      "updatedAt": "2025-12-21T12:46:27-06:00"
+    },
+    {
+      "id": "STORY-013",
+      "title": "Add --url flag for custom server URL",
+      "description": "As a user, I want to pass a --url flag to the application that specifies a custom URL/endpoint for the server to bind to. This allows configuring the server address at runtime instead of using a default.",
+      "tasks": [
+        {
+          "id": "TASK-054",
+          "title": "Add --url flag parsing to main.go",
+          "description": "Add command-line flag parsing using Go's flag package to accept a --url parameter for the server bind address.",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-055",
+          "title": "Update server startup to use the URL flag",
+          "description": "Modify the gin router startup to bind to the address specified by the --url flag instead of just the port.",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T14:15:32-06:00",
+      "updatedAt": "2025-12-21T14:15:32-06:00"
+    },
+    {
+      "id": "STORY-014",
+      "title": "Add flag to disable account registration",
+      "description": "As an administrator, I want a command-line flag or environment variable to disable new account registration, so that I can run a private instance where only existing users can log in. This is useful for personal/family deployments where you don't want random signups.",
+      "tasks": [
+        {
+          "id": "TASK-056",
+          "title": "Add --disable-registration flag and env var",
+          "description": "Add command-line flag and WEBBY_DISABLE_REGISTRATION env var to main.go",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-057",
+          "title": "Pass registration setting to auth handler",
+          "description": "Update auth handler to check if registration is disabled and return appropriate error",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-058",
+          "title": "Update auth UI to hide registration when disabled",
+          "description": "Add API endpoint to check registration status and hide signup tab if disabled",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T14:24:29-06:00",
+      "updatedAt": "2025-12-21T14:24:29-06:00"
+    },
+    {
+      "id": "STORY-015",
+      "title": "Document Docker database volume mounting",
+      "description": "As a user deploying with Docker, I want clear documentation in the Dockerfile showing where the database is stored and how to mount a volume for persistent data, so that I can easily configure data persistence in my docker run command.",
+      "tasks": [
+        {
+          "id": "TASK-059",
+          "title": "Add comments to Dockerfile for data volume",
+          "description": "Add clear comments showing where data is stored and example volume mount commands",
+          "status": "pending"
+        },
+        {
+          "id": "TASK-060",
+          "title": "Create README section for Docker deployment",
+          "description": "Document Docker usage with volume mounting examples in README or docs",
+          "status": "pending"
+        }
+      ],
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T14:24:29-06:00",
+      "updatedAt": "2025-12-21T14:24:29-06:00"
+    },
+    {
+      "id": "STORY-016",
+      "title": "Require authentication to access library",
+      "description": "Remove the 'Continue without signing in' option and require users to authenticate before accessing the library. Redirect unauthenticated users to the login page.",
+      "priority": 1,
+      "complexity": "low",
+      "status": "completed",
+      "createdAt": "2025-12-21T14:33:02-06:00",
+      "updatedAt": "2025-12-21T14:33:02-06:00"
     }
   ],
-  "lastUpdated": "2025-12-21T12:09:58-06:00",
-  "nextStoryId": 11,
-  "nextTaskId": 44
+  "lastUpdated": "2025-12-21T14:34:57-06:00",
+  "nextStoryId": 17,
+  "nextTaskId": 61
 }
