@@ -122,6 +122,11 @@ func main() {
 	r.Static("/static", "web/static")
 	r.GET("/reader/:id", handler.ServeReader)
 
+	// Serve auth page
+	r.GET("/auth", func(c *gin.Context) {
+		c.File("web/static/auth.html")
+	})
+
 	// Serve library index at root
 	r.GET("/", func(c *gin.Context) {
 		c.File("web/static/index.html")

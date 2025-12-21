@@ -98,6 +98,45 @@
             opacity: 0.9;
         }
 
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .user-info strong {
+            color: var(--text-color);
+        }
+
+        .auth-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .auth-btn:hover {
+            background: var(--bg-color);
+        }
+
+        .auth-btn.primary {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .auth-btn.primary:hover {
+            opacity: 0.9;
+        }
+
         .library {
             padding: 20px;
             max-width: 1400px;
@@ -309,7 +348,12 @@
 </head>
 <body>
     <header class="header">
-        <h1>Webby Library</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1>Webby Library</h1>
+            <div class="user-section" id="userSection">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
         <div class="controls">
             <input type="text" class="search-box" id="searchBox" placeholder="Search books...">
             <select class="sort-select" id="sortSelect">
@@ -354,6 +398,72 @@
         let books = [];
         let viewMode = 'grid';
         let groupBy = null;
+        let currentUser = null;
+
+        // Auth helpers
+        function getAuthToken() {
+            return localStorage.getItem('webby-token');
+        }
+
+        function clearAuthToken() {
+            localStorage.removeItem('webby-token');
+        }
+
+        function getAuthHeaders() {
+            const headers = {};
+            const token = getAuthToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        async function checkAuth() {
+            const token = getAuthToken();
+            if (!token) {
+                renderUserSection(null);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/me`, {
+                    headers: getAuthHeaders()
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentUser = data.user;
+                    renderUserSection(currentUser);
+                } else {
+                    // Token invalid
+                    clearAuthToken();
+                    currentUser = null;
+                    renderUserSection(null);
+                }
+            } catch (err) {
+                renderUserSection(null);
+            }
+        }
+
+        function renderUserSection(user) {
+            const section = document.getElementById('userSection');
+            if (user) {
+                section.innerHTML = `
+                    <span class="user-info">Signed in as <strong>${user.username}</strong></span>
+                    <button class="auth-btn" onclick="logout()">Sign Out</button>
+                `;
+            } else {
+                section.innerHTML = `
+                    <a href="/auth" class="auth-btn primary">Sign In</a>
+                `;
+            }
+        }
+
+        function logout() {
+            clearAuthToken();
+            currentUser = null;
+            renderUserSection(null);
+            loadBooks(); // Reload to show public books only
+        }
 
         async function loadBooks() {
             const library = document.getElementById('library');
@@ -364,7 +474,7 @@
                 let url = `${API_BASE}/books?sort=${sortBy}`;
                 if (search) url += `&search=${encodeURIComponent(search)}`;
 
-                const res = await fetch(url);
+                const res = await fetch(url, { headers: getAuthHeaders() });
                 const data = await res.json();
                 books = data.books || [];
                 renderBooks();
@@ -377,7 +487,7 @@
             const library = document.getElementById('library');
 
             try {
-                const res = await fetch(`${API_BASE}/books/by-${type}`);
+                const res = await fetch(`${API_BASE}/books/by-${type}`, { headers: getAuthHeaders() });
                 const data = await res.json();
                 const groups = data[type === 'author' ? 'authors' : 'series'] || {};
                 renderGrouped(groups);
@@ -482,6 +592,11 @@
                 };
 
                 xhr.open('POST', `${API_BASE}/books`);
+                // Add auth header if available
+                const token = getAuthToken();
+                if (token) {
+                    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                }
                 xhr.send(formData);
             } catch (err) {
                 status.textContent = 'Upload failed';
@@ -576,7 +691,11 @@
         }
 
         // Initialize
-        loadBooks();
+        async function init() {
+            await checkAuth();
+            loadBooks();
+        }
+        init();
     </script>
 </body>
 </html>

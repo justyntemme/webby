@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webby - Sign In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --accent-color: #4a90d9;
+            --border-color: #ddd;
+            --error-color: #e74c3c;
+            --success-color: #27ae60;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .auth-header {
+            text-align: center;
+            padding: 30px 20px 20px;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .auth-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s, border-color 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .auth-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .auth-tab:hover {
+            color: var(--accent-color);
+        }
+
+        .auth-form {
+            padding: 25px;
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-group input.error {
+            border-color: var(--error-color);
+        }
+
+        .form-group .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .form-group .error-msg {
+            font-size: 12px;
+            color: var(--error-color);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .form-group .error-msg.visible {
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.error {
+            background: #fdeaea;
+            color: var(--error-color);
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: var(--success-color);
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.visible {
+            display: block;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .divider span {
+            background: var(--card-bg);
+            padding: 0 15px;
+            position: relative;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .skip-link {
+            display: block;
+            text-align: center;
+            color: var(--accent-color);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .skip-link:hover {
+            text-decoration: underline;
+        }
+
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            padding-left: 15px;
+        }
+
+        .password-requirements li {
+            margin-bottom: 3px;
+        }
+
+        .password-requirements li.valid {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>Webby</h1>
+            <p>Your personal EPUB library</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="loginTab">Sign In</button>
+            <button class="auth-tab" id="registerTab">Create Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <form class="auth-form active" id="loginForm">
+            <div class="alert error" id="loginError"></div>
+            <div class="alert success" id="loginSuccess"></div>
+
+            <div class="form-group">
+                <label for="loginUsername">Username or Email</label>
+                <input type="text" id="loginUsername" name="username" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" name="password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="submit-btn" id="loginBtn">Sign In</button>
+
+            <div class="divider"><span>or</span></div>
+            <a href="/" class="skip-link">Continue without signing in</a>
+        </form>
+
+        <!-- Register Form -->
+        <form class="auth-form" id="registerForm">
+            <div class="alert error" id="registerError"></div>
+            <div class="alert success" id="registerSuccess"></div>
+
+            <div class="form-group">
+                <label for="registerUsername">Username</label>
+                <input type="text" id="registerUsername" name="username" required autocomplete="username" minlength="3" maxlength="32">
+                <div class="hint">3-32 characters</div>
+                <div class="error-msg" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" name="email" required autocomplete="email">
+                <div class="error-msg" id="emailError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="registerPassword">Password</label>
+                <input type="password" id="registerPassword" name="password" required autocomplete="new-password" minlength="8">
+                <ul class="password-requirements" id="passwordReqs">
+                    <li id="reqLength">At least 8 characters</li>
+                </ul>
+                <div class="error-msg" id="passwordError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password">
+                <div class="error-msg" id="confirmError"></div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="registerBtn">Create Account</button>
+
+            <div class="divider"><span>or</span></div>
+            <a href="/" class="skip-link">Continue without signing in</a>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // Token storage helpers
+        function setAuthToken(token) {
+            localStorage.setItem('webby-token', token);
+        }
+
+        function getAuthToken() {
+            return localStorage.getItem('webby-token');
+        }
+
+        function clearAuthToken() {
+            localStorage.removeItem('webby-token');
+        }
+
+        // Check if already logged in
+        async function checkExistingAuth() {
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    // Already logged in, redirect to library
+                    window.location.href = '/';
+                }
+            } catch (err) {
+                // Token invalid, clear it
+                clearAuthToken();
+            }
+        }
+
+        // Tab switching
+        document.getElementById('loginTab').addEventListener('click', () => {
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').classList.add('active');
+            document.getElementById('registerForm').classList.remove('active');
+            clearAlerts();
+        });
+
+        document.getElementById('registerTab').addEventListener('click', () => {
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('registerForm').classList.add('active');
+            document.getElementById('loginForm').classList.remove('active');
+            clearAlerts();
+        });
+
+        function clearAlerts() {
+            document.querySelectorAll('.alert').forEach(el => {
+                el.classList.remove('visible');
+                el.textContent = '';
+            });
+            document.querySelectorAll('.error-msg').forEach(el => {
+                el.classList.remove('visible');
+                el.textContent = '';
+            });
+            document.querySelectorAll('input').forEach(el => {
+                el.classList.remove('error');
+            });
+        }
+
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.classList.add('visible');
+        }
+
+        function showSuccess(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.classList.add('visible');
+        }
+
+        // Password validation
+        document.getElementById('registerPassword').addEventListener('input', (e) => {
+            const password = e.target.value;
+            const reqLength = document.getElementById('reqLength');
+
+            if (password.length >= 8) {
+                reqLength.classList.add('valid');
+            } else {
+                reqLength.classList.remove('valid');
+            }
+        });
+
+        // Confirm password validation
+        document.getElementById('confirmPassword').addEventListener('input', (e) => {
+            const password = document.getElementById('registerPassword').value;
+            const confirm = e.target.value;
+            const errorEl = document.getElementById('confirmError');
+
+            if (confirm && confirm !== password) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.add('visible');
+                e.target.classList.add('error');
+            } else {
+                errorEl.classList.remove('visible');
+                e.target.classList.remove('error');
+            }
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlerts();
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            if (!username || !password) {
+                showError('loginError', 'Please fill in all fields');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError('loginError', data.error || 'Login failed');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                    return;
+                }
+
+                // Store token and redirect
+                setAuthToken(data.token);
+                showSuccess('loginSuccess', 'Login successful! Redirecting...');
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 500);
+
+            } catch (err) {
+                showError('loginError', 'Network error. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+
+        // Register form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlerts();
+
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('registerBtn');
+
+            // Client-side validation
+            let hasError = false;
+
+            if (username.length < 3 || username.length > 32) {
+                showError('usernameError', 'Username must be 3-32 characters');
+                document.getElementById('registerUsername').classList.add('error');
+                hasError = true;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('emailError', 'Please enter a valid email');
+                document.getElementById('registerEmail').classList.add('error');
+                hasError = true;
+            }
+
+            if (password.length < 8) {
+                showError('passwordError', 'Password must be at least 8 characters');
+                document.getElementById('registerPassword').classList.add('error');
+                hasError = true;
+            }
+
+            if (password !== confirm) {
+                showError('confirmError', 'Passwords do not match');
+                document.getElementById('confirmPassword').classList.add('error');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError('registerError', data.error || 'Registration failed');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                    return;
+                }
+
+                // Store token and redirect
+                setAuthToken(data.token);
+                showSuccess('registerSuccess', 'Account created! Redirecting...');
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 500);
+
+            } catch (err) {
+                showError('registerError', 'Network error. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        });
+
+        // Check existing auth on page load
+        checkExistingAuth();
+    </script>
+</body>
+</html>
