@@ -17,10 +17,10 @@ COPY . .
 RUN CGO_ENABLED=1 go build -ldflags="-s -w" -o webby ./cmd/webby
 
 # Production stage
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
-# Install runtime dependencies for SQLite
-RUN apk add --no-cache ca-certificates
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ ENV WEBBY_PORT=8080
 EXPOSE 8080
 
 # Run as non-root user for security
-RUN adduser -D -u 1000 webby && chown -R webby:webby /app
+RUN useradd -u 1000 webby && chown -R webby:webby /app
 USER webby
 
 ENTRYPOINT ["./webby"]
