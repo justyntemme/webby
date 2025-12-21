@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,10 +14,20 @@ import (
 )
 
 func main() {
+	// Command-line flags
+	urlFlag := flag.String("url", "", "Server bind address (e.g., :8080 or 0.0.0.0:8080)")
+	flag.Parse()
+
 	// Configuration
 	dataDir := getEnv("WEBBY_DATA_DIR", "./data")
 	dbPath := filepath.Join(dataDir, "webby.db")
 	port := getEnv("WEBBY_PORT", "8080")
+
+	// Determine bind address: flag takes precedence, then env, then default
+	bindAddr := ":" + port
+	if *urlFlag != "" {
+		bindAddr = *urlFlag
+	}
 
 	// Ensure data directory exists
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
@@ -133,9 +144,9 @@ func main() {
 	})
 
 	// Start server
-	log.Printf("Webby server starting on port %s", port)
+	log.Printf("Webby server starting on %s", bindAddr)
 	log.Printf("Data directory: %s", dataDir)
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run(bindAddr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
