@@ -307,8 +307,9 @@ func (h *Handler) GetChapterContent(c *gin.Context) {
 // GetReadingPosition returns the saved reading position for a book
 func (h *Handler) GetReadingPosition(c *gin.Context) {
 	id := c.Param("id")
+	userID := auth.GetUserID(c)
 
-	pos, err := h.db.GetReadingPosition(id)
+	pos, err := h.db.GetReadingPosition(id, userID)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusOK, gin.H{"position": nil})
 		return
@@ -324,6 +325,7 @@ func (h *Handler) GetReadingPosition(c *gin.Context) {
 // SaveReadingPosition saves the reading position for a book
 func (h *Handler) SaveReadingPosition(c *gin.Context) {
 	id := c.Param("id")
+	userID := auth.GetUserID(c)
 
 	var req struct {
 		Chapter  string  `json:"chapter" binding:"required"`
@@ -343,6 +345,7 @@ func (h *Handler) SaveReadingPosition(c *gin.Context) {
 
 	pos := &models.ReadingPosition{
 		BookID:   id,
+		UserID:   userID,
 		Chapter:  req.Chapter,
 		Position: req.Position,
 	}

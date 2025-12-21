@@ -292,27 +292,27 @@ func (d *Database) DeleteBook(id string) error {
 	return err
 }
 
-// SaveReadingPosition saves or updates reading position
+// SaveReadingPosition saves or updates reading position for a user
 func (d *Database) SaveReadingPosition(pos *models.ReadingPosition) error {
 	_, err := d.db.Exec(`
-		INSERT INTO reading_positions (book_id, chapter, position, updated_at)
-		VALUES (?, ?, ?, ?)
-		ON CONFLICT(book_id) DO UPDATE SET
+		INSERT INTO reading_positions (book_id, user_id, chapter, position, updated_at)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(book_id, user_id) DO UPDATE SET
 			chapter = excluded.chapter,
 			position = excluded.position,
 			updated_at = excluded.updated_at`,
-		pos.BookID, pos.Chapter, pos.Position, time.Now(),
+		pos.BookID, pos.UserID, pos.Chapter, pos.Position, time.Now(),
 	)
 	return err
 }
 
-// GetReadingPosition retrieves reading position for a book
-func (d *Database) GetReadingPosition(bookID string) (*models.ReadingPosition, error) {
+// GetReadingPosition retrieves reading position for a book and user
+func (d *Database) GetReadingPosition(bookID, userID string) (*models.ReadingPosition, error) {
 	pos := &models.ReadingPosition{}
 	err := d.db.QueryRow(`
-		SELECT book_id, chapter, position, updated_at
-		FROM reading_positions WHERE book_id = ?`, bookID,
-	).Scan(&pos.BookID, &pos.Chapter, &pos.Position, &pos.UpdatedAt)
+		SELECT book_id, user_id, chapter, position, updated_at
+		FROM reading_positions WHERE book_id = ? AND user_id = ?`, bookID, userID,
+	).Scan(&pos.BookID, &pos.UserID, &pos.Chapter, &pos.Position, &pos.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}

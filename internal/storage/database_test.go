@@ -230,3 +230,162 @@ func TestCollections(t *testing.T) {
 	_, err = db.GetCollection(collection.ID)
 	assert.Error(t, err)
 }
+
+func TestReadingPositionPerUser(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create a book
+	book := &models.Book{
+		ID:         "test-book",
+		Title:      "Test Book",
+		Author:     "Author",
+		FilePath:   "/path/book.epub",
+		UploadedAt: time.Now(),
+	}
+	require.NoError(t, db.CreateBook(book))
+
+	// Save position for user 1
+	pos1 := &models.ReadingPosition{
+		BookID:   book.ID,
+		UserID:   "user-1",
+		Chapter:  "5",
+		Position: 0.75,
+	}
+	err := db.SaveReadingPosition(pos1)
+	require.NoError(t, err)
+
+	// Save position for user 2 (same book, different position)
+	pos2 := &models.ReadingPosition{
+		BookID:   book.ID,
+		UserID:   "user-2",
+		Chapter:  "2",
+		Position: 0.25,
+	}
+	err = db.SaveReadingPosition(pos2)
+	require.NoError(t, err)
+
+	// Get position for user 1
+	retrieved1, err := db.GetReadingPosition(book.ID, "user-1")
+	require.NoError(t, err)
+	assert.Equal(t, "5", retrieved1.Chapter)
+	assert.Equal(t, 0.75, retrieved1.Position)
+	assert.Equal(t, "user-1", retrieved1.UserID)
+
+	// Get position for user 2
+	retrieved2, err := db.GetReadingPosition(book.ID, "user-2")
+	require.NoError(t, err)
+	assert.Equal(t, "2", retrieved2.Chapter)
+	assert.Equal(t, 0.25, retrieved2.Position)
+	assert.Equal(t, "user-2", retrieved2.UserID)
+
+	// Positions are independent
+	assert.NotEqual(t, retrieved1.Chapter, retrieved2.Chapter)
+	assert.NotEqual(t, retrieved1.Position, retrieved2.Position)
+}
+
+func TestReadingPositionUpdate(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create a book
+	book := &models.Book{
+		ID:         "test-book",
+		Title:      "Test Book",
+		Author:     "Author",
+		FilePath:   "/path/book.epub",
+		UploadedAt: time.Now(),
+	}
+	require.NoError(t, db.CreateBook(book))
+
+	// Save initial position
+	pos := &models.ReadingPosition{
+		BookID:   book.ID,
+		UserID:   "user-1",
+		Chapter:  "1",
+		Position: 0.0,
+	}
+	err := db.SaveReadingPosition(pos)
+	require.NoError(t, err)
+
+	// Update position (same user, same book)
+	pos.Chapter = "10"
+	pos.Position = 0.5
+	err = db.SaveReadingPosition(pos)
+	require.NoError(t, err)
+
+	// Verify updated
+	retrieved, err := db.GetReadingPosition(book.ID, "user-1")
+	require.NoError(t, err)
+	assert.Equal(t, "10", retrieved.Chapter)
+	assert.Equal(t, 0.5, retrieved.Position)
+}
+
+func TestReadingPositionUnauthenticated(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create a book
+	book := &models.Book{
+		ID:         "test-book",
+		Title:      "Test Book",
+		Author:     "Author",
+		FilePath:   "/path/book.epub",
+		UploadedAt: time.Now(),
+	}
+	require.NoError(t, db.CreateBook(book))
+
+	// Save position for unauthenticated user (empty user_id)
+	pos := &models.ReadingPosition{
+		BookID:   book.ID,
+		UserID:   "", // Empty = unauthenticated
+		Chapter:  "3",
+		Position: 0.33,
+	}
+	err := db.SaveReadingPosition(pos)
+	require.NoError(t, err)
+
+	// Get position for unauthenticated user
+	retrieved, err := db.GetReadingPosition(book.ID, "")
+	require.NoError(t, err)
+	assert.Equal(t, "3", retrieved.Chapter)
+	assert.Equal(t, 0.33, retrieved.Position)
+
+	// Authenticated user has separate position
+	authPos := &models.ReadingPosition{
+		BookID:   book.ID,
+		UserID:   "auth-user",
+		Chapter:  "7",
+		Position: 0.77,
+	}
+	err = db.SaveReadingPosition(authPos)
+	require.NoError(t, err)
+
+	// Verify both positions are independent
+	unauthRetrieved, err := db.GetReadingPosition(book.ID, "")
+	require.NoError(t, err)
+	assert.Equal(t, "3", unauthRetrieved.Chapter)
+
+	authRetrieved, err := db.GetReadingPosition(book.ID, "auth-user")
+	require.NoError(t, err)
+	assert.Equal(t, "7", authRetrieved.Chapter)
+}
+
+func TestReadingPositionNotFound(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create a book
+	book := &models.Book{
+		ID:         "test-book",
+		Title:      "Test Book",
+		Author:     "Author",
+		FilePath:   "/path/book.epub",
+		UploadedAt: time.Now(),
+	}
+	require.NoError(t, db.CreateBook(book))
+
+	// Try to get non-existent position
+	_, err := db.GetReadingPosition(book.ID, "nonexistent-user")
+	assert.Error(t, err)
+}

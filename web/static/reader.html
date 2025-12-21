@@ -369,6 +369,25 @@
         let fontSize = 18;
         let darkMode = false;
         let uiVisible = true;
+        let savedScrollPosition = 0;
+
+        // Get auth token from localStorage
+        function getAuthToken() {
+            return localStorage.getItem('webby-token');
+        }
+
+        // Get headers with optional auth
+        function getHeaders(includeContentType = false) {
+            const headers = {};
+            const token = getAuthToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            if (includeContentType) {
+                headers['Content-Type'] = 'application/json';
+            }
+            return headers;
+        }
 
         // Get book ID from URL
         const pathParts = window.location.pathname.split('/');
@@ -380,7 +399,7 @@
             await loadBook();
             await loadTOC();
             await loadSavedPosition();
-            await loadChapter(currentChapter);
+            await loadChapter(currentChapter, true); // Restore scroll position on initial load
             setupEventListeners();
         }
 
@@ -439,10 +458,13 @@
 
         async function loadSavedPosition() {
             try {
-                const res = await fetch(`${API_BASE}/books/${bookId}/position`);
+                const res = await fetch(`${API_BASE}/books/${bookId}/position`, {
+                    headers: getHeaders()
+                });
                 const data = await res.json();
                 if (data.position) {
                     currentChapter = parseInt(data.position.chapter) || 0;
+                    savedScrollPosition = data.position.position || 0;
                 }
             } catch (err) {
                 console.error('Failed to load position', err);
@@ -454,7 +476,7 @@
                 const scrollPos = window.scrollY / (document.body.scrollHeight - window.innerHeight);
                 await fetch(`${API_BASE}/books/${bookId}/position`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getHeaders(true),
                     body: JSON.stringify({
                         chapter: String(currentChapter),
                         position: scrollPos || 0
@@ -465,7 +487,7 @@
             }
         }
 
-        async function loadChapter(index) {
+        async function loadChapter(index, restoreScroll = false) {
             if (index < 0 || index >= chapters.length) return;
 
             currentChapter = index;
@@ -482,7 +504,18 @@
                 const doc = parser.parseFromString(html, 'text/html');
                 content.innerHTML = doc.body.innerHTML;
 
-                window.scrollTo(0, 0);
+                // Restore scroll position if loading saved position, otherwise scroll to top
+                if (restoreScroll && savedScrollPosition > 0) {
+                    // Wait for content to render before scrolling
+                    requestAnimationFrame(() => {
+                        const scrollTarget = savedScrollPosition * (document.body.scrollHeight - window.innerHeight);
+                        window.scrollTo(0, scrollTarget);
+                        savedScrollPosition = 0; // Reset after restoring
+                    });
+                } else {
+                    window.scrollTo(0, 0);
+                }
+
                 updateProgress();
                 renderTOC();
                 savePosition();
