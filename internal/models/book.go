@@ -74,6 +74,46 @@ type Collection struct {
 	UserID    string    `json:"user_id,omitempty"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
+
+	// Smart collection fields
+	IsSmart   bool              `json:"is_smart"`
+	RuleLogic string            `json:"rule_logic,omitempty"` // "AND" or "OR"
+	Rules     []CollectionRule  `json:"rules,omitempty"`
+	BookCount int               `json:"book_count,omitempty"`
+}
+
+// Rule field constants for smart collections
+const (
+	RuleFieldAuthor      = "author"
+	RuleFieldTitle       = "title"
+	RuleFieldFormat      = "format"
+	RuleFieldYear        = "year"
+	RuleFieldSeries      = "series"
+	RuleFieldTags        = "tags"
+	RuleFieldRating      = "rating"
+	RuleFieldReadStatus  = "read_status"
+	RuleFieldFileSize    = "file_size"
+	RuleFieldContentType = "content_type"
+)
+
+// Rule operator constants
+const (
+	RuleOpEquals      = "equals"
+	RuleOpContains    = "contains"
+	RuleOpStartsWith  = "starts_with"
+	RuleOpGreaterThan = "greater_than"
+	RuleOpLessThan    = "less_than"
+	RuleOpBetween     = "between"
+	RuleOpIn          = "in" // for multi-value fields like tags
+)
+
+// CollectionRule defines a single rule for smart collections
+type CollectionRule struct {
+	ID           string `json:"id"`
+	CollectionID string `json:"collection_id"`
+	Field        string `json:"field"`    // author, title, format, year, series, tags, rating, read_status, file_size
+	Operator     string `json:"operator"` // equals, contains, starts_with, greater_than, less_than, between, in
+	Value        string `json:"value"`    // The value to match (JSON for complex values like ranges)
 }
 
 // ReadingPosition tracks user's reading progress

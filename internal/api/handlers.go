@@ -753,10 +753,18 @@ func (h *Handler) GetCBZInfo(c *gin.Context) {
 	})
 }
 
-// CreateCollection creates a new collection
+// CreateCollection creates a new collection (static or smart)
 func (h *Handler) CreateCollection(c *gin.Context) {
+	userID := auth.GetUserID(c)
 	var req struct {
-		Name string `json:"name" binding:"required"`
+		Name      string `json:"name" binding:"required"`
+		IsSmart   bool   `json:"is_smart"`
+		RuleLogic string `json:"rule_logic"` // AND or OR
+		Rules     []struct {
+			Field    string `json:"field"`
+			Operator string `json:"operator"`
+			Value    string `json:"value"`
+		} `json:"rules"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -764,15 +772,41 @@ func (h *Handler) CreateCollection(c *gin.Context) {
 		return
 	}
 
+	ruleLogic := req.RuleLogic
+	if ruleLogic == "" {
+		ruleLogic = "AND"
+	}
+
 	collection := &models.Collection{
 		ID:        uuid.New().String(),
+		UserID:    userID,
 		Name:      req.Name,
+		IsSmart:   req.IsSmart,
+		RuleLogic: ruleLogic,
 		CreatedAt: time.Now(),
 	}
 
 	if err := h.db.CreateCollection(collection); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create collection"})
 		return
+	}
+
+	// Add rules if this is a smart collection
+	if req.IsSmart && len(req.Rules) > 0 {
+		for _, r := range req.Rules {
+			rule := &models.CollectionRule{
+				ID:           uuid.New().String(),
+				CollectionID: collection.ID,
+				Field:        r.Field,
+				Operator:     r.Operator,
+				Value:        r.Value,
+			}
+			if err := h.db.CreateCollectionRule(rule); err != nil {
+				// Log error but continue
+				continue
+			}
+			collection.Rules = append(collection.Rules, *rule)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Collection created", "collection": collection})
@@ -796,6 +830,7 @@ func (h *Handler) ListCollections(c *gin.Context) {
 // GetCollection returns a collection with its books
 func (h *Handler) GetCollection(c *gin.Context) {
 	id := c.Param("id")
+	userID := auth.GetUserID(c)
 
 	collection, err := h.db.GetCollection(id)
 	if err == sql.ErrNoRows {
@@ -807,7 +842,22 @@ func (h *Handler) GetCollection(c *gin.Context) {
 		return
 	}
 
-	books, err := h.db.GetBooksInCollection(id)
+	// Get rules if it's a smart collection
+	if collection.IsSmart {
+		rules, err := h.db.GetCollectionRules(id)
+		if err == nil {
+			collection.Rules = rules
+		}
+	}
+
+	var books []models.Book
+	if collection.IsSmart {
+		// For smart collections, get books matching the rules
+		books, err = h.db.GetSmartCollectionBooks(id, userID)
+	} else {
+		// For static collections, get the manually added books
+		books, err = h.db.GetBooksInCollection(id)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch books"})
 		return
@@ -817,15 +867,22 @@ func (h *Handler) GetCollection(c *gin.Context) {
 		books = []models.Book{}
 	}
 
+	collection.BookCount = len(books)
 	c.JSON(http.StatusOK, gin.H{"collection": collection, "books": books})
 }
 
-// UpdateCollection updates a collection's name
+// UpdateCollection updates a collection's name and rules
 func (h *Handler) UpdateCollection(c *gin.Context) {
 	id := c.Param("id")
 
 	var req struct {
-		Name string `json:"name" binding:"required"`
+		Name      string `json:"name" binding:"required"`
+		RuleLogic string `json:"rule_logic"`
+		Rules     []struct {
+			Field    string `json:"field"`
+			Operator string `json:"operator"`
+			Value    string `json:"value"`
+		} `json:"rules"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -833,14 +890,45 @@ func (h *Handler) UpdateCollection(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.db.GetCollection(id); err != nil {
+	collection, err := h.db.GetCollection(id)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Collection not found"})
 		return
 	}
 
-	if err := h.db.UpdateCollection(id, req.Name); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update collection"})
-		return
+	// Update based on whether it's a smart collection
+	if collection.IsSmart {
+		ruleLogic := req.RuleLogic
+		if ruleLogic == "" {
+			ruleLogic = collection.RuleLogic
+		}
+		if err := h.db.UpdateSmartCollection(id, req.Name, ruleLogic); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update collection"})
+			return
+		}
+
+		// Replace rules if provided
+		if len(req.Rules) > 0 {
+			// Delete existing rules
+			h.db.DeleteCollectionRules(id)
+
+			// Add new rules
+			for _, r := range req.Rules {
+				rule := &models.CollectionRule{
+					ID:           uuid.New().String(),
+					CollectionID: id,
+					Field:        r.Field,
+					Operator:     r.Operator,
+					Value:        r.Value,
+				}
+				h.db.CreateCollectionRule(rule)
+			}
+		}
+	} else {
+		if err := h.db.UpdateCollection(id, req.Name); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update collection"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Collection updated"})
@@ -1108,6 +1196,7 @@ func (h *Handler) SearchMetadata(c *gin.Context) {
 	isbn := c.Query("isbn")
 	title := c.Query("title")
 	author := c.Query("author")
+	year := c.Query("year")
 
 	if isbn == "" && title == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "At least isbn or title is required"})
@@ -1129,6 +1218,21 @@ func (h *Handler) SearchMetadata(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search metadata"})
 		return
+	}
+
+	// Filter by year if provided
+	if year != "" {
+		filtered := make([]metadata.BookMetadata, 0)
+		for _, r := range results {
+			// Check if publish date contains the year
+			if strings.Contains(r.PublishDate, year) {
+				filtered = append(filtered, r)
+			}
+		}
+		// Only use filtered results if any matched
+		if len(filtered) > 0 {
+			results = filtered
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"results": results, "count": len(results)})

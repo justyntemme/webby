@@ -1027,6 +1027,17 @@
             cursor: not-allowed;
         }
 
+        .form-actions .search-btn {
+            background: var(--secondary-color, #6c757d);
+            color: white;
+            border-color: var(--secondary-color, #6c757d);
+            margin-right: auto;
+        }
+
+        .form-actions .search-btn:hover {
+            opacity: 0.9;
+        }
+
         @media (max-width: 500px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -1659,6 +1670,7 @@
                 <button id="groupOffBtn" class="active">All</button>
                 <button id="groupSeriesBtn">Group Series</button>
             </div>
+            <button class="upload-btn" id="collectionsBtn" style="background: var(--secondary-color, #6c757d);">Collections</button>
             <button class="upload-btn" id="uploadBtn">+ Upload</button>
         </div>
     </header>
@@ -1747,11 +1759,11 @@
             <form id="editMetadataForm">
                 <div class="form-group">
                     <label for="editTitle">Title</label>
-                    <input type="text" id="editTitle" name="title" required>
+                    <input type="text" id="editTitle" name="title" placeholder="Optional">
                 </div>
                 <div class="form-group">
                     <label for="editAuthor">Author</label>
-                    <input type="text" id="editAuthor" name="author" required>
+                    <input type="text" id="editAuthor" name="author" placeholder="Optional">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -1792,6 +1804,7 @@
                     <textarea id="editDescription" name="description" placeholder="Book description..."></textarea>
                 </div>
                 <div class="form-actions">
+                    <button type="button" id="searchFromEditBtn" class="search-btn" title="Search for metadata online">Search Metadata</button>
                     <button type="button" id="cancelEditBtn">Cancel</button>
                     <button type="submit" class="save-btn" id="saveEditBtn">Save Changes</button>
                 </div>
@@ -1818,6 +1831,16 @@
                         <input type="text" id="searchISBN" placeholder="ISBN-10 or ISBN-13">
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="searchYear">Publication Year</label>
+                        <input type="text" id="searchYear" placeholder="e.g., 2023">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchSeriesNum">Series/Issue #</label>
+                        <input type="text" id="searchSeriesNum" placeholder="e.g., 1, 2, 3">
+                    </div>
+                </div>
                 <div class="search-actions">
                     <button type="button" id="doSearchBtn" class="primary-btn">Search</button>
                     <button type="button" id="cancelSearchBtn">Cancel</button>
@@ -1838,14 +1861,115 @@
         </div>
     </div>
 
+    <!-- Collections Modal -->
+    <div class="modal" id="collectionsModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2>Collections</h2>
+            <div style="display: flex; gap: 20px;">
+                <!-- Collections List -->
+                <div style="flex: 1; max-height: 400px; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">Your Collections</h3>
+                        <button id="newCollectionBtn" class="primary-btn">+ New Collection</button>
+                    </div>
+                    <div id="collectionsList" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="loading">Loading collections...</div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button id="closeCollectionsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Collection Modal -->
+    <div class="modal" id="newCollectionModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>Create Collection</h2>
+            <form id="newCollectionForm">
+                <div class="form-group">
+                    <label for="collectionName">Collection Name</label>
+                    <input type="text" id="collectionName" name="name" required placeholder="My Collection">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isSmartCollection"> Make this a Smart Collection
+                    </label>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Smart collections automatically populate based on rules you define.
+                    </p>
+                </div>
+                <div id="smartCollectionRules" style="display: none;">
+                    <div class="form-group">
+                        <label>Rule Logic</label>
+                        <select id="ruleLogic">
+                            <option value="AND">Match ALL rules (AND)</option>
+                            <option value="OR">Match ANY rule (OR)</option>
+                        </select>
+                    </div>
+                    <div id="rulesList">
+                        <div class="rule-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <select class="rule-field" style="flex: 1;">
+                                <option value="author">Author</option>
+                                <option value="title">Title</option>
+                                <option value="series">Series</option>
+                                <option value="format">Format</option>
+                                <option value="content_type">Type (Book/Comic)</option>
+                                <option value="year">Year</option>
+                                <option value="rating">Rating</option>
+                                <option value="read_status">Read Status</option>
+                                <option value="tags">Tag</option>
+                            </select>
+                            <select class="rule-operator" style="flex: 1;">
+                                <option value="contains">Contains</option>
+                                <option value="equals">Equals</option>
+                                <option value="starts_with">Starts With</option>
+                                <option value="greater_than">Greater Than</option>
+                                <option value="less_than">Less Than</option>
+                            </select>
+                            <input type="text" class="rule-value" style="flex: 1;" placeholder="Value">
+                            <button type="button" class="remove-rule-btn" style="padding: 5px 10px;">X</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addRuleBtn" style="margin-bottom: 15px;">+ Add Rule</button>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelNewCollectionBtn">Cancel</button>
+                    <button type="submit" class="save-btn">Create Collection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Collection Modal -->
+    <div class="modal" id="viewCollectionModal">
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="viewCollectionName">Collection</h2>
+                <span id="viewCollectionBadge" style="padding: 3px 10px; background: var(--accent-color); color: white; border-radius: 10px; font-size: 12px;"></span>
+            </div>
+            <div id="viewCollectionRules" style="margin-bottom: 15px; padding: 10px; background: var(--header-bg); border-radius: 5px; display: none;">
+                <strong>Rules:</strong> <span id="viewCollectionRulesText"></span>
+            </div>
+            <div id="viewCollectionBooks" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px;">
+                <div class="loading">Loading books...</div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="deleteCollectionBtn" style="background: #dc3545; color: white;">Delete Collection</button>
+                <button id="closeViewCollectionBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload Modal -->
     <div class="modal" id="uploadModal">
         <div class="modal-content">
-            <h2>Upload EPUB</h2>
+            <h2>Upload Book</h2>
             <div class="drop-zone" id="dropZone">
-                <p>Drag & drop EPUB file here</p>
+                <p>Drag & drop EPUB, PDF, CBZ, or CBR file here</p>
                 <p>or click to browse</p>
-                <input type="file" class="file-input" id="fileInput" accept=".epub">
+                <input type="file" class="file-input" id="fileInput" accept=".epub,.pdf,.cbz,.cbr">
             </div>
             <div class="upload-progress" id="uploadProgress">
                 <p id="uploadStatus">Uploading...</p>
@@ -2969,6 +3093,8 @@
             const title = document.getElementById('searchTitle').value.trim();
             const author = document.getElementById('searchAuthor').value.trim();
             const isbn = document.getElementById('searchISBN').value.trim();
+            const year = document.getElementById('searchYear').value.trim();
+            const seriesNum = document.getElementById('searchSeriesNum').value.trim();
 
             if (!title && !author && !isbn) {
                 alert('Please enter at least a title, author, or ISBN to search');
@@ -2990,6 +3116,8 @@
                 if (isbn) params.append('isbn', isbn);
                 if (title) params.append('title', title);
                 if (author) params.append('author', author);
+                if (year) params.append('year', year);
+                if (seriesNum) params.append('series_num', seriesNum);
 
                 const res = await fetch(`${API_BASE}/metadata/search?${params}`, {
                     headers: getAuthHeaders()
@@ -3286,6 +3414,11 @@
             if (e.target.id === 'editMetadataModal') closeEditModal();
         });
 
+        document.getElementById('searchFromEditBtn').addEventListener('click', () => {
+            // Open search modal from edit modal context
+            openSearchModal();
+        });
+
         // Search Metadata Modal Event Listeners
         document.getElementById('searchMetadataBtn').addEventListener('click', openSearchModal);
 
@@ -3299,6 +3432,263 @@
 
         document.getElementById('searchMetadataModal').addEventListener('click', (e) => {
             if (e.target.id === 'searchMetadataModal') closeSearchModal();
+        });
+
+        // Collections functionality
+        let currentViewingCollectionId = null;
+
+        async function loadCollections() {
+            const listContainer = document.getElementById('collectionsList');
+            try {
+                const res = await fetch(`${API_BASE}/collections`, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                if (!data.collections || data.collections.length === 0) {
+                    listContainer.innerHTML = '<p style="color: #666;">No collections yet. Create one!</p>';
+                    return;
+                }
+
+                listContainer.innerHTML = data.collections.map(c => `
+                    <div class="collection-item" data-id="${c.id}" style="
+                        padding: 12px;
+                        background: var(--card-bg);
+                        border-radius: 8px;
+                        cursor: pointer;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    ">
+                        <div>
+                            <strong>${c.name}</strong>
+                            ${c.is_smart ? '<span style="margin-left: 8px; padding: 2px 6px; background: var(--accent-color); color: white; border-radius: 4px; font-size: 10px;">SMART</span>' : ''}
+                        </div>
+                        <span style="color: #666; font-size: 12px;">${c.book_count || 0} books</span>
+                    </div>
+                `).join('');
+
+                // Add click handlers
+                listContainer.querySelectorAll('.collection-item').forEach(item => {
+                    item.addEventListener('click', () => openViewCollection(item.dataset.id));
+                });
+            } catch (err) {
+                listContainer.innerHTML = '<p style="color: red;">Failed to load collections</p>';
+                console.error(err);
+            }
+        }
+
+        async function openViewCollection(collectionId) {
+            currentViewingCollectionId = collectionId;
+            document.getElementById('collectionsModal').classList.remove('active');
+            document.getElementById('viewCollectionModal').classList.add('active');
+
+            const booksContainer = document.getElementById('viewCollectionBooks');
+            booksContainer.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/collections/${collectionId}`, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                document.getElementById('viewCollectionName').textContent = data.collection.name;
+                document.getElementById('viewCollectionBadge').textContent = data.collection.is_smart ? 'Smart Collection' : 'Manual Collection';
+
+                // Show rules if smart collection
+                const rulesDiv = document.getElementById('viewCollectionRules');
+                if (data.collection.is_smart && data.collection.rules && data.collection.rules.length > 0) {
+                    rulesDiv.style.display = 'block';
+                    const rulesText = data.collection.rules.map(r =>
+                        `${r.field} ${r.operator} "${r.value}"`
+                    ).join(data.collection.rule_logic === 'OR' ? ' OR ' : ' AND ');
+                    document.getElementById('viewCollectionRulesText').textContent = rulesText;
+                } else {
+                    rulesDiv.style.display = 'none';
+                }
+
+                if (!data.books || data.books.length === 0) {
+                    booksContainer.innerHTML = '<p style="color: #666; grid-column: 1/-1;">No books match this collection.</p>';
+                    return;
+                }
+
+                booksContainer.innerHTML = data.books.map(book => `
+                    <div class="book-card" onclick="openBookDetail('${book.id}')" style="cursor: pointer;">
+                        <div class="cover-wrapper">
+                            <img class="cover" src="${API_BASE}/books/${book.id}/cover"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="cover-fallback" style="display: none;">${book.title.charAt(0)}</div>
+                        </div>
+                        <div class="book-info">
+                            <div class="title">${book.title}</div>
+                            <div class="author">${book.author || 'Unknown'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                booksContainer.innerHTML = '<p style="color: red;">Failed to load collection</p>';
+                console.error(err);
+            }
+        }
+
+        async function deleteCollection(collectionId) {
+            if (!confirm('Are you sure you want to delete this collection?')) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/collections/${collectionId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                if (res.ok) {
+                    document.getElementById('viewCollectionModal').classList.remove('active');
+                    loadCollections();
+                } else {
+                    alert('Failed to delete collection');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to delete collection');
+            }
+        }
+
+        async function createCollection(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('collectionName').value.trim();
+            const isSmart = document.getElementById('isSmartCollection').checked;
+            const ruleLogic = document.getElementById('ruleLogic').value;
+
+            const rules = [];
+            if (isSmart) {
+                document.querySelectorAll('#rulesList .rule-row').forEach(row => {
+                    const field = row.querySelector('.rule-field').value;
+                    const operator = row.querySelector('.rule-operator').value;
+                    const value = row.querySelector('.rule-value').value.trim();
+                    if (value) {
+                        rules.push({ field, operator, value });
+                    }
+                });
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/collections`, {
+                    method: 'POST',
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        is_smart: isSmart,
+                        rule_logic: ruleLogic,
+                        rules
+                    })
+                });
+
+                if (res.ok) {
+                    document.getElementById('newCollectionModal').classList.remove('active');
+                    document.getElementById('newCollectionForm').reset();
+                    document.getElementById('smartCollectionRules').style.display = 'none';
+                    document.getElementById('collectionsModal').classList.add('active');
+                    loadCollections();
+                } else {
+                    alert('Failed to create collection');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to create collection');
+            }
+        }
+
+        function addRuleRow() {
+            const rulesList = document.getElementById('rulesList');
+            const newRow = document.createElement('div');
+            newRow.className = 'rule-row';
+            newRow.style = 'display: flex; gap: 10px; margin-bottom: 10px;';
+            newRow.innerHTML = `
+                <select class="rule-field" style="flex: 1;">
+                    <option value="author">Author</option>
+                    <option value="title">Title</option>
+                    <option value="series">Series</option>
+                    <option value="format">Format</option>
+                    <option value="content_type">Type (Book/Comic)</option>
+                    <option value="year">Year</option>
+                    <option value="rating">Rating</option>
+                    <option value="read_status">Read Status</option>
+                    <option value="tags">Tag</option>
+                </select>
+                <select class="rule-operator" style="flex: 1;">
+                    <option value="contains">Contains</option>
+                    <option value="equals">Equals</option>
+                    <option value="starts_with">Starts With</option>
+                    <option value="greater_than">Greater Than</option>
+                    <option value="less_than">Less Than</option>
+                </select>
+                <input type="text" class="rule-value" style="flex: 1;" placeholder="Value">
+                <button type="button" class="remove-rule-btn" style="padding: 5px 10px;">X</button>
+            `;
+            rulesList.appendChild(newRow);
+
+            newRow.querySelector('.remove-rule-btn').addEventListener('click', () => {
+                newRow.remove();
+            });
+        }
+
+        // Collections Event Listeners
+        document.getElementById('collectionsBtn').addEventListener('click', () => {
+            document.getElementById('collectionsModal').classList.add('active');
+            loadCollections();
+        });
+
+        document.getElementById('closeCollectionsBtn').addEventListener('click', () => {
+            document.getElementById('collectionsModal').classList.remove('active');
+        });
+
+        document.getElementById('collectionsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'collectionsModal') {
+                document.getElementById('collectionsModal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('newCollectionBtn').addEventListener('click', () => {
+            document.getElementById('collectionsModal').classList.remove('active');
+            document.getElementById('newCollectionModal').classList.add('active');
+        });
+
+        document.getElementById('cancelNewCollectionBtn').addEventListener('click', () => {
+            document.getElementById('newCollectionModal').classList.remove('active');
+            document.getElementById('collectionsModal').classList.add('active');
+        });
+
+        document.getElementById('newCollectionModal').addEventListener('click', (e) => {
+            if (e.target.id === 'newCollectionModal') {
+                document.getElementById('newCollectionModal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('isSmartCollection').addEventListener('change', (e) => {
+            document.getElementById('smartCollectionRules').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('addRuleBtn').addEventListener('click', addRuleRow);
+
+        document.getElementById('newCollectionForm').addEventListener('submit', createCollection);
+
+        // Remove rule button handler for initial rule
+        document.querySelector('#rulesList .remove-rule-btn').addEventListener('click', function() {
+            if (document.querySelectorAll('#rulesList .rule-row').length > 1) {
+                this.closest('.rule-row').remove();
+            }
+        });
+
+        document.getElementById('closeViewCollectionBtn').addEventListener('click', () => {
+            document.getElementById('viewCollectionModal').classList.remove('active');
+        });
+
+        document.getElementById('viewCollectionModal').addEventListener('click', (e) => {
+            if (e.target.id === 'viewCollectionModal') {
+                document.getElementById('viewCollectionModal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('deleteCollectionBtn').addEventListener('click', () => {
+            if (currentViewingCollectionId) {
+                deleteCollection(currentViewingCollectionId);
+            }
         });
 
         // Upload Modal Event Listeners

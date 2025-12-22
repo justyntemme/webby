@@ -27,8 +27,16 @@
             --border-color: #444;
         }
 
+        .sepia-mode {
+            --bg-color: #f4ecd8;
+            --text-color: #5b4636;
+            --accent-color: #8b6914;
+            --header-bg: #e8dcc8;
+            --border-color: #c9b99a;
+        }
+
         body {
-            font-family: Georgia, 'Times New Roman', serif;
+            font-family: var(--font-family, Georgia), 'Times New Roman', serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
@@ -343,8 +351,16 @@
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Settings</h2>
+                <h2>Reading Settings</h2>
                 <button class="modal-close" id="settingsClose">&times;</button>
+            </div>
+            <div class="settings-option">
+                <span>Theme</span>
+                <div class="theme-selector" style="display: flex; gap: 8px;">
+                    <button id="themeDayBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333;">Day</button>
+                    <button id="themeNightBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0;">Night</button>
+                    <button id="themeSepiaBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636;">Sepia</button>
+                </div>
             </div>
             <div class="settings-option">
                 <span>Font Size</span>
@@ -355,8 +371,23 @@
                 </div>
             </div>
             <div class="settings-option">
-                <span>Dark Mode</span>
-                <div class="toggle-switch" id="darkModeToggle"></div>
+                <span>Line Spacing</span>
+                <div class="font-size-control">
+                    <button id="lineSpacingDecrease">-</button>
+                    <span id="lineSpacing">1.8</span>
+                    <button id="lineSpacingIncrease">+</button>
+                </div>
+            </div>
+            <div class="settings-option">
+                <span>Font Family</span>
+                <select id="fontFamilySelect" style="padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                    <option value="Georgia">Georgia (Serif)</option>
+                    <option value="Arial">Arial (Sans-serif)</option>
+                    <option value="Verdana">Verdana (Sans-serif)</option>
+                    <option value="Palatino Linotype">Palatino (Serif)</option>
+                    <option value="Courier New">Courier New (Monospace)</option>
+                    <option value="OpenDyslexic">OpenDyslexic</option>
+                </select>
             </div>
         </div>
     </div>
@@ -367,7 +398,9 @@
         let chapters = [];
         let currentChapter = 0;
         let fontSize = 18;
-        let darkMode = false;
+        let lineSpacing = 1.8;
+        let fontFamily = 'Georgia';
+        let theme = 'day'; // day, night, sepia
         let uiVisible = true;
         let savedScrollPosition = 0;
 
@@ -433,26 +466,58 @@
         }
 
         function loadSettings() {
-            const saved = localStorage.getItem('webby-settings');
+            const saved = localStorage.getItem('webby-reader-settings');
             if (saved) {
                 const settings = JSON.parse(saved);
                 fontSize = settings.fontSize || 18;
-                darkMode = settings.darkMode || false;
+                lineSpacing = settings.lineSpacing || 1.8;
+                fontFamily = settings.fontFamily || 'Georgia';
+                theme = settings.theme || 'day';
             }
             applySettings();
         }
 
         function saveSettings() {
-            localStorage.setItem('webby-settings', JSON.stringify({ fontSize, darkMode }));
+            localStorage.setItem('webby-reader-settings', JSON.stringify({
+                fontSize, lineSpacing, fontFamily, theme
+            }));
         }
 
         function applySettings() {
-            document.getElementById('content').style.fontSize = fontSize + 'px';
+            const content = document.getElementById('content');
+            content.style.fontSize = fontSize + 'px';
+            content.style.lineHeight = lineSpacing;
+            content.style.fontFamily = fontFamily + ", 'Times New Roman', serif";
+
             document.getElementById('fontSize').textContent = fontSize;
-            document.body.classList.toggle('dark-mode', darkMode);
-            document.getElementById('darkModeToggle').classList.toggle('active', darkMode);
-            // Recalculate pages when font size changes
+            document.getElementById('lineSpacing').textContent = lineSpacing;
+            document.getElementById('fontFamilySelect').value = fontFamily;
+
+            // Apply theme
+            document.body.classList.remove('dark-mode', 'sepia-mode');
+            if (theme === 'night') {
+                document.body.classList.add('dark-mode');
+            } else if (theme === 'sepia') {
+                document.body.classList.add('sepia-mode');
+            }
+
+            // Update theme button styles
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.style.outline = 'none';
+            });
+            const activeBtn = document.getElementById(`theme${theme.charAt(0).toUpperCase() + theme.slice(1)}Btn`);
+            if (activeBtn) {
+                activeBtn.style.outline = '2px solid var(--accent-color)';
+            }
+
+            // Recalculate pages when settings change
             calculatePages();
+        }
+
+        function setTheme(newTheme) {
+            theme = newTheme;
+            applySettings();
+            saveSettings();
         }
 
         // Calculate page dimensions and total pages
@@ -699,11 +764,34 @@
                     saveSettings();
                 }
             });
-            document.getElementById('darkModeToggle').addEventListener('click', () => {
-                darkMode = !darkMode;
+
+            // Line spacing controls
+            document.getElementById('lineSpacingDecrease').addEventListener('click', () => {
+                if (lineSpacing > 1.2) {
+                    lineSpacing = Math.round((lineSpacing - 0.2) * 10) / 10;
+                    applySettings();
+                    saveSettings();
+                }
+            });
+            document.getElementById('lineSpacingIncrease').addEventListener('click', () => {
+                if (lineSpacing < 3.0) {
+                    lineSpacing = Math.round((lineSpacing + 0.2) * 10) / 10;
+                    applySettings();
+                    saveSettings();
+                }
+            });
+
+            // Font family selector
+            document.getElementById('fontFamilySelect').addEventListener('change', (e) => {
+                fontFamily = e.target.value;
                 applySettings();
                 saveSettings();
             });
+
+            // Theme buttons
+            document.getElementById('themeDayBtn').addEventListener('click', () => setTheme('day'));
+            document.getElementById('themeNightBtn').addEventListener('click', () => setTheme('night'));
+            document.getElementById('themeSepiaBtn').addEventListener('click', () => setTheme('sepia'));
 
             // Close modals on background click
             document.querySelectorAll('.modal').forEach(modal => {

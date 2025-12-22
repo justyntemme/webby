@@ -59,8 +59,19 @@ func (d *Database) migrate() error {
 		id TEXT PRIMARY KEY,
 		user_id TEXT NOT NULL DEFAULT '',
 		name TEXT NOT NULL,
+		is_smart INTEGER DEFAULT 0,
+		rule_logic TEXT DEFAULT 'AND',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS collection_rules (
+		id TEXT PRIMARY KEY,
+		collection_id TEXT NOT NULL,
+		field TEXT NOT NULL,
+		operator TEXT NOT NULL,
+		value TEXT NOT NULL,
+		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
 	);
 
 	CREATE TABLE IF NOT EXISTS book_collections (
@@ -134,6 +145,23 @@ func (d *Database) migrate() error {
 
 	// Add star rating column (0-5, 0 means no rating)
 	d.db.Exec("ALTER TABLE books ADD COLUMN rating INTEGER DEFAULT 0")
+
+	// Add smart collections support
+	d.db.Exec("ALTER TABLE collections ADD COLUMN is_smart INTEGER DEFAULT 0")
+	d.db.Exec("ALTER TABLE collections ADD COLUMN rule_logic TEXT DEFAULT 'AND'")
+
+	// Create collection_rules table if it doesn't exist
+	d.db.Exec(`
+		CREATE TABLE IF NOT EXISTS collection_rules (
+			id TEXT PRIMARY KEY,
+			collection_id TEXT NOT NULL,
+			field TEXT NOT NULL,
+			operator TEXT NOT NULL,
+			value TEXT NOT NULL,
+			FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+		)
+	`)
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_collection_rules_collection ON collection_rules(collection_id)")
 
 	// Add indexes
 	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn)")
@@ -558,10 +586,18 @@ func (d *Database) GetReadingPosition(bookID, userID string) (*models.ReadingPos
 
 // CreateCollection creates a new collection
 func (d *Database) CreateCollection(collection *models.Collection) error {
+	isSmart := 0
+	if collection.IsSmart {
+		isSmart = 1
+	}
+	ruleLogic := collection.RuleLogic
+	if ruleLogic == "" {
+		ruleLogic = "AND"
+	}
 	_, err := d.db.Exec(`
-		INSERT INTO collections (id, name, created_at)
-		VALUES (?, ?, ?)`,
-		collection.ID, collection.Name, collection.CreatedAt,
+		INSERT INTO collections (id, user_id, name, is_smart, rule_logic, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		collection.ID, collection.UserID, collection.Name, isSmart, ruleLogic, collection.CreatedAt,
 	)
 	return err
 }
@@ -569,18 +605,32 @@ func (d *Database) CreateCollection(collection *models.Collection) error {
 // GetCollection retrieves a collection by ID
 func (d *Database) GetCollection(id string) (*models.Collection, error) {
 	collection := &models.Collection{}
+	var isSmart int
+	var userID, ruleLogic sql.NullString
 	err := d.db.QueryRow(`
-		SELECT id, name, created_at FROM collections WHERE id = ?`, id,
-	).Scan(&collection.ID, &collection.Name, &collection.CreatedAt)
+		SELECT id, user_id, name, COALESCE(is_smart, 0), COALESCE(rule_logic, 'AND'), created_at
+		FROM collections WHERE id = ?`, id,
+	).Scan(&collection.ID, &userID, &collection.Name, &isSmart, &ruleLogic, &collection.CreatedAt)
 	if err != nil {
 		return nil, err
+	}
+	collection.IsSmart = isSmart == 1
+	if userID.Valid {
+		collection.UserID = userID.String
+	}
+	if ruleLogic.Valid {
+		collection.RuleLogic = ruleLogic.String
+	} else {
+		collection.RuleLogic = "AND"
 	}
 	return collection, nil
 }
 
 // ListCollections returns all collections
 func (d *Database) ListCollections() ([]models.Collection, error) {
-	rows, err := d.db.Query(`SELECT id, name, created_at FROM collections ORDER BY name`)
+	rows, err := d.db.Query(`
+		SELECT id, user_id, name, COALESCE(is_smart, 0), COALESCE(rule_logic, 'AND'), created_at
+		FROM collections ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -589,8 +639,19 @@ func (d *Database) ListCollections() ([]models.Collection, error) {
 	var collections []models.Collection
 	for rows.Next() {
 		var c models.Collection
-		if err := rows.Scan(&c.ID, &c.Name, &c.CreatedAt); err != nil {
+		var isSmart int
+		var userID, ruleLogic sql.NullString
+		if err := rows.Scan(&c.ID, &userID, &c.Name, &isSmart, &ruleLogic, &c.CreatedAt); err != nil {
 			return nil, err
+		}
+		c.IsSmart = isSmart == 1
+		if userID.Valid {
+			c.UserID = userID.String
+		}
+		if ruleLogic.Valid {
+			c.RuleLogic = ruleLogic.String
+		} else {
+			c.RuleLogic = "AND"
 		}
 		collections = append(collections, c)
 	}
@@ -701,6 +762,233 @@ func (d *Database) BulkAddBooksToCollection(bookIDs []string, collectionID strin
 	}
 
 	return tx.Commit()
+}
+
+// UpdateSmartCollection updates a smart collection's settings
+func (d *Database) UpdateSmartCollection(id, name, ruleLogic string) error {
+	_, err := d.db.Exec(`UPDATE collections SET name = ?, rule_logic = ? WHERE id = ?`, name, ruleLogic, id)
+	return err
+}
+
+// CreateCollectionRule adds a rule to a collection
+func (d *Database) CreateCollectionRule(rule *models.CollectionRule) error {
+	_, err := d.db.Exec(`
+		INSERT INTO collection_rules (id, collection_id, field, operator, value)
+		VALUES (?, ?, ?, ?, ?)`,
+		rule.ID, rule.CollectionID, rule.Field, rule.Operator, rule.Value,
+	)
+	return err
+}
+
+// GetCollectionRules returns all rules for a collection
+func (d *Database) GetCollectionRules(collectionID string) ([]models.CollectionRule, error) {
+	rows, err := d.db.Query(`
+		SELECT id, collection_id, field, operator, value
+		FROM collection_rules WHERE collection_id = ?`, collectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var rules []models.CollectionRule
+	for rows.Next() {
+		var r models.CollectionRule
+		if err := rows.Scan(&r.ID, &r.CollectionID, &r.Field, &r.Operator, &r.Value); err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
+	}
+	return rules, nil
+}
+
+// DeleteCollectionRules removes all rules for a collection
+func (d *Database) DeleteCollectionRules(collectionID string) error {
+	_, err := d.db.Exec(`DELETE FROM collection_rules WHERE collection_id = ?`, collectionID)
+	return err
+}
+
+// GetSmartCollectionBooks returns books matching a smart collection's rules
+func (d *Database) GetSmartCollectionBooks(collectionID, userID string) ([]models.Book, error) {
+	// Get collection and its rules
+	collection, err := d.GetCollection(collectionID)
+	if err != nil {
+		return nil, err
+	}
+	if !collection.IsSmart {
+		// For non-smart collections, return normal book list
+		return d.GetBooksInCollection(collectionID)
+	}
+
+	rules, err := d.GetCollectionRules(collectionID)
+	if err != nil {
+		return nil, err
+	}
+	if len(rules) == 0 {
+		return []models.Book{}, nil
+	}
+
+	// Build dynamic query based on rules
+	query := `SELECT DISTINCT b.id, b.title, b.author, b.series, b.series_index,
+		b.file_path, b.cover_path, b.file_size, b.uploaded_at,
+		COALESCE(b.isbn, ''), COALESCE(b.publisher, ''), COALESCE(b.publish_date, ''),
+		COALESCE(b.description, ''), COALESCE(b.language, ''), COALESCE(b.subjects, ''),
+		COALESCE(b.content_type, 'book'), COALESCE(b.file_format, 'epub'),
+		COALESCE(b.read_status, 'unread'), COALESCE(b.rating, 0)
+		FROM books b
+		LEFT JOIN book_tags bt ON b.id = bt.book_id
+		LEFT JOIN tags t ON bt.tag_id = t.id
+		WHERE b.user_id = ?`
+
+	args := []interface{}{userID}
+	conditions := []string{}
+
+	for _, rule := range rules {
+		cond, ruleArgs := d.buildRuleCondition(rule)
+		if cond != "" {
+			conditions = append(conditions, cond)
+			args = append(args, ruleArgs...)
+		}
+	}
+
+	if len(conditions) > 0 {
+		joiner := " AND "
+		if collection.RuleLogic == "OR" {
+			joiner = " OR "
+		}
+		query += " AND (" + strings.Join(conditions, joiner) + ")"
+	}
+
+	query += " ORDER BY b.title"
+
+	rows, err := d.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []models.Book
+	for rows.Next() {
+		var book models.Book
+		err := rows.Scan(&book.ID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
+			&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
+			&book.Language, &book.Subjects, &book.ContentType, &book.FileFormat,
+			&book.ReadStatus, &book.Rating)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, nil
+}
+
+// buildRuleCondition builds a SQL condition for a single rule
+func (d *Database) buildRuleCondition(rule models.CollectionRule) (string, []interface{}) {
+	var args []interface{}
+
+	switch rule.Field {
+	case models.RuleFieldAuthor:
+		switch rule.Operator {
+		case models.RuleOpEquals:
+			return "LOWER(b.author) = LOWER(?)", []interface{}{rule.Value}
+		case models.RuleOpContains:
+			return "LOWER(b.author) LIKE LOWER(?)", []interface{}{"%" + rule.Value + "%"}
+		case models.RuleOpStartsWith:
+			return "LOWER(b.author) LIKE LOWER(?)", []interface{}{rule.Value + "%"}
+		}
+
+	case models.RuleFieldTitle:
+		switch rule.Operator {
+		case models.RuleOpEquals:
+			return "LOWER(b.title) = LOWER(?)", []interface{}{rule.Value}
+		case models.RuleOpContains:
+			return "LOWER(b.title) LIKE LOWER(?)", []interface{}{"%" + rule.Value + "%"}
+		case models.RuleOpStartsWith:
+			return "LOWER(b.title) LIKE LOWER(?)", []interface{}{rule.Value + "%"}
+		}
+
+	case models.RuleFieldFormat:
+		return "b.file_format = ?", []interface{}{rule.Value}
+
+	case models.RuleFieldContentType:
+		return "b.content_type = ?", []interface{}{rule.Value}
+
+	case models.RuleFieldYear:
+		switch rule.Operator {
+		case models.RuleOpEquals:
+			return "b.publish_date LIKE ?", []interface{}{rule.Value + "%"}
+		case models.RuleOpGreaterThan:
+			return "CAST(SUBSTR(b.publish_date, 1, 4) AS INTEGER) > ?", []interface{}{rule.Value}
+		case models.RuleOpLessThan:
+			return "CAST(SUBSTR(b.publish_date, 1, 4) AS INTEGER) < ?", []interface{}{rule.Value}
+		}
+
+	case models.RuleFieldSeries:
+		switch rule.Operator {
+		case models.RuleOpEquals:
+			return "LOWER(b.series) = LOWER(?)", []interface{}{rule.Value}
+		case models.RuleOpContains:
+			return "LOWER(b.series) LIKE LOWER(?)", []interface{}{"%" + rule.Value + "%"}
+		}
+
+	case models.RuleFieldTags:
+		return "LOWER(t.name) = LOWER(?)", []interface{}{rule.Value}
+
+	case models.RuleFieldRating:
+		switch rule.Operator {
+		case models.RuleOpEquals:
+			return "b.rating = ?", []interface{}{rule.Value}
+		case models.RuleOpGreaterThan:
+			return "b.rating > ?", []interface{}{rule.Value}
+		case models.RuleOpLessThan:
+			return "b.rating < ?", []interface{}{rule.Value}
+		}
+
+	case models.RuleFieldReadStatus:
+		return "b.read_status = ?", []interface{}{rule.Value}
+
+	case models.RuleFieldFileSize:
+		switch rule.Operator {
+		case models.RuleOpGreaterThan:
+			return "b.file_size > ?", []interface{}{rule.Value}
+		case models.RuleOpLessThan:
+			return "b.file_size < ?", []interface{}{rule.Value}
+		}
+	}
+
+	return "", args
+}
+
+// ListSmartCollections returns all smart collections for a user
+func (d *Database) ListSmartCollections(userID string) ([]models.Collection, error) {
+	rows, err := d.db.Query(`
+		SELECT id, user_id, name, COALESCE(is_smart, 0), COALESCE(rule_logic, 'AND'), created_at
+		FROM collections WHERE is_smart = 1 AND user_id = ? ORDER BY name`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var collections []models.Collection
+	for rows.Next() {
+		var c models.Collection
+		var isSmart int
+		var uID, ruleLogic sql.NullString
+		if err := rows.Scan(&c.ID, &uID, &c.Name, &isSmart, &ruleLogic, &c.CreatedAt); err != nil {
+			return nil, err
+		}
+		c.IsSmart = isSmart == 1
+		if uID.Valid {
+			c.UserID = uID.String
+		}
+		if ruleLogic.Valid {
+			c.RuleLogic = ruleLogic.String
+		} else {
+			c.RuleLogic = "AND"
+		}
+		collections = append(collections, c)
+	}
+	return collections, nil
 }
 
 // CreateUser creates a new user
