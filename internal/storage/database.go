@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -249,6 +250,55 @@ func (d *Database) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_annotations_chapter ON annotations(chapter);
 	`
 	d.db.Exec(annotationsSchema)
+
+	// Create reading sessions and statistics tables
+	readingStatsSchema := `
+	CREATE TABLE IF NOT EXISTS reading_sessions (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		book_id TEXT NOT NULL,
+		start_time DATETIME NOT NULL,
+		end_time DATETIME,
+		pages_read INTEGER DEFAULT 0,
+		chapters_read INTEGER DEFAULT 0,
+		duration_seconds INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS user_statistics (
+		user_id TEXT PRIMARY KEY,
+		total_books_read INTEGER DEFAULT 0,
+		total_pages_read INTEGER DEFAULT 0,
+		total_chapters_read INTEGER DEFAULT 0,
+		total_time_seconds INTEGER DEFAULT 0,
+		current_streak INTEGER DEFAULT 0,
+		longest_streak INTEGER DEFAULT 0,
+		last_reading_date DATE,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS daily_reading_stats (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		reading_date DATE NOT NULL,
+		pages_read INTEGER DEFAULT 0,
+		chapters_read INTEGER DEFAULT 0,
+		time_seconds INTEGER DEFAULT 0,
+		books_touched INTEGER DEFAULT 0,
+		UNIQUE(user_id, reading_date),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_reading_sessions_user ON reading_sessions(user_id);
+	CREATE INDEX IF NOT EXISTS idx_reading_sessions_book ON reading_sessions(book_id);
+	CREATE INDEX IF NOT EXISTS idx_reading_sessions_start ON reading_sessions(start_time);
+	CREATE INDEX IF NOT EXISTS idx_daily_stats_user ON daily_reading_stats(user_id);
+	CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_reading_stats(reading_date);
+	`
+	d.db.Exec(readingStatsSchema)
 
 	return nil
 }
@@ -2186,6 +2236,314 @@ func (d *Database) GetSimilarBooks(bookID, userID string, limit int) ([]*Similar
 	}
 
 	return result, nil
+}
+
+// ============================================================================
+// Reading Statistics Methods
+// ============================================================================
+
+// CreateReadingSession creates a new reading session
+func (d *Database) CreateReadingSession(session *models.ReadingSession) error {
+	_, err := d.db.Exec(`
+		INSERT INTO reading_sessions (id, user_id, book_id, start_time, end_time, pages_read, chapters_read, duration_seconds, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		session.ID, session.UserID, session.BookID, session.StartTime, session.EndTime,
+		session.PagesRead, session.ChaptersRead, session.DurationSeconds, session.CreatedAt,
+	)
+	return err
+}
+
+// UpdateReadingSession updates an existing reading session (e.g., when ending it)
+func (d *Database) UpdateReadingSession(session *models.ReadingSession) error {
+	_, err := d.db.Exec(`
+		UPDATE reading_sessions SET
+			end_time = ?, pages_read = ?, chapters_read = ?, duration_seconds = ?
+		WHERE id = ?`,
+		session.EndTime, session.PagesRead, session.ChaptersRead, session.DurationSeconds, session.ID,
+	)
+	return err
+}
+
+// GetActiveReadingSession gets an active (not ended) reading session for a user and book
+func (d *Database) GetActiveReadingSession(userID, bookID string) (*models.ReadingSession, error) {
+	session := &models.ReadingSession{}
+	err := d.db.QueryRow(`
+		SELECT id, user_id, book_id, start_time, end_time, pages_read, chapters_read, duration_seconds, created_at
+		FROM reading_sessions
+		WHERE user_id = ? AND book_id = ? AND end_time IS NULL
+		ORDER BY start_time DESC LIMIT 1`,
+		userID, bookID,
+	).Scan(&session.ID, &session.UserID, &session.BookID, &session.StartTime, &session.EndTime,
+		&session.PagesRead, &session.ChaptersRead, &session.DurationSeconds, &session.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
+// GetRecentReadingSessions returns recent reading sessions for a user
+func (d *Database) GetRecentReadingSessions(userID string, limit int) ([]models.ReadingSession, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	rows, err := d.db.Query(`
+		SELECT rs.id, rs.user_id, rs.book_id, rs.start_time, rs.end_time,
+			rs.pages_read, rs.chapters_read, rs.duration_seconds, rs.created_at,
+			b.title, b.author
+		FROM reading_sessions rs
+		JOIN books b ON rs.book_id = b.id
+		WHERE rs.user_id = ? AND rs.end_time IS NOT NULL
+		ORDER BY rs.start_time DESC
+		LIMIT ?`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sessions []models.ReadingSession
+	for rows.Next() {
+		var s models.ReadingSession
+		if err := rows.Scan(&s.ID, &s.UserID, &s.BookID, &s.StartTime, &s.EndTime,
+			&s.PagesRead, &s.ChaptersRead, &s.DurationSeconds, &s.CreatedAt,
+			&s.BookTitle, &s.BookAuthor); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, s)
+	}
+	return sessions, nil
+}
+
+// GetOrCreateUserStatistics gets or creates user statistics record
+func (d *Database) GetOrCreateUserStatistics(userID string) (*models.UserStatistics, error) {
+	stats := &models.UserStatistics{UserID: userID}
+	err := d.db.QueryRow(`
+		SELECT user_id, total_books_read, total_pages_read, total_chapters_read,
+			total_time_seconds, current_streak, longest_streak, last_reading_date, updated_at
+		FROM user_statistics WHERE user_id = ?`, userID,
+	).Scan(&stats.UserID, &stats.TotalBooksRead, &stats.TotalPagesRead, &stats.TotalChaptersRead,
+		&stats.TotalTimeSeconds, &stats.CurrentStreak, &stats.LongestStreak,
+		&stats.LastReadingDate, &stats.UpdatedAt)
+
+	if err == sql.ErrNoRows {
+		// Create new record
+		now := time.Now()
+		_, err = d.db.Exec(`
+			INSERT INTO user_statistics (user_id, total_books_read, total_pages_read, total_chapters_read,
+				total_time_seconds, current_streak, longest_streak, updated_at)
+			VALUES (?, 0, 0, 0, 0, 0, 0, ?)`, userID, now)
+		if err != nil {
+			return nil, err
+		}
+		stats.UpdatedAt = now
+		return stats, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate average pace
+	if stats.TotalPagesRead > 0 && stats.TotalTimeSeconds > 0 {
+		stats.AveragePaceMinutes = float64(stats.TotalTimeSeconds) / 60.0 / float64(stats.TotalPagesRead)
+	}
+
+	// Format total time
+	stats.TotalTimeFormatted = formatDuration(stats.TotalTimeSeconds)
+
+	return stats, nil
+}
+
+// UpdateUserStatistics updates the user's aggregated statistics
+func (d *Database) UpdateUserStatistics(stats *models.UserStatistics) error {
+	_, err := d.db.Exec(`
+		UPDATE user_statistics SET
+			total_books_read = ?, total_pages_read = ?, total_chapters_read = ?,
+			total_time_seconds = ?, current_streak = ?, longest_streak = ?,
+			last_reading_date = ?, updated_at = ?
+		WHERE user_id = ?`,
+		stats.TotalBooksRead, stats.TotalPagesRead, stats.TotalChaptersRead,
+		stats.TotalTimeSeconds, stats.CurrentStreak, stats.LongestStreak,
+		stats.LastReadingDate, time.Now(), stats.UserID,
+	)
+	return err
+}
+
+// GetDailyReadingStats returns daily reading statistics for a date range
+func (d *Database) GetDailyReadingStats(userID string, startDate, endDate time.Time) ([]models.DailyReadingStats, error) {
+	rows, err := d.db.Query(`
+		SELECT id, user_id, reading_date, pages_read, chapters_read, time_seconds, books_touched
+		FROM daily_reading_stats
+		WHERE user_id = ? AND reading_date >= ? AND reading_date <= ?
+		ORDER BY reading_date ASC`, userID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []models.DailyReadingStats
+	for rows.Next() {
+		var s models.DailyReadingStats
+		var dateStr string
+		if err := rows.Scan(&s.ID, &s.UserID, &dateStr, &s.PagesRead, &s.ChaptersRead, &s.TimeSeconds, &s.BooksTouched); err != nil {
+			return nil, err
+		}
+		s.ReadingDate, _ = time.Parse("2006-01-02", dateStr)
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
+// UpdateDailyStats updates or creates daily reading stats
+func (d *Database) UpdateDailyStats(userID string, date time.Time, pagesRead, chaptersRead, timeSeconds int, bookID string) error {
+	dateStr := date.Format("2006-01-02")
+
+	// Check if record exists
+	var existingID string
+	var existingPages, existingChapters, existingTime, existingBooks int
+	err := d.db.QueryRow(`
+		SELECT id, pages_read, chapters_read, time_seconds, books_touched
+		FROM daily_reading_stats WHERE user_id = ? AND reading_date = ?`,
+		userID, dateStr).Scan(&existingID, &existingPages, &existingChapters, &existingTime, &existingBooks)
+
+	if err == sql.ErrNoRows {
+		// Create new record
+		id := generateUUID()
+		_, err = d.db.Exec(`
+			INSERT INTO daily_reading_stats (id, user_id, reading_date, pages_read, chapters_read, time_seconds, books_touched)
+			VALUES (?, ?, ?, ?, ?, ?, 1)`,
+			id, userID, dateStr, pagesRead, chaptersRead, timeSeconds)
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	// Update existing record
+	_, err = d.db.Exec(`
+		UPDATE daily_reading_stats SET
+			pages_read = pages_read + ?, chapters_read = chapters_read + ?, time_seconds = time_seconds + ?
+		WHERE id = ?`,
+		pagesRead, chaptersRead, timeSeconds, existingID)
+	return err
+}
+
+// CalculateStreak calculates the current reading streak for a user
+func (d *Database) CalculateStreak(userID string) (current, longest int, err error) {
+	// Get distinct reading dates in descending order
+	rows, err := d.db.Query(`
+		SELECT DISTINCT DATE(start_time) as reading_date
+		FROM reading_sessions
+		WHERE user_id = ? AND end_time IS NOT NULL
+		ORDER BY reading_date DESC`, userID)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer rows.Close()
+
+	var dates []time.Time
+	for rows.Next() {
+		var dateStr string
+		if err := rows.Scan(&dateStr); err != nil {
+			return 0, 0, err
+		}
+		d, _ := time.Parse("2006-01-02", dateStr)
+		dates = append(dates, d)
+	}
+
+	if len(dates) == 0 {
+		return 0, 0, nil
+	}
+
+	today := time.Now().Truncate(24 * time.Hour)
+	yesterday := today.AddDate(0, 0, -1)
+	lastReading := dates[0].Truncate(24 * time.Hour)
+
+	// If last reading wasn't today or yesterday, streak is broken
+	if !lastReading.Equal(today) && !lastReading.Equal(yesterday) {
+		// Get longest streak from history
+		longest = d.calculateLongestStreak(dates)
+		return 0, longest, nil
+	}
+
+	// Count current streak
+	current = 1
+	for i := 0; i < len(dates)-1; i++ {
+		curr := dates[i].Truncate(24 * time.Hour)
+		prev := dates[i+1].Truncate(24 * time.Hour)
+		if curr.AddDate(0, 0, -1).Equal(prev) {
+			current++
+		} else {
+			break
+		}
+	}
+
+	// Calculate longest streak
+	longest = d.calculateLongestStreak(dates)
+	if current > longest {
+		longest = current
+	}
+
+	return current, longest, nil
+}
+
+func (d *Database) calculateLongestStreak(dates []time.Time) int {
+	if len(dates) == 0 {
+		return 0
+	}
+
+	longest := 1
+	currentStreak := 1
+
+	for i := 0; i < len(dates)-1; i++ {
+		curr := dates[i].Truncate(24 * time.Hour)
+		prev := dates[i+1].Truncate(24 * time.Hour)
+		if curr.AddDate(0, 0, -1).Equal(prev) {
+			currentStreak++
+			if currentStreak > longest {
+				longest = currentStreak
+			}
+		} else {
+			currentStreak = 1
+		}
+	}
+
+	return longest
+}
+
+// GetReadingStatsForBook returns reading statistics for a specific book
+func (d *Database) GetReadingStatsForBook(userID, bookID string) (totalTime, pagesRead, sessionsCount int, err error) {
+	err = d.db.QueryRow(`
+		SELECT COALESCE(SUM(duration_seconds), 0), COALESCE(SUM(pages_read), 0), COUNT(*)
+		FROM reading_sessions
+		WHERE user_id = ? AND book_id = ? AND end_time IS NOT NULL`,
+		userID, bookID).Scan(&totalTime, &pagesRead, &sessionsCount)
+	return
+}
+
+// GetCompletedBooksCount returns the count of books marked as completed
+func (d *Database) GetCompletedBooksCount(userID string) (int, error) {
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(*) FROM books WHERE user_id = ? AND read_status = 'completed'`, userID).Scan(&count)
+	return count, err
+}
+
+// Helper function to format duration
+func formatDuration(seconds int) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return "< 1m"
+}
+
+// Helper to generate UUID - uses the same pattern as elsewhere in the codebase
+func generateUUID() string {
+	// Simple UUID generation - in production, use google/uuid
+	return time.Now().Format("20060102150405") + "-" + strings.ReplaceAll(time.Now().String()[20:29], ".", "")
 }
 
 // Close closes the database connection

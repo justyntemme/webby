@@ -120,6 +120,16 @@ func main() {
 			protected.GET("/books/:id/annotations/:annotationId", handler.GetAnnotation)
 			protected.PUT("/books/:id/annotations/:annotationId", handler.UpdateAnnotation)
 			protected.DELETE("/books/:id/annotations/:annotationId", handler.DeleteAnnotation)
+
+			// Reading Statistics
+			protected.GET("/stats", handler.GetUserStatistics)
+			protected.GET("/stats/summary", handler.GetStatsSummary)
+			protected.GET("/stats/daily", handler.GetDailyStats)
+			protected.GET("/stats/sessions", handler.GetRecentSessions)
+			protected.POST("/stats/sessions", handler.StartReadingSession)
+			protected.PUT("/stats/sessions/:id", handler.EndReadingSession)
+			protected.PUT("/books/:id/reading-session", handler.UpdateReadingSessionProgress)
+			protected.GET("/books/:id/stats", handler.GetBookReadingStats)
 		}
 
 		// Book routes - use optional auth for backward compatibility

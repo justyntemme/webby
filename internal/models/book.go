@@ -200,3 +200,48 @@ type Annotation struct {
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 }
+
+// ReadingSession represents a single reading session
+type ReadingSession struct {
+	ID              string     `json:"id"`
+	UserID          string     `json:"user_id"`
+	BookID          string     `json:"book_id"`
+	StartTime       time.Time  `json:"start_time"`
+	EndTime         *time.Time `json:"end_time,omitempty"`
+	PagesRead       int        `json:"pages_read"`
+	ChaptersRead    int        `json:"chapters_read"`
+	DurationSeconds int        `json:"duration_seconds"`
+	CreatedAt       time.Time  `json:"created_at"`
+
+	// Computed/joined fields
+	BookTitle  string `json:"book_title,omitempty"`
+	BookAuthor string `json:"book_author,omitempty"`
+}
+
+// UserStatistics represents aggregated reading statistics for a user
+type UserStatistics struct {
+	UserID             string     `json:"user_id"`
+	TotalBooksRead     int        `json:"total_books_read"`
+	TotalPagesRead     int        `json:"total_pages_read"`
+	TotalChaptersRead  int        `json:"total_chapters_read"`
+	TotalTimeSeconds   int        `json:"total_time_seconds"`
+	CurrentStreak      int        `json:"current_streak"`
+	LongestStreak      int        `json:"longest_streak"`
+	LastReadingDate    *time.Time `json:"last_reading_date,omitempty"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+
+	// Computed fields
+	AveragePaceMinutes float64 `json:"average_pace_minutes,omitempty"` // Minutes per page
+	TotalTimeFormatted string  `json:"total_time_formatted,omitempty"` // Human-readable time
+}
+
+// DailyReadingStats represents reading stats for a single day
+type DailyReadingStats struct {
+	ID           string    `json:"id"`
+	UserID       string    `json:"user_id"`
+	ReadingDate  time.Time `json:"reading_date"`
+	PagesRead    int       `json:"pages_read"`
+	ChaptersRead int       `json:"chapters_read"`
+	TimeSeconds  int       `json:"time_seconds"`
+	BooksTouched int       `json:"books_touched"`
+}
