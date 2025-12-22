@@ -570,7 +570,7 @@ func (h *Handler) ServeReader(c *gin.Context) {
 	switch book.FileFormat {
 	case models.FileFormatPDF:
 		readerPath = "web/static/pdf-reader.html"
-	case models.FileFormatCBZ:
+	case models.FileFormatCBZ, models.FileFormatCBR:
 		readerPath = "web/static/cbz-reader.html"
 	default:
 		readerPath = "web/static/reader.html"
