@@ -215,7 +215,7 @@ func (h *Handler) UploadBook(c *gin.Context) {
 		}
 
 		// Parse CBZ metadata
-		meta, err := cbz.ParseCBZ(filePath)
+		meta, err := cbz.ParseCBZ(filePath, header.Filename)
 		if err != nil {
 			h.files.DeleteBook(bookID)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse CBZ metadata"})
@@ -254,7 +254,7 @@ func (h *Handler) UploadBook(c *gin.Context) {
 		}
 
 		// Parse CBR metadata
-		meta, err := cbz.ParseCBR(filePath)
+		meta, err := cbz.ParseCBR(filePath, header.Filename)
 		if err != nil {
 			h.files.DeleteBook(bookID)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse CBR metadata"})

@@ -41,7 +41,7 @@ var imageExtensions = map[string]bool{
 }
 
 // ParseCBZ parses a CBZ file and extracts metadata
-func ParseCBZ(filePath string) (*Metadata, error) {
+func ParseCBZ(filePath, originalFilename string) (*Metadata, error) {
 	r, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open CBZ: %w", err)
@@ -63,9 +63,8 @@ func ParseCBZ(filePath string) (*Metadata, error) {
 	meta.PageCount = len(imageFiles)
 
 	// Parse filename using the robust parser
-	baseName := filepath.Base(filePath)
-	meta.RawFilename = baseName
-	filenameInfo := ParseComicFilename(baseName)
+	meta.RawFilename = originalFilename
+	filenameInfo := ParseComicFilename(originalFilename)
 
 	// Use parsed data
 	meta.Title = filenameInfo.Title
@@ -364,7 +363,7 @@ func extractXMLValue(xml, tagName string) string {
 // ============================================
 
 // ParseCBR parses a CBR file and extracts metadata
-func ParseCBR(filePath string) (*Metadata, error) {
+func ParseCBR(filePath, originalFilename string) (*Metadata, error) {
 	r, err := rardecode.OpenReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open CBR: %w", err)
@@ -404,9 +403,8 @@ func ParseCBR(filePath string) (*Metadata, error) {
 	meta.PageCount = len(imageFiles)
 
 	// Parse filename using the robust parser
-	fileBaseName := filepath.Base(filePath)
-	meta.RawFilename = fileBaseName
-	filenameInfo := ParseComicFilename(fileBaseName)
+	meta.RawFilename = originalFilename
+	filenameInfo := ParseComicFilename(originalFilename)
 
 	// Use parsed data
 	meta.Title = filenameInfo.Title
