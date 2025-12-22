@@ -202,6 +202,32 @@ func main() {
 		}
 	}
 
+	// OPDS routes for e-reader apps
+	opdsGroup := r.Group("/opds/v1.2")
+	opdsGroup.Use(auth.OptionalAuthMiddleware())
+	{
+		// Root catalog
+		opdsGroup.GET("/catalog.xml", handler.OPDSCatalog)
+
+		// Acquisition feeds
+		opdsGroup.GET("/books/all.xml", handler.OPDSAllBooks)
+		opdsGroup.GET("/books/recent.xml", handler.OPDSRecentBooks)
+		opdsGroup.GET("/books/ebooks.xml", handler.OPDSEBooks)
+		opdsGroup.GET("/books/comics.xml", handler.OPDSComics)
+
+		// Navigation feeds
+		opdsGroup.GET("/authors.xml", handler.OPDSAuthors)
+		opdsGroup.GET("/authors/:author", handler.OPDSAuthorBooks)
+		opdsGroup.GET("/series.xml", handler.OPDSSeries)
+		opdsGroup.GET("/series/:series", handler.OPDSSeriesBooks)
+
+		// Search
+		opdsGroup.GET("/search.xml", handler.OPDSSearch)
+
+		// Book download
+		opdsGroup.GET("/books/:id/download", handler.OPDSDownload)
+	}
+
 	// Serve static files for web reader
 	r.Static("/static", "web/static")
 	r.GET("/reader/:id", handler.ServeReader)
