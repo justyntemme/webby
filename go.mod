@@ -7,6 +7,8 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/nwaples/rardecode/v2 v2.2.2
+	github.com/pdfcpu/pdfcpu v0.11.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.46.0
 )
@@ -34,7 +36,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pdfcpu/pdfcpu v0.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

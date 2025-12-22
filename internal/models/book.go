@@ -22,6 +22,7 @@ const (
 	FileFormatEPUB = "epub"
 	FileFormatPDF  = "pdf"
 	FileFormatCBZ  = "cbz"
+	FileFormatCBR  = "cbr"
 )
 
 // Book represents a book in the library (EPUB, PDF, or CBZ)

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/nwaples/rardecode/v2"
 )
 
 // Metadata contains CBZ metadata
@@ -348,4 +350,315 @@ func extractXMLValue(xml, tagName string) string {
 	}
 
 	return strings.TrimSpace(xml[startIdx : startIdx+endIdx])
+}
+
+// ============================================
+// CBR (RAR Archive) Support
+// ============================================
+
+// ParseCBR parses a CBR file and extracts metadata
+func ParseCBR(filePath string) (*Metadata, error) {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open CBR: %w", err)
+	}
+	defer r.Close()
+
+	meta := &Metadata{
+		ContentType: "comic",
+	}
+
+	// Count image files for page count
+	var imageFiles []string
+	var comicInfoData []byte
+
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		baseName := filepath.Base(header.Name)
+
+		// Check for ComicInfo.xml
+		if strings.EqualFold(baseName, "ComicInfo.xml") {
+			comicInfoData, _ = io.ReadAll(r)
+		}
+
+		if imageExtensions[ext] && !strings.HasPrefix(baseName, ".") {
+			imageFiles = append(imageFiles, header.Name)
+		}
+	}
+
+	meta.PageCount = len(imageFiles)
+
+	// Try to extract title from filename
+	baseName := filepath.Base(filePath)
+	meta.Title = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+
+	// Try to parse series info from common naming patterns
+	meta.Series, meta.SeriesIndex = parseSeriesFromFilename(meta.Title)
+
+	// Parse ComicInfo.xml if found
+	if comicInfoData != nil {
+		if info := parseComicInfoData(comicInfoData); info != nil {
+			if info.Title != "" {
+				meta.Title = info.Title
+			}
+			if info.Series != "" {
+				meta.Series = info.Series
+			}
+			if info.Number > 0 {
+				meta.SeriesIndex = info.Number
+			}
+			if info.Writer != "" {
+				meta.Author = info.Writer
+			}
+		}
+	}
+
+	return meta, nil
+}
+
+// ValidateCBR checks if a file is a valid CBR archive
+func ValidateCBR(filePath string) error {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return fmt.Errorf("invalid CBR file: %w", err)
+	}
+	defer r.Close()
+
+	// Check if it contains at least one image
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		if imageExtensions[ext] {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("CBR file contains no images")
+}
+
+// ExtractCoverCBR extracts the first image from a CBR as the cover
+func ExtractCoverCBR(filePath string) (*CoverImage, error) {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open CBR: %w", err)
+	}
+	defer r.Close()
+
+	// First pass: collect all image file names
+	type imageEntry struct {
+		name string
+	}
+	var imageFiles []imageEntry
+
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		if imageExtensions[ext] && !strings.HasPrefix(filepath.Base(header.Name), ".") {
+			imageFiles = append(imageFiles, imageEntry{name: header.Name})
+		}
+	}
+
+	if len(imageFiles) == 0 {
+		return nil, fmt.Errorf("no images found in CBR")
+	}
+
+	// Sort by name to get the first page
+	sort.Slice(imageFiles, func(i, j int) bool {
+		return imageFiles[i].name < imageFiles[j].name
+	})
+
+	// Re-open and find the first image
+	r2, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reopen CBR: %w", err)
+	}
+	defer r2.Close()
+
+	targetName := imageFiles[0].name
+	for {
+		header, err := r2.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		if header.Name == targetName {
+			data, err := io.ReadAll(r2)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read image: %w", err)
+			}
+
+			ext := strings.ToLower(filepath.Ext(header.Name))
+			return &CoverImage{
+				Data:      data,
+				Extension: ext,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("cover image not found")
+}
+
+// GetPageCountCBR returns the number of image pages in a CBR
+func GetPageCountCBR(filePath string) (int, error) {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Close()
+
+	count := 0
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return 0, err
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		if imageExtensions[ext] && !strings.HasPrefix(filepath.Base(header.Name), ".") {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+// GetPageCBR extracts a specific page (0-indexed) from a CBR
+func GetPageCBR(filePath string, pageIndex int) ([]byte, string, error) {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to open CBR: %w", err)
+	}
+	defer r.Close()
+
+	// First pass: collect all image file names
+	var imageFiles []string
+
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		if imageExtensions[ext] && !strings.HasPrefix(filepath.Base(header.Name), ".") {
+			imageFiles = append(imageFiles, header.Name)
+		}
+	}
+
+	if len(imageFiles) == 0 {
+		return nil, "", fmt.Errorf("no images found in CBR")
+	}
+
+	// Sort by name
+	sort.Strings(imageFiles)
+
+	if pageIndex < 0 || pageIndex >= len(imageFiles) {
+		return nil, "", fmt.Errorf("page index out of range: %d (total: %d)", pageIndex, len(imageFiles))
+	}
+
+	// Re-open and find the target page
+	r2, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to reopen CBR: %w", err)
+	}
+	defer r2.Close()
+
+	targetName := imageFiles[pageIndex]
+	for {
+		header, err := r2.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		if header.Name == targetName {
+			data, err := io.ReadAll(r2)
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to read page: %w", err)
+			}
+
+			ext := strings.ToLower(filepath.Ext(header.Name))
+			contentType := getImageContentType(ext)
+			return data, contentType, nil
+		}
+	}
+
+	return nil, "", fmt.Errorf("page not found")
+}
+
+// GetPageListCBR returns a list of page filenames in order
+func GetPageListCBR(filePath string) ([]string, error) {
+	r, err := rardecode.OpenReader(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open CBR: %w", err)
+	}
+	defer r.Close()
+
+	var pages []string
+	for {
+		header, err := r.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CBR: %w", err)
+		}
+
+		ext := strings.ToLower(filepath.Ext(header.Name))
+		if imageExtensions[ext] && !strings.HasPrefix(filepath.Base(header.Name), ".") {
+			pages = append(pages, header.Name)
+		}
+	}
+
+	sort.Strings(pages)
+	return pages, nil
+}
+
+// parseComicInfoData parses ComicInfo.xml from raw bytes
+func parseComicInfoData(data []byte) *ComicInfo {
+	info := &ComicInfo{}
+	content := string(data)
+
+	info.Title = extractXMLValue(content, "Title")
+	info.Series = extractXMLValue(content, "Series")
+	info.Writer = extractXMLValue(content, "Writer")
+
+	if numStr := extractXMLValue(content, "Number"); numStr != "" {
+		fmt.Sscanf(numStr, "%f", &info.Number)
+	}
+
+	return info
 }

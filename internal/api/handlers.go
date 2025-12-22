@@ -78,8 +78,11 @@ func (h *Handler) UploadBook(c *gin.Context) {
 	case strings.HasSuffix(filename, ".cbz"):
 		fileFormat = models.FileFormatCBZ
 		fileExt = ".cbz"
+	case strings.HasSuffix(filename, ".cbr"):
+		fileFormat = models.FileFormatCBR
+		fileExt = ".cbr"
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported file format. Please upload EPUB, PDF, or CBZ files."})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported file format. Please upload EPUB, PDF, CBZ, or CBR files."})
 		return
 	}
 
@@ -224,6 +227,44 @@ func (h *Handler) UploadBook(c *gin.Context) {
 			ContentType:     models.ContentTypeComic, // CBZ is always comic
 			FileFormat:      models.FileFormatCBZ,
 			MetadataSource:  "cbz",
+			MetadataUpdated: &now,
+		}
+	} else if fileFormat == models.FileFormatCBR {
+		// Validate CBR
+		if err := cbz.ValidateCBR(filePath); err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CBR file"})
+			return
+		}
+
+		// Parse CBR metadata
+		meta, err := cbz.ParseCBR(filePath)
+		if err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse CBR metadata"})
+			return
+		}
+
+		// Extract cover image from first page
+		var coverPath string
+		if cover, err := cbz.ExtractCoverCBR(filePath); err == nil && len(cover.Data) > 0 {
+			coverPath, _ = h.files.SaveCover(bookID, cover.Data, cover.Extension)
+		}
+
+		book = &models.Book{
+			ID:              bookID,
+			UserID:          userID,
+			Title:           meta.Title,
+			Author:          meta.Author,
+			Series:          meta.Series,
+			SeriesIndex:     meta.SeriesIndex,
+			FilePath:        filePath,
+			CoverPath:       coverPath,
+			FileSize:        header.Size,
+			UploadedAt:      now,
+			ContentType:     models.ContentTypeComic, // CBR is always comic
+			FileFormat:      models.FileFormatCBR,
+			MetadataSource:  "cbr",
 			MetadataUpdated: &now,
 		}
 	}
@@ -574,6 +615,8 @@ func (h *Handler) GetBookFile(c *gin.Context) {
 		contentType = "application/epub+zip"
 	case models.FileFormatCBZ:
 		contentType = "application/zip"
+	case models.FileFormatCBR:
+		contentType = "application/x-rar-compressed"
 	default:
 		contentType = "application/octet-stream"
 	}
@@ -611,12 +654,18 @@ func (h *Handler) GetCBZPage(c *gin.Context) {
 		return
 	}
 
-	if book.FileFormat != models.FileFormatCBZ {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a CBZ file"})
+	if book.FileFormat != models.FileFormatCBZ && book.FileFormat != models.FileFormatCBR {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a comic file (CBZ/CBR)"})
 		return
 	}
 
-	data, contentType, err := cbz.GetPage(book.FilePath, pageIndex)
+	var data []byte
+	var contentType string
+	if book.FileFormat == models.FileFormatCBR {
+		data, contentType, err = cbz.GetPageCBR(book.FilePath, pageIndex)
+	} else {
+		data, contentType, err = cbz.GetPage(book.FilePath, pageIndex)
+	}
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -627,7 +676,7 @@ func (h *Handler) GetCBZPage(c *gin.Context) {
 	c.Data(http.StatusOK, contentType, data)
 }
 
-// GetCBZInfo returns page count and other info for a CBZ
+// GetCBZInfo returns page count and other info for a CBZ/CBR
 func (h *Handler) GetCBZInfo(c *gin.Context) {
 	id := c.Param("id")
 	userID := auth.GetUserID(c)
@@ -649,12 +698,17 @@ func (h *Handler) GetCBZInfo(c *gin.Context) {
 		return
 	}
 
-	if book.FileFormat != models.FileFormatCBZ {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a CBZ file"})
+	if book.FileFormat != models.FileFormatCBZ && book.FileFormat != models.FileFormatCBR {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a comic file (CBZ/CBR)"})
 		return
 	}
 
-	pageCount, err := cbz.GetPageCount(book.FilePath)
+	var pageCount int
+	if book.FileFormat == models.FileFormatCBR {
+		pageCount, err = cbz.GetPageCountCBR(book.FilePath)
+	} else {
+		pageCount, err = cbz.GetPageCount(book.FilePath)
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get page count"})
 		return

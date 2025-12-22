@@ -6,7 +6,8 @@ Base URL: `http://localhost:8080`
 
 - **EPUB** - Standard ebook format with full reading support
 - **PDF** - Portable Document Format with cover extraction
-- **CBZ** - Comic Book Archive with page-by-page reading
+- **CBZ** - Comic Book Archive (ZIP) with page-by-page reading
+- **CBR** - Comic Book Archive (RAR) with page-by-page reading
 
 ## Authentication
 
@@ -117,9 +118,9 @@ Response 200:
 POST /api/books
 Content-Type: multipart/form-data
 
-file: <epub_file|pdf_file|cbz_file>
+file: <epub_file|pdf_file|cbz_file|cbr_file>
 
-Supported formats: .epub, .pdf, .cbz
+Supported formats: .epub, .pdf, .cbz, .cbr
 Max file size: 100MB
 
 Response 201:
@@ -133,7 +134,7 @@ Response 201:
     "series": "string",
     "series_index": 1.0,
     "file_size": 1024,
-    "file_format": "epub|pdf|cbz",
+    "file_format": "epub|pdf|cbz|cbr",
     "content_type": "book|comic",
     "uploaded_at": "timestamp"
   }
@@ -253,6 +254,7 @@ Response 200: Binary file with appropriate Content-Type
 - application/epub+zip (EPUB)
 - application/pdf (PDF)
 - application/zip (CBZ)
+- application/x-rar-compressed (CBR)
 ```
 
 ### Get Table of Contents (EPUB only)
@@ -274,9 +276,11 @@ Response 200:
 
 ---
 
-## CBZ Comic Reading
+## CBZ/CBR Comic Reading
 
-### Get CBZ Info
+These endpoints work for both CBZ (ZIP) and CBR (RAR) comic archives.
+
+### Get Comic Info
 ```
 GET /api/books/:id/cbz/info
 
@@ -289,7 +293,7 @@ Response 200:
 }
 ```
 
-### Get CBZ Page
+### Get Comic Page
 ```
 GET /api/books/:id/cbz/page/:pageIndex
 
@@ -756,7 +760,8 @@ Common HTTP status codes:
    - Get plain text with `/api/books/:id/text/:chapter`
    - Save position with `/api/books/:id/position`
 
-3. **Reading Flow (CBZ Comics):**
+3. **Reading Flow (CBZ/CBR Comics):**
+   - Same endpoints work for both CBZ (ZIP) and CBR (RAR) formats
    - Get comic info with `/api/books/:id/cbz/info`
    - Fetch pages with `/api/books/:id/cbz/page/:pageIndex`
    - Page index is 0-based (0 to pageCount-1)
