@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+// Content type constants
+const (
+	ContentTypeBook  = "book"
+	ContentTypeComic = "comic"
+)
+
 // Metadata contains extracted EPUB metadata
 type Metadata struct {
 	Title       string
@@ -19,6 +25,7 @@ type Metadata struct {
 	SeriesIndex float64
 	CoverData   []byte
 	CoverExt    string
+	ContentType string // "book" or "comic"
 
 	// Extended metadata fields
 	ISBN        string
@@ -219,7 +226,115 @@ func ParseEPUB(filePath string) (*Metadata, error) {
 		}
 	}
 
+	// Detect content type (book vs comic)
+	meta.ContentType = detectContentType(pkg, meta)
+
 	return meta, nil
+}
+
+// detectContentType determines if the EPUB is a book or comic
+func detectContentType(pkg *Package, meta *Metadata) string {
+	// Check subjects for comic-related terms
+	comicTerms := []string{
+		"comic", "comics", "graphic novel", "graphic novels",
+		"manga", "manhwa", "manhua", "bande dessinée",
+		"sequential art", "comic book", "comic books",
+	}
+
+	for _, subj := range meta.Subjects {
+		subjLower := strings.ToLower(subj)
+		for _, term := range comicTerms {
+			if strings.Contains(subjLower, term) {
+				return ContentTypeComic
+			}
+		}
+	}
+
+	// Check Calibre tags and custom metadata
+	for _, m := range pkg.Metadata.Meta {
+		// Check for calibre:user_categories or tags containing comic terms
+		if m.Name == "calibre:user_categories" || m.Name == "calibre:tags" {
+			contentLower := strings.ToLower(m.Content)
+			for _, term := range comicTerms {
+				if strings.Contains(contentLower, term) {
+					return ContentTypeComic
+				}
+			}
+		}
+	}
+
+	// Check publisher for common comic publishers
+	comicPublishers := []string{
+		"marvel", "dc comics", "dark horse", "image comics",
+		"idw", "boom! studios", "dynamite", "valiant",
+		"oni press", "viz media", "kodansha", "shueisha",
+		"seven seas", "yen press", "tokyopop",
+	}
+
+	if meta.Publisher != "" {
+		pubLower := strings.ToLower(meta.Publisher)
+		for _, pub := range comicPublishers {
+			if strings.Contains(pubLower, pub) {
+				return ContentTypeComic
+			}
+		}
+	}
+
+	// Check title for common comic patterns
+	titleLower := strings.ToLower(meta.Title)
+	if strings.Contains(titleLower, " vol.") ||
+		strings.Contains(titleLower, " vol ") ||
+		strings.Contains(titleLower, " issue ") ||
+		strings.Contains(titleLower, " #") {
+		// Could be a comic, but also could be a book series
+		// Check for high image ratio as additional signal
+		imageCount := 0
+		totalItems := 0
+		for _, item := range pkg.Manifest.Items {
+			if strings.HasPrefix(item.MediaType, "image/") {
+				imageCount++
+			}
+			// Count content items (not just any item)
+			if strings.HasPrefix(item.MediaType, "application/xhtml") ||
+				strings.HasPrefix(item.MediaType, "text/html") ||
+				strings.HasPrefix(item.MediaType, "image/") {
+				totalItems++
+			}
+		}
+
+		// If more than 70% of content items are images, likely a comic
+		if totalItems > 0 && float64(imageCount)/float64(totalItems) > 0.7 {
+			return ContentTypeComic
+		}
+	}
+
+	// Check for very high image-to-spine ratio (image-heavy EPUBs)
+	imageCount := 0
+	for _, item := range pkg.Manifest.Items {
+		if strings.HasPrefix(item.MediaType, "image/") {
+			imageCount++
+		}
+	}
+	spineCount := len(pkg.Spine.Items)
+
+	// If there are many images per spine item, likely a comic (images embedded per page)
+	if spineCount > 0 && imageCount > spineCount*2 {
+		// Check subjects more loosely
+		for _, subj := range meta.Subjects {
+			subjLower := strings.ToLower(subj)
+			if strings.Contains(subjLower, "fiction") ||
+				strings.Contains(subjLower, "novel") {
+				// Has fiction/novel subject, probably not a comic
+				return ContentTypeBook
+			}
+		}
+		// High image ratio without fiction subjects, could be comic
+		if float64(imageCount)/float64(spineCount) > 5 {
+			return ContentTypeComic
+		}
+	}
+
+	return ContentTypeBook
 }
 
 // GetTableOfContents returns the book's table of contents

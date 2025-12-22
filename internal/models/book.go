@@ -11,7 +11,20 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// Book represents an EPUB book in the library
+// ContentType constants for books vs comics
+const (
+	ContentTypeBook  = "book"
+	ContentTypeComic = "comic"
+)
+
+// FileFormat constants for different file types
+const (
+	FileFormatEPUB = "epub"
+	FileFormatPDF  = "pdf"
+	FileFormatCBZ  = "cbz"
+)
+
+// Book represents a book in the library (EPUB, PDF, or CBZ)
 type Book struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id,omitempty"`
@@ -23,6 +36,8 @@ type Book struct {
 	CoverPath   string    `json:"-"`
 	FileSize    int64     `json:"file_size"`
 	UploadedAt  time.Time `json:"uploaded_at"`
+	ContentType string    `json:"content_type"`  // "book" or "comic"
+	FileFormat  string    `json:"file_format"`   // "epub", "pdf", or "cbz"
 
 	// Extended metadata fields
 	ISBN            string     `json:"isbn,omitempty"`

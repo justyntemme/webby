@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -114,6 +115,8 @@ func (d *Database) migrate() error {
 		"ALTER TABLE books ADD COLUMN subjects TEXT DEFAULT ''",
 		"ALTER TABLE books ADD COLUMN metadata_source TEXT DEFAULT 'epub'",
 		"ALTER TABLE books ADD COLUMN metadata_updated DATETIME",
+		"ALTER TABLE books ADD COLUMN content_type TEXT DEFAULT 'book'",
+		"ALTER TABLE books ADD COLUMN file_format TEXT DEFAULT 'epub'",
 	}
 
 	for _, col := range metadataColumns {
@@ -121,22 +124,34 @@ func (d *Database) migrate() error {
 		d.db.Exec(col)
 	}
 
-	// Add ISBN index
+	// Add indexes
 	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn)")
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_content_type ON books(content_type)")
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_file_format ON books(file_format)")
 
 	return nil
 }
 
 // CreateBook inserts a new book into the database
 func (d *Database) CreateBook(book *models.Book) error {
+	// Default to "book" if content type not set
+	contentType := book.ContentType
+	if contentType == "" {
+		contentType = models.ContentTypeBook
+	}
+	// Default to "epub" if file format not set
+	fileFormat := book.FileFormat
+	if fileFormat == "" {
+		fileFormat = models.FileFormatEPUB
+	}
 	_, err := d.db.Exec(`
 		INSERT INTO books (id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
-			isbn, publisher, publish_date, description, language, subjects, metadata_source, metadata_updated)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			isbn, publisher, publish_date, description, language, subjects, metadata_source, metadata_updated, content_type, file_format)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		book.ID, book.UserID, book.Title, book.Author, book.Series, book.SeriesIndex,
 		book.FilePath, book.CoverPath, book.FileSize, book.UploadedAt,
 		book.ISBN, book.Publisher, book.PublishDate, book.Description,
-		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated,
+		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated, contentType, fileFormat,
 	)
 	return err
 }
@@ -172,12 +187,13 @@ func (d *Database) GetBook(id string) (*models.Book, error) {
 	err := d.db.QueryRow(`
 		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
 			COALESCE(isbn, ''), COALESCE(publisher, ''), COALESCE(publish_date, ''), COALESCE(description, ''),
-			COALESCE(language, ''), COALESCE(subjects, ''), COALESCE(metadata_source, 'epub'), metadata_updated
+			COALESCE(language, ''), COALESCE(subjects, ''), COALESCE(metadata_source, 'epub'), metadata_updated,
+			COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
 		FROM books WHERE id = ?`, id,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
 		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
 		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
-		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated)
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -190,14 +206,15 @@ func (d *Database) GetBookForUser(id, userID string) (*models.Book, error) {
 	err := d.db.QueryRow(`
 		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index, b.file_path, b.cover_path, b.file_size, b.uploaded_at,
 			COALESCE(b.isbn, ''), COALESCE(b.publisher, ''), COALESCE(b.publish_date, ''), COALESCE(b.description, ''),
-			COALESCE(b.language, ''), COALESCE(b.subjects, ''), COALESCE(b.metadata_source, 'epub'), b.metadata_updated
+			COALESCE(b.language, ''), COALESCE(b.subjects, ''), COALESCE(b.metadata_source, 'epub'), b.metadata_updated,
+			COALESCE(b.content_type, 'book'), COALESCE(b.file_format, 'epub')
 		FROM books b
 		LEFT JOIN book_shares bs ON b.id = bs.book_id AND bs.shared_with_id = ?
 		WHERE b.id = ? AND (b.user_id = ? OR b.user_id = '' OR bs.id IS NOT NULL)`, userID, id, userID,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
 		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
 		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
-		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated)
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat)
 	if err != nil {
 		return nil, err
 	}
@@ -206,37 +223,61 @@ func (d *Database) GetBookForUser(id, userID string) (*models.Book, error) {
 
 // ListBooks returns all books with optional sorting (legacy - no user filter)
 func (d *Database) ListBooks(sortBy, order string) ([]models.Book, error) {
-	return d.ListBooksForUser("", sortBy, order)
+	return d.ListBooksForUserWithFilter("", sortBy, order, "")
 }
 
 // ListBooksForUser returns books for a specific user with optional sorting
 func (d *Database) ListBooksForUser(userID, sortBy, order string) ([]models.Book, error) {
-	validSort := map[string]string{
-		"title":  "title",
-		"author": "author, series, series_index, title",
-		"series": "series, series_index, title",
-		"date":   "uploaded_at",
+	return d.ListBooksForUserWithFilter(userID, sortBy, order, "")
+}
+
+// ListBooksForUserWithFilter returns books for a specific user with optional sorting and content type filter
+func (d *Database) ListBooksForUserWithFilter(userID, sortBy, order, contentType string) ([]models.Book, error) {
+	// Define sort columns - each column needs order applied
+	// Using COALESCE to handle NULL/empty authors - sort them at the end
+	validSort := map[string][]string{
+		"title":  {"title"},
+		"author": {"CASE WHEN author = '' OR author IS NULL THEN 1 ELSE 0 END", "author", "series", "series_index", "title"},
+		"series": {"series", "series_index", "title"},
+		"date":   {"uploaded_at"},
 	}
 
-	sortColumn, ok := validSort[sortBy]
+	sortColumns, ok := validSort[sortBy]
 	if !ok {
 		// Default: sort by author, then series, then title
-		sortColumn = "author, series, series_index, title"
+		sortColumns = validSort["author"]
 	}
 
 	if order != "desc" {
 		order = "asc"
 	}
 
+	// Build ORDER BY clause with order applied to each column
+	var orderParts []string
+	for _, col := range sortColumns {
+		orderParts = append(orderParts, col+" "+order)
+	}
+	orderBy := " ORDER BY " + strings.Join(orderParts, ", ")
+
 	var query string
 	var args []interface{}
 
+	baseSelect := "SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at, COALESCE(content_type, 'book'), COALESCE(file_format, 'epub') FROM books WHERE "
+
 	if userID != "" {
-		query = "SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at FROM books WHERE user_id = ? ORDER BY " + sortColumn + " " + order
+		query = baseSelect + "user_id = ?"
 		args = append(args, userID)
 	} else {
-		query = "SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at FROM books WHERE user_id = '' ORDER BY " + sortColumn + " " + order
+		query = baseSelect + "user_id = ''"
 	}
+
+	// Add content type filter if specified
+	if contentType != "" && (contentType == models.ContentTypeBook || contentType == models.ContentTypeComic) {
+		query += " AND COALESCE(content_type, 'book') = ?"
+		args = append(args, contentType)
+	}
+
+	query += orderBy
 
 	rows, err := d.db.Query(query, args...)
 	if err != nil {
@@ -248,7 +289,7 @@ func (d *Database) ListBooksForUser(userID, sortBy, order string) ([]models.Book
 	for rows.Next() {
 		var book models.Book
 		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
-			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt)
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat)
 		if err != nil {
 			return nil, err
 		}
@@ -271,7 +312,7 @@ func (d *Database) SearchBooksForUser(query, userID string) ([]models.Book, erro
 
 	if userID != "" {
 		rows, err = d.db.Query(`
-			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at, COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
 			FROM books
 			WHERE user_id = ? AND (title LIKE ? OR author LIKE ? OR series LIKE ?)
 			ORDER BY title`,
@@ -279,7 +320,7 @@ func (d *Database) SearchBooksForUser(query, userID string) ([]models.Book, erro
 		)
 	} else {
 		rows, err = d.db.Query(`
-			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at, COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
 			FROM books
 			WHERE user_id = '' AND (title LIKE ? OR author LIKE ? OR series LIKE ?)
 			ORDER BY title`,
@@ -296,7 +337,7 @@ func (d *Database) SearchBooksForUser(query, userID string) ([]models.Book, erro
 	for rows.Next() {
 		var book models.Book
 		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
-			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt)
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat)
 		if err != nil {
 			return nil, err
 		}

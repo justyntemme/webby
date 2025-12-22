@@ -35,9 +35,14 @@ func NewFileStorage(basePath string) (*FileStorage, error) {
 	return fs, nil
 }
 
-// SaveBook saves an EPUB file and returns the file path
+// SaveBook saves a book file (EPUB or PDF) and returns the file path
 func (fs *FileStorage) SaveBook(id string, reader io.Reader) (string, error) {
-	filePath := filepath.Join(fs.booksDir, id+".epub")
+	return fs.SaveBookWithExt(id, reader, ".epub")
+}
+
+// SaveBookWithExt saves a book file with a specific extension and returns the file path
+func (fs *FileStorage) SaveBookWithExt(id string, reader io.Reader, ext string) (string, error) {
+	filePath := filepath.Join(fs.booksDir, id+ext)
 
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -69,9 +74,22 @@ func (fs *FileStorage) SaveCover(id string, data []byte, ext string) (string, er
 	return filePath, nil
 }
 
-// GetBookPath returns the path to a book file
+// GetBookPath returns the path to a book file (tries multiple extensions)
 func (fs *FileStorage) GetBookPath(id string) string {
+	// Try common extensions
+	for _, ext := range []string{".epub", ".pdf", ".cbz"} {
+		path := filepath.Join(fs.booksDir, id+ext)
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+	// Default to epub if not found
 	return filepath.Join(fs.booksDir, id+".epub")
+}
+
+// GetBookPathWithExt returns the path to a book file with a specific extension
+func (fs *FileStorage) GetBookPathWithExt(id, ext string) string {
+	return filepath.Join(fs.booksDir, id+ext)
 }
 
 // GetCoverPath returns the path to a cover file
