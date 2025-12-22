@@ -371,6 +371,11 @@
         let uiVisible = true;
         let savedScrollPosition = 0;
 
+        // Page-based navigation
+        let currentPage = 0;
+        let totalPages = 1;
+        let pageHeight = 0; // Viewport height minus header/footer
+
         // Get auth token from localStorage
         function getAuthToken() {
             return localStorage.getItem('webby-token');
@@ -446,6 +451,64 @@
             document.getElementById('fontSize').textContent = fontSize;
             document.body.classList.toggle('dark-mode', darkMode);
             document.getElementById('darkModeToggle').classList.toggle('active', darkMode);
+            // Recalculate pages when font size changes
+            calculatePages();
+        }
+
+        // Calculate page dimensions and total pages
+        function calculatePages() {
+            // Page height = viewport height minus header (50px) and footer (60px)
+            pageHeight = window.innerHeight - 110;
+            // Total scrollable height
+            const contentHeight = document.body.scrollHeight - window.innerHeight;
+            // Total pages (at least 1)
+            totalPages = Math.max(1, Math.ceil(contentHeight / pageHeight) + 1);
+            // Recalculate current page based on scroll position
+            currentPage = Math.floor(window.scrollY / pageHeight);
+            updateProgress();
+        }
+
+        // Navigate to a specific page within current chapter
+        function goToPage(pageIndex) {
+            if (pageIndex < 0 || pageIndex >= totalPages) return false;
+            currentPage = pageIndex;
+            const scrollTarget = pageIndex * pageHeight;
+            window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+            updateProgress();
+            savePosition();
+            return true;
+        }
+
+        // Go to next page (or next chapter if at end)
+        function nextPage() {
+            if (currentPage < totalPages - 1) {
+                // More pages in current chapter
+                goToPage(currentPage + 1);
+            } else if (currentChapter < chapters.length - 1) {
+                // Load next chapter, start at first page
+                loadChapter(currentChapter + 1).then(() => {
+                    currentPage = 0;
+                    window.scrollTo(0, 0);
+                    updateProgress();
+                });
+            }
+        }
+
+        // Go to previous page (or previous chapter if at start)
+        function prevPage() {
+            if (currentPage > 0) {
+                // More pages before in current chapter
+                goToPage(currentPage - 1);
+            } else if (currentChapter > 0) {
+                // Load previous chapter, go to last page
+                loadChapter(currentChapter - 1).then(() => {
+                    // After loading, go to last page
+                    setTimeout(() => {
+                        calculatePages();
+                        goToPage(totalPages - 1);
+                    }, 100);
+                });
+            }
         }
 
         async function loadBook() {
@@ -515,6 +578,7 @@
             if (index < 0 || index >= chapters.length) return;
 
             currentChapter = index;
+            currentPage = 0;
             const content = document.getElementById('content');
             content.innerHTML = '<div class="loading">Loading...</div>';
 
@@ -528,19 +592,23 @@
                 const doc = parser.parseFromString(html, 'text/html');
                 content.innerHTML = doc.body.innerHTML;
 
-                // Restore scroll position if loading saved position, otherwise scroll to top
-                if (restoreScroll && savedScrollPosition > 0) {
-                    // Wait for content to render before scrolling
-                    requestAnimationFrame(() => {
+                // Calculate pages after content loads
+                requestAnimationFrame(() => {
+                    calculatePages();
+
+                    // Restore scroll position if loading saved position, otherwise scroll to top
+                    if (restoreScroll && savedScrollPosition > 0) {
                         const scrollTarget = savedScrollPosition * (document.body.scrollHeight - window.innerHeight);
                         window.scrollTo(0, scrollTarget);
+                        currentPage = Math.floor(scrollTarget / pageHeight);
                         savedScrollPosition = 0; // Reset after restoring
-                    });
-                } else {
-                    window.scrollTo(0, 0);
-                }
+                    } else {
+                        window.scrollTo(0, 0);
+                        currentPage = 0;
+                    }
+                    updateProgress();
+                });
 
-                updateProgress();
                 renderTOC();
                 savePosition();
             } catch (err) {
@@ -551,13 +619,16 @@
         }
 
         function updateProgress() {
-            document.getElementById('chapterProgress').textContent =
-                `Chapter ${currentChapter + 1} of ${chapters.length}`;
+            const chapterInfo = `Chapter ${currentChapter + 1} of ${chapters.length}`;
+            const pageInfo = totalPages > 1 ? ` • Page ${currentPage + 1} of ${totalPages}` : '';
+            document.getElementById('chapterProgress').textContent = chapterInfo + pageInfo;
         }
 
         function updateNavButtons() {
-            document.getElementById('prevBtn').disabled = currentChapter === 0;
-            document.getElementById('nextBtn').disabled = currentChapter >= chapters.length - 1;
+            // Disable prev if at first page of first chapter
+            document.getElementById('prevBtn').disabled = currentChapter === 0 && currentPage === 0;
+            // Disable next if at last page of last chapter
+            document.getElementById('nextBtn').disabled = currentChapter >= chapters.length - 1 && currentPage >= totalPages - 1;
         }
 
         function showError(message) {
@@ -571,14 +642,20 @@
         }
 
         function setupEventListeners() {
-            // Navigation
-            document.getElementById('prevBtn').addEventListener('click', () => loadChapter(currentChapter - 1));
-            document.getElementById('nextBtn').addEventListener('click', () => loadChapter(currentChapter + 1));
+            // Navigation - now page-based
+            document.getElementById('prevBtn').addEventListener('click', prevPage);
+            document.getElementById('nextBtn').addEventListener('click', nextPage);
 
-            // Touch zones
-            document.getElementById('touchLeft').addEventListener('click', () => loadChapter(currentChapter - 1));
-            document.getElementById('touchRight').addEventListener('click', () => loadChapter(currentChapter + 1));
+            // Touch zones - now page-based
+            document.getElementById('touchLeft').addEventListener('click', prevPage);
+            document.getElementById('touchRight').addEventListener('click', nextPage);
             document.getElementById('touchCenter').addEventListener('click', toggleUI);
+
+            // Recalculate pages on window resize
+            window.addEventListener('resize', () => {
+                calculatePages();
+                updateNavButtons();
+            });
 
             // Back to Library
             document.getElementById('backBtn').addEventListener('click', () => {
@@ -635,30 +712,65 @@
                 });
             });
 
-            // Keyboard navigation
+            // Keyboard navigation - now page-based
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') loadChapter(currentChapter - 1);
-                if (e.key === 'ArrowRight') loadChapter(currentChapter + 1);
+                // Arrow keys for page navigation
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+                    e.preventDefault();
+                    prevPage();
+                }
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+                    e.preventDefault();
+                    nextPage();
+                }
+                // Home/End for chapter start/end
+                if (e.key === 'Home') {
+                    e.preventDefault();
+                    goToPage(0);
+                }
+                if (e.key === 'End') {
+                    e.preventDefault();
+                    goToPage(totalPages - 1);
+                }
             });
 
             // Save position on page leave
             window.addEventListener('beforeunload', savePosition);
 
-            // Swipe navigation
+            // Update current page on scroll (for manual scrolling)
+            let scrollTimeout;
+            window.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const newPage = Math.floor(window.scrollY / pageHeight);
+                    if (newPage !== currentPage && newPage >= 0 && newPage < totalPages) {
+                        currentPage = newPage;
+                        updateProgress();
+                        updateNavButtons();
+                    }
+                }, 100);
+            }, { passive: true });
+
+            // Swipe navigation - now page-based
             let touchStartX = 0;
+            let touchStartY = 0;
             document.addEventListener('touchstart', (e) => {
                 touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
 
             document.addEventListener('touchend', (e) => {
                 const touchEndX = e.changedTouches[0].clientX;
-                const diff = touchStartX - touchEndX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
 
-                if (Math.abs(diff) > 50) {
-                    if (diff > 0) {
-                        loadChapter(currentChapter + 1);
+                // Only trigger on horizontal swipes (not vertical scrolling)
+                if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX > 0) {
+                        nextPage();
                     } else {
-                        loadChapter(currentChapter - 1);
+                        prevPage();
                     }
                 }
             }, { passive: true });

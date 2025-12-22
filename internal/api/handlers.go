@@ -14,17 +14,20 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/justyntemme/webby/internal/auth"
+	"github.com/justyntemme/webby/internal/cbz"
 	"github.com/justyntemme/webby/internal/epub"
 	"github.com/justyntemme/webby/internal/metadata"
 	"github.com/justyntemme/webby/internal/models"
+	"github.com/justyntemme/webby/internal/pdf"
 	"github.com/justyntemme/webby/internal/storage"
 )
 
 // Handler contains all HTTP handlers
 type Handler struct {
-	db       *storage.Database
-	files    *storage.FileStorage
-	metadata *metadata.Service
+	db            *storage.Database
+	files         *storage.FileStorage
+	metadata      *metadata.Service
+	comicMetadata *metadata.ComicService
 }
 
 // NewHandler creates a new handler instance
@@ -33,14 +36,19 @@ func NewHandler(db *storage.Database, files *storage.FileStorage) *Handler {
 	openLibrary := metadata.NewOpenLibraryProvider()
 	metadataService := metadata.NewService(openLibrary, nil) // No fallback for now
 
+	// Initialize comic metadata service with ComicVine provider
+	comicVine := metadata.NewComicVineProvider()
+	comicMetadataService := metadata.NewComicService(comicVine)
+
 	return &Handler{
-		db:       db,
-		files:    files,
-		metadata: metadataService,
+		db:            db,
+		files:         files,
+		metadata:      metadataService,
+		comicMetadata: comicMetadataService,
 	}
 }
 
-// UploadBook handles EPUB file uploads
+// UploadBook handles EPUB and PDF file uploads
 func (h *Handler) UploadBook(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -55,61 +63,169 @@ func (h *Handler) UploadBook(c *gin.Context) {
 		return
 	}
 
+	// Detect file type from extension
+	filename := strings.ToLower(header.Filename)
+	var fileFormat string
+	var fileExt string
+
+	switch {
+	case strings.HasSuffix(filename, ".epub"):
+		fileFormat = models.FileFormatEPUB
+		fileExt = ".epub"
+	case strings.HasSuffix(filename, ".pdf"):
+		fileFormat = models.FileFormatPDF
+		fileExt = ".pdf"
+	case strings.HasSuffix(filename, ".cbz"):
+		fileFormat = models.FileFormatCBZ
+		fileExt = ".cbz"
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unsupported file format. Please upload EPUB, PDF, or CBZ files."})
+		return
+	}
+
 	// Generate unique ID
 	bookID := uuid.New().String()
 
-	// Save file temporarily to validate and parse
-	filePath, err := h.files.SaveBook(bookID, file)
+	// Save file with appropriate extension
+	filePath, err := h.files.SaveBookWithExt(bookID, file, fileExt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
 
-	// Validate EPUB
-	if err := epub.ValidateEPUB(filePath); err != nil {
-		h.files.DeleteBook(bookID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid EPUB file"})
-		return
-	}
-
-	// Parse metadata
-	meta, err := epub.ParseEPUB(filePath)
-	if err != nil {
-		h.files.DeleteBook(bookID)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse EPUB metadata"})
-		return
-	}
-
-	// Save cover if present
-	var coverPath string
-	if len(meta.CoverData) > 0 {
-		coverPath, _ = h.files.SaveCover(bookID, meta.CoverData, meta.CoverExt)
-	}
-
-	// Get user ID from context (if authenticated)
+	var book *models.Book
+	now := time.Now()
 	userID := auth.GetUserID(c)
 
-	// Create book record with extended metadata from EPUB
-	now := time.Now()
-	book := &models.Book{
-		ID:             bookID,
-		UserID:         userID,
-		Title:          meta.Title,
-		Author:         meta.Author,
-		Series:         meta.Series,
-		SeriesIndex:    meta.SeriesIndex,
-		FilePath:       filePath,
-		CoverPath:      coverPath,
-		FileSize:       header.Size,
-		UploadedAt:     now,
-		ISBN:           meta.ISBN,
-		Publisher:      meta.Publisher,
-		PublishDate:    meta.PublishDate,
-		Description:    meta.Description,
-		Language:       meta.Language,
-		Subjects:       strings.Join(meta.Subjects, ", "),
-		MetadataSource: "epub",
-		MetadataUpdated: &now,
+	if fileFormat == models.FileFormatEPUB {
+		// Validate EPUB
+		if err := epub.ValidateEPUB(filePath); err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid EPUB file"})
+			return
+		}
+
+		// Parse EPUB metadata
+		meta, err := epub.ParseEPUB(filePath)
+		if err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse EPUB metadata"})
+			return
+		}
+
+		// Save cover if present
+		var coverPath string
+		if len(meta.CoverData) > 0 {
+			coverPath, _ = h.files.SaveCover(bookID, meta.CoverData, meta.CoverExt)
+		}
+
+		contentType := meta.ContentType
+		if contentType == "" {
+			contentType = models.ContentTypeBook
+		}
+
+		book = &models.Book{
+			ID:              bookID,
+			UserID:          userID,
+			Title:           meta.Title,
+			Author:          meta.Author,
+			Series:          meta.Series,
+			SeriesIndex:     meta.SeriesIndex,
+			FilePath:        filePath,
+			CoverPath:       coverPath,
+			FileSize:        header.Size,
+			UploadedAt:      now,
+			ContentType:     contentType,
+			FileFormat:      models.FileFormatEPUB,
+			ISBN:            meta.ISBN,
+			Publisher:       meta.Publisher,
+			PublishDate:     meta.PublishDate,
+			Description:     meta.Description,
+			Language:        meta.Language,
+			Subjects:        strings.Join(meta.Subjects, ", "),
+			MetadataSource:  "epub",
+			MetadataUpdated: &now,
+		}
+	} else if fileFormat == models.FileFormatPDF {
+		// Validate PDF
+		if err := pdf.ValidatePDF(filePath); err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid PDF file"})
+			return
+		}
+
+		// Parse PDF metadata
+		meta, err := pdf.ParsePDF(filePath)
+		if err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse PDF metadata"})
+			return
+		}
+
+		// Try to extract cover image from first page
+		var coverPath string
+		if cover, err := pdf.ExtractCover(filePath); err == nil && len(cover.Data) > 0 {
+			coverPath, _ = h.files.SaveCover(bookID, cover.Data, cover.Extension)
+		}
+
+		contentType := meta.ContentType
+		if contentType == "" {
+			contentType = models.ContentTypeBook
+		}
+
+		book = &models.Book{
+			ID:              bookID,
+			UserID:          userID,
+			Title:           meta.Title,
+			Author:          meta.Author,
+			FilePath:        filePath,
+			CoverPath:       coverPath,
+			FileSize:        header.Size,
+			UploadedAt:      now,
+			ContentType:     contentType,
+			FileFormat:      models.FileFormatPDF,
+			Subjects:        strings.Join(meta.Keywords, ", "),
+			MetadataSource:  "pdf",
+			MetadataUpdated: &now,
+		}
+	} else if fileFormat == models.FileFormatCBZ {
+		// Validate CBZ
+		if err := cbz.ValidateCBZ(filePath); err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CBZ file"})
+			return
+		}
+
+		// Parse CBZ metadata
+		meta, err := cbz.ParseCBZ(filePath)
+		if err != nil {
+			h.files.DeleteBook(bookID)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse CBZ metadata"})
+			return
+		}
+
+		// Extract cover image from first page
+		var coverPath string
+		if cover, err := cbz.ExtractCover(filePath); err == nil && len(cover.Data) > 0 {
+			coverPath, _ = h.files.SaveCover(bookID, cover.Data, cover.Extension)
+		}
+
+		book = &models.Book{
+			ID:              bookID,
+			UserID:          userID,
+			Title:           meta.Title,
+			Author:          meta.Author,
+			Series:          meta.Series,
+			SeriesIndex:     meta.SeriesIndex,
+			FilePath:        filePath,
+			CoverPath:       coverPath,
+			FileSize:        header.Size,
+			UploadedAt:      now,
+			ContentType:     models.ContentTypeComic, // CBZ is always comic
+			FileFormat:      models.FileFormatCBZ,
+			MetadataSource:  "cbz",
+			MetadataUpdated: &now,
+		}
 	}
 
 	if err := h.db.CreateBook(book); err != nil {
@@ -129,6 +245,7 @@ func (h *Handler) ListBooks(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort", "title")
 	order := c.DefaultQuery("order", "asc")
 	search := c.Query("search")
+	contentType := c.Query("type") // "book", "comic", or empty for all
 	userID := auth.GetUserID(c)
 
 	// Pagination
@@ -146,8 +263,18 @@ func (h *Handler) ListBooks(c *gin.Context) {
 
 	if search != "" {
 		books, err = h.db.SearchBooksForUser(search, userID)
+		// Filter by content type if specified
+		if contentType != "" && err == nil {
+			filtered := make([]models.Book, 0)
+			for _, b := range books {
+				if b.ContentType == contentType {
+					filtered = append(filtered, b)
+				}
+			}
+			books = filtered
+		}
 	} else {
-		books, err = h.db.ListBooksForUser(userID, sortBy, order)
+		books, err = h.db.ListBooksForUserWithFilter(userID, sortBy, order, contentType)
 	}
 
 	if err != nil {
@@ -387,14 +514,158 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "time": time.Now()})
 }
 
-// ServeReader serves the web reader HTML page
+// ServeReader serves the web reader HTML page (EPUB or PDF based on book format)
 func (h *Handler) ServeReader(c *gin.Context) {
-	readerPath := "web/static/reader.html"
+	id := c.Param("id")
+
+	// Get book to determine format
+	book, err := h.db.GetBook(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+
+	var readerPath string
+	switch book.FileFormat {
+	case models.FileFormatPDF:
+		readerPath = "web/static/pdf-reader.html"
+	case models.FileFormatCBZ:
+		readerPath = "web/static/cbz-reader.html"
+	default:
+		readerPath = "web/static/reader.html"
+	}
+
 	if _, err := os.Stat(readerPath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Reader not found"})
 		return
 	}
 	c.File(readerPath)
+}
+
+// GetBookFile serves the actual book file (PDF or EPUB) for reading
+func (h *Handler) GetBookFile(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	var book *models.Book
+	var err error
+
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	// Set appropriate content type
+	var contentType string
+	switch book.FileFormat {
+	case models.FileFormatPDF:
+		contentType = "application/pdf"
+	case models.FileFormatEPUB:
+		contentType = "application/epub+zip"
+	case models.FileFormatCBZ:
+		contentType = "application/zip"
+	default:
+		contentType = "application/octet-stream"
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", "inline; filename=\""+book.Title+"\"")
+	c.File(book.FilePath)
+}
+
+// GetCBZPage serves a specific page from a CBZ file
+func (h *Handler) GetCBZPage(c *gin.Context) {
+	id := c.Param("id")
+	pageStr := c.Param("page")
+	userID := auth.GetUserID(c)
+
+	pageIndex, err := strconv.Atoi(pageStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
+		return
+	}
+
+	var book *models.Book
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	if book.FileFormat != models.FileFormatCBZ {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a CBZ file"})
+		return
+	}
+
+	data, contentType, err := cbz.GetPage(book.FilePath, pageIndex)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Data(http.StatusOK, contentType, data)
+}
+
+// GetCBZInfo returns page count and other info for a CBZ
+func (h *Handler) GetCBZInfo(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	var book *models.Book
+	var err error
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	if book.FileFormat != models.FileFormatCBZ {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book is not a CBZ file"})
+		return
+	}
+
+	pageCount, err := cbz.GetPageCount(book.FilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get page count"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pageCount": pageCount,
+		"title":     book.Title,
+		"author":    book.Author,
+		"series":    book.Series,
+	})
 }
 
 // CreateCollection creates a new collection
@@ -1035,6 +1306,179 @@ func (h *Handler) UpdateBookMetadata(c *gin.Context) {
 	})
 }
 
+// SearchComicMetadata searches for comic metadata from ComicVine
+func (h *Handler) SearchComicMetadata(c *gin.Context) {
+	series := c.Query("series")
+	issue := c.Query("issue")
+	title := c.Query("title")
+
+	if series == "" && title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least series or title is required"})
+		return
+	}
+
+	if !h.comicMetadata.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "Comic metadata service not configured",
+			"message": "Set COMICVINE_API_KEY environment variable to enable comic metadata lookup",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
+	results, err := h.comicMetadata.SearchComics(ctx, series, issue, title)
+	if err != nil {
+		if err == metadata.ErrNoMatch {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No matching comic metadata found"})
+			return
+		}
+		if err == metadata.ErrRateLimited {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limited, please try again later"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search comic metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"results": results, "count": len(results)})
+}
+
+// RefreshComicMetadata fetches and updates metadata for a comic
+func (h *Handler) RefreshComicMetadata(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	// Get the book
+	var book *models.Book
+	var err error
+
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	// Verify this is a comic
+	if book.ContentType != models.ContentTypeComic {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This is not a comic. Use the book metadata refresh endpoint."})
+		return
+	}
+
+	if !h.comicMetadata.IsConfigured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "Comic metadata service not configured",
+			"message": "Set COMICVINE_API_KEY environment variable to enable comic metadata lookup",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	defer cancel()
+
+	// Use series and title as search hints
+	result, err := h.comicMetadata.LookupComic(ctx, book.Series, "", book.Title)
+	if err != nil {
+		if err == metadata.ErrNoMatch {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No matching comic metadata found"})
+			return
+		}
+		if err == metadata.ErrRateLimited {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limited, please try again later"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to lookup comic metadata"})
+		return
+	}
+
+	// Only update if confidence is above threshold
+	if result.Confidence < 0.5 {
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Match confidence too low, metadata not updated",
+			"metadata":   result,
+			"confidence": result.Confidence,
+		})
+		return
+	}
+
+	// Update book with comic metadata
+	now := time.Now()
+	if result.Title != "" {
+		book.Title = result.Title
+	}
+	if result.Series != "" {
+		book.Series = result.Series
+	}
+	// Use first writer as author
+	if len(result.Writers) > 0 {
+		book.Author = result.Writers[0]
+	}
+	if result.Publisher != "" {
+		book.Publisher = result.Publisher
+	}
+	if result.ReleaseDate != "" {
+		book.PublishDate = result.ReleaseDate
+	}
+	if result.Description != "" {
+		book.Description = result.Description
+	}
+	// Combine genres as subjects
+	if len(result.Genres) > 0 {
+		book.Subjects = strings.Join(result.Genres, ", ")
+	}
+	book.MetadataSource = result.Source
+	book.MetadataUpdated = &now
+
+	if err := h.db.UpdateBookMetadata(book); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update metadata"})
+		return
+	}
+
+	// Reorganize book to correct folder structure
+	newPaths, err := h.files.ReorganizeBook(book.FilePath, book.CoverPath, book.Author, book.Series, book.Title)
+	if err != nil {
+		log.Printf("Warning: failed to reorganize comic %s: %v", book.ID, err)
+	} else if newPaths.BookPath != book.FilePath || newPaths.CoverPath != book.CoverPath {
+		if err := h.db.UpdateBookFilePaths(book.ID, newPaths.BookPath, newPaths.CoverPath); err != nil {
+			log.Printf("Warning: failed to update file paths for comic %s: %v", book.ID, err)
+		}
+		book.FilePath = newPaths.BookPath
+		book.CoverPath = newPaths.CoverPath
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Comic metadata updated successfully",
+		"book":       book,
+		"confidence": result.Confidence,
+		"source":     result.Source,
+	})
+}
+
+// GetComicMetadataStatus returns whether comic metadata service is configured
+func (h *Handler) GetComicMetadataStatus(c *gin.Context) {
+	configured := h.comicMetadata.IsConfigured()
+	c.JSON(http.StatusOK, gin.H{
+		"configured": configured,
+		"provider":   "comicvine",
+		"message": func() string {
+			if configured {
+				return "Comic metadata service is ready"
+			}
+			return "Set COMICVINE_API_KEY environment variable to enable"
+		}(),
+	})
+}
+
 // APIInfo returns API documentation for TUI/programmatic clients
 func (h *Handler) APIInfo(c *gin.Context) {
 	endpoints := []gin.H{
@@ -1049,8 +1493,8 @@ func (h *Handler) APIInfo(c *gin.Context) {
 		{"method": "GET", "path": "/api/users/search", "description": "Search users", "query": "q", "auth": true},
 
 		// Books
-		{"method": "POST", "path": "/api/books", "description": "Upload EPUB", "body": "file (multipart)"},
-		{"method": "GET", "path": "/api/books", "description": "List books", "query": "sort, order, search, page, limit"},
+		{"method": "POST", "path": "/api/books", "description": "Upload EPUB/PDF/CBZ", "body": "file (multipart)"},
+		{"method": "GET", "path": "/api/books", "description": "List books", "query": "sort, order, search, page, limit, type (book/comic)"},
 		{"method": "GET", "path": "/api/books/:id", "description": "Get book by ID"},
 		{"method": "DELETE", "path": "/api/books/:id", "description": "Delete book"},
 		{"method": "GET", "path": "/api/books/by-author", "description": "Books grouped by author"},
@@ -1058,17 +1502,25 @@ func (h *Handler) APIInfo(c *gin.Context) {
 
 		// Reading
 		{"method": "GET", "path": "/api/books/:id/cover", "description": "Get book cover image"},
-		{"method": "GET", "path": "/api/books/:id/toc", "description": "Get table of contents"},
-		{"method": "GET", "path": "/api/books/:id/content/:chapter", "description": "Get chapter HTML content"},
-		{"method": "GET", "path": "/api/books/:id/text/:chapter", "description": "Get chapter plain text (TUI-friendly)"},
+		{"method": "GET", "path": "/api/books/:id/file", "description": "Get book file (PDF/EPUB/CBZ)"},
+		{"method": "GET", "path": "/api/books/:id/toc", "description": "Get table of contents (EPUB only)"},
+		{"method": "GET", "path": "/api/books/:id/content/:chapter", "description": "Get chapter HTML content (EPUB only)"},
+		{"method": "GET", "path": "/api/books/:id/text/:chapter", "description": "Get chapter plain text (EPUB only, TUI-friendly)"},
+		{"method": "GET", "path": "/api/books/:id/cbz/info", "description": "Get CBZ comic info and page count"},
+		{"method": "GET", "path": "/api/books/:id/cbz/page/:page", "description": "Get specific page from CBZ"},
 		{"method": "GET", "path": "/api/books/:id/position", "description": "Get reading position"},
 		{"method": "POST", "path": "/api/books/:id/position", "description": "Save reading position", "body": "chapter, position"},
 
-		// Metadata
+		// Book Metadata
 		{"method": "GET", "path": "/api/metadata/lookup", "description": "Lookup book metadata from external sources", "query": "isbn, title, author"},
-		{"method": "GET", "path": "/api/metadata/search", "description": "Search for metadata and return all matches", "query": "isbn, title, author"},
+		{"method": "GET", "path": "/api/metadata/search", "description": "Search for book metadata and return all matches", "query": "isbn, title, author"},
 		{"method": "POST", "path": "/api/books/:id/metadata/refresh", "description": "Refresh book metadata from external sources"},
 		{"method": "PUT", "path": "/api/books/:id/metadata", "description": "Manually update book metadata", "body": "title, author, series, series_index, isbn, publisher, publish_date, language, subjects, description"},
+
+		// Comic Metadata
+		{"method": "GET", "path": "/api/metadata/comic/status", "description": "Check if comic metadata service is configured"},
+		{"method": "GET", "path": "/api/metadata/comic/search", "description": "Search for comic metadata from ComicVine", "query": "series, issue, title"},
+		{"method": "POST", "path": "/api/books/:id/metadata/comic/refresh", "description": "Refresh comic metadata from ComicVine"},
 
 		// Sharing
 		{"method": "GET", "path": "/api/books/shared", "description": "Get books shared with you", "auth": true},
@@ -1091,7 +1543,7 @@ func (h *Handler) APIInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"name":        "Webby API",
 		"version":     "1.0.0",
-		"description": "EPUB library API for web and TUI clients",
+		"description": "EPUB/PDF/CBZ library API for web and TUI clients",
 		"endpoints":   endpoints,
 	})
 }

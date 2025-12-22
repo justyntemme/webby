@@ -2,6 +2,12 @@
 
 Base URL: `http://localhost:8080`
 
+## Supported Formats
+
+- **EPUB** - Standard ebook format with full reading support
+- **PDF** - Portable Document Format with cover extraction
+- **CBZ** - Comic Book Archive with page-by-page reading
+
 ## Authentication
 
 All authenticated endpoints require the `Authorization` header:
@@ -111,7 +117,10 @@ Response 200:
 POST /api/books
 Content-Type: multipart/form-data
 
-file: <epub_file>
+file: <epub_file|pdf_file|cbz_file>
+
+Supported formats: .epub, .pdf, .cbz
+Max file size: 100MB
 
 Response 201:
 {
@@ -124,6 +133,8 @@ Response 201:
     "series": "string",
     "series_index": 1.0,
     "file_size": 1024,
+    "file_format": "epub|pdf|cbz",
+    "content_type": "book|comic",
     "uploaded_at": "timestamp"
   }
 }
@@ -135,13 +146,15 @@ GET /api/books
 GET /api/books?sort=title&order=asc
 GET /api/books?search=<query>
 GET /api/books?page=1&limit=20
+GET /api/books?type=comic
 
 Query Parameters:
-- sort: title, author, series, uploaded_at (default: title)
+- sort: title, author, series, date (default: title)
 - order: asc, desc (default: asc)
 - search: search in title/author
 - page: page number (default: 1)
 - limit: items per page (default: 0 = unlimited)
+- type: book, comic (filter by content type)
 
 Response 200:
 {
@@ -153,6 +166,8 @@ Response 200:
       "series": "string",
       "series_index": 1.0,
       "file_size": 1024,
+      "file_format": "epub|pdf|cbz",
+      "content_type": "book|comic",
       "uploaded_at": "timestamp"
     }
   ],
@@ -230,7 +245,17 @@ Response 200: image/jpeg or image/png binary
 Response 404: { "error": "No cover available" }
 ```
 
-### Get Table of Contents
+### Get Book File
+```
+GET /api/books/:id/file
+
+Response 200: Binary file with appropriate Content-Type
+- application/epub+zip (EPUB)
+- application/pdf (PDF)
+- application/zip (CBZ)
+```
+
+### Get Table of Contents (EPUB only)
 ```
 GET /api/books/:id/toc
 
@@ -245,6 +270,33 @@ Response 200:
     }
   ]
 }
+```
+
+---
+
+## CBZ Comic Reading
+
+### Get CBZ Info
+```
+GET /api/books/:id/cbz/info
+
+Response 200:
+{
+  "pageCount": 24,
+  "title": "Comic Title",
+  "author": "Artist Name",
+  "series": "Series Name"
+}
+```
+
+### Get CBZ Page
+```
+GET /api/books/:id/cbz/page/:pageIndex
+
+pageIndex: 0-based page number
+
+Response 200: image/jpeg or image/png binary
+Response 404: { "error": "Page not found" }
 ```
 
 ### Get Chapter Content (HTML)
@@ -304,6 +356,159 @@ Response 200:
 {
   "message": "Position saved",
   "position": { ... }
+}
+```
+
+---
+
+## Book Metadata
+
+### Lookup Metadata
+```
+GET /api/metadata/lookup?title=<title>&author=<author>&isbn=<isbn>
+
+Query Parameters (at least one required):
+- isbn: ISBN-10 or ISBN-13
+- title: Book title
+- author: Author name
+
+Response 200:
+{
+  "metadata": {
+    "title": "string",
+    "authors": ["string"],
+    "publisher": "string",
+    "publish_date": "string",
+    "description": "string",
+    "isbn_10": "string",
+    "isbn_13": "string",
+    "subjects": ["string"],
+    "cover_url": "string",
+    "source": "openlibrary",
+    "confidence": 0.95
+  }
+}
+```
+
+### Search Metadata
+```
+GET /api/metadata/search?title=<title>&author=<author>&isbn=<isbn>
+
+Returns multiple results for selection.
+
+Response 200:
+{
+  "results": [ ... ],
+  "count": 5
+}
+```
+
+### Refresh Book Metadata
+```
+POST /api/books/:id/metadata/refresh
+
+Automatically fetches metadata from external sources.
+
+Response 200:
+{
+  "message": "Metadata updated successfully",
+  "book": { ... },
+  "confidence": 0.85,
+  "source": "openlibrary"
+}
+```
+
+### Update Book Metadata (Manual)
+```
+PUT /api/books/:id/metadata
+Content-Type: application/json
+
+{
+  "title": "string",
+  "author": "string",
+  "series": "string",
+  "series_index": 1.0,
+  "isbn": "string",
+  "publisher": "string",
+  "publish_date": "string",
+  "language": "string",
+  "subjects": "comma, separated, tags",
+  "description": "string"
+}
+
+Response 200:
+{
+  "message": "Metadata updated successfully",
+  "book": { ... }
+}
+```
+
+---
+
+## Comic Metadata
+
+Requires `COMICVINE_API_KEY` environment variable.
+
+### Check Comic Metadata Status
+```
+GET /api/metadata/comic/status
+
+Response 200:
+{
+  "configured": true,
+  "provider": "comicvine",
+  "message": "Comic metadata service is ready"
+}
+```
+
+### Search Comic Metadata
+```
+GET /api/metadata/comic/search?series=<series>&issue=<issue>&title=<title>
+
+Query Parameters (at least series or title required):
+- series: Comic series name
+- issue: Issue number
+- title: Comic title
+
+Response 200:
+{
+  "results": [
+    {
+      "title": "string",
+      "series": "string",
+      "issue_number": "string",
+      "publisher": "string",
+      "release_date": "string",
+      "description": "string",
+      "writers": ["string"],
+      "artists": ["string"],
+      "cover_url": "string",
+      "source": "comicvine",
+      "confidence": 0.9
+    }
+  ],
+  "count": 5
+}
+```
+
+### Refresh Comic Metadata
+```
+POST /api/books/:id/metadata/comic/refresh
+
+Only works for books with content_type="comic".
+
+Response 200:
+{
+  "message": "Comic metadata updated successfully",
+  "book": { ... },
+  "confidence": 0.85,
+  "source": "comicvine"
+}
+
+Response 503 (not configured):
+{
+  "error": "Comic metadata service not configured",
+  "message": "Set COMICVINE_API_KEY environment variable to enable"
 }
 ```
 
@@ -545,17 +750,34 @@ Common HTTP status codes:
    - Include in all requests as `Authorization: Bearer <token>`
    - Refresh before expiry with `/api/auth/refresh`
 
-2. **Reading Flow:**
+2. **Reading Flow (EPUB):**
    - List books with `/api/books?page=1&limit=20`
    - Get TOC with `/api/books/:id/toc`
    - Get plain text with `/api/books/:id/text/:chapter`
    - Save position with `/api/books/:id/position`
 
-3. **Pagination:**
+3. **Reading Flow (CBZ Comics):**
+   - Get comic info with `/api/books/:id/cbz/info`
+   - Fetch pages with `/api/books/:id/cbz/page/:pageIndex`
+   - Page index is 0-based (0 to pageCount-1)
+
+4. **Reading Flow (PDF):**
+   - Download file with `/api/books/:id/file`
+   - Use a PDF library for rendering
+
+5. **Filtering Content:**
+   - Books only: `/api/books?type=book`
+   - Comics only: `/api/books?type=comic`
+
+6. **Pagination:**
    - Use `page` and `limit` query params
    - Response includes `total` for calculating pages
 
-4. **Plain Text Content:**
+7. **Plain Text Content:**
    - Use `/api/books/:id/text/:chapter` for terminal display
    - HTML is stripped, entities decoded
    - Line breaks preserved for readability
+
+8. **Metadata Sources:**
+   - Books: OpenLibrary (automatic)
+   - Comics: ComicVine (requires COMICVINE_API_KEY)

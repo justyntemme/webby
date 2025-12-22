@@ -56,12 +56,16 @@
             font-size: 16px;
         }
 
-        .sort-select {
+        .sort-select, .type-select {
             padding: 10px 15px;
             border: 1px solid var(--border-color);
             border-radius: 5px;
             font-size: 16px;
             background: var(--card-bg);
+        }
+
+        .type-select {
+            min-width: 120px;
         }
 
         .view-toggle {
@@ -189,6 +193,31 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .content-type-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .content-type-badge.comic {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .content-type-badge.book {
+            background: #3498db;
+            color: white;
+        }
+
+        .book-cover {
+            position: relative;
         }
 
         .book-info {
@@ -815,6 +844,11 @@
             color: #2e7d32;
         }
 
+        .metadata-source-badge.comicvine {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
         .metadata-grid {
             display: grid;
             grid-template-columns: 120px 1fr;
@@ -901,6 +935,277 @@
             .metadata-label {
                 margin-bottom: -5px;
             }
+
+            /* Mobile-friendly action buttons */
+            .book-detail-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .book-detail-actions button {
+                min-height: 44px;
+                font-size: 16px;
+            }
+
+            /* Mobile form improvements */
+            .edit-modal .modal-content,
+            .search-modal .modal-content {
+                max-height: 100vh;
+                height: 100vh;
+                border-radius: 0;
+                padding: 20px;
+                padding-bottom: env(safe-area-inset-bottom, 20px);
+            }
+
+            .form-group input,
+            .form-group textarea {
+                font-size: 16px; /* Prevents iOS zoom on focus */
+                min-height: 44px;
+                padding: 12px;
+            }
+
+            .form-actions {
+                position: sticky;
+                bottom: 0;
+                background: var(--card-bg);
+                padding: 15px 0;
+                margin: 0 -20px;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .form-actions button {
+                min-height: 44px;
+                flex: 1;
+            }
+        }
+
+        /* Mobile Action Menu (Bottom Sheet) */
+        .mobile-action-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 300;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .mobile-action-menu.active {
+            display: flex;
+        }
+
+        .mobile-action-content {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 16px 16px 0 0;
+            padding: 10px 0;
+            padding-bottom: env(safe-area-inset-bottom, 10px);
+            animation: slideUp 0.2s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .mobile-action-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .mobile-action-header h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .mobile-action-header p {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .mobile-action-item {
+            display: block;
+            padding: 16px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            color: var(--text-color);
+            min-height: 52px;
+        }
+
+        .mobile-action-item:hover {
+            background: var(--bg-color);
+        }
+
+        .mobile-action-item.danger {
+            color: #e74c3c;
+        }
+
+        .mobile-action-cancel {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 8px solid var(--bg-color);
+        }
+
+        .mobile-action-cancel .mobile-action-item {
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Long-press visual feedback */
+        .book-card.pressing {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        /* Series Card Styles */
+        .series-card {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .series-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .series-cover-stack {
+            position: relative;
+            width: 140px;
+            height: 200px;
+            margin: 0 auto 10px;
+        }
+
+        .series-cover-stack::before,
+        .series-cover-stack::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .series-cover-stack::before {
+            top: 8px;
+            left: 8px;
+            z-index: 1;
+        }
+
+        .series-cover-stack::after {
+            top: 4px;
+            left: 4px;
+            z-index: 2;
+        }
+
+        .series-cover-stack img {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .series-cover-stack .series-placeholder {
+            position: relative;
+            z-index: 3;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--header-bg);
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .series-info {
+            text-align: center;
+            padding: 0 10px 15px;
+        }
+
+        .series-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .series-count {
+            font-size: 12px;
+            color: #888;
+            background: var(--header-bg);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .series-author {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Expanded series view */
+        .series-expanded {
+            grid-column: 1 / -1;
+            background: var(--header-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .series-expanded-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .series-expanded-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .series-collapse-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .series-books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .series-books-grid .book-card {
+            background: var(--card-bg);
         }
     </style>
 </head>
@@ -914,6 +1219,11 @@
         </div>
         <div class="controls">
             <input type="text" class="search-box" id="searchBox" placeholder="Search books...">
+            <select class="type-select" id="typeSelect">
+                <option value="">All Items</option>
+                <option value="book">Books Only</option>
+                <option value="comic">Comics Only</option>
+            </select>
             <select class="sort-select" id="sortSelect">
                 <option value="title">Sort by Title</option>
                 <option value="author">Sort by Author</option>
@@ -923,6 +1233,10 @@
             <div class="view-toggle">
                 <button id="gridViewBtn" class="active">Grid</button>
                 <button id="listViewBtn">List</button>
+            </div>
+            <div class="view-toggle">
+                <button id="groupOffBtn" class="active">All</button>
+                <button id="groupSeriesBtn">Group Series</button>
             </div>
             <button class="upload-btn" id="uploadBtn">+ Upload</button>
         </div>
@@ -1079,12 +1393,41 @@
         </div>
     </div>
 
+    <!-- Mobile Action Menu (Bottom Sheet) -->
+    <div class="mobile-action-menu" id="mobileActionMenu">
+        <div class="mobile-action-content">
+            <div class="mobile-action-header">
+                <h3 id="mobileActionTitle">Book Title</h3>
+                <p id="mobileActionAuthor">by Author</p>
+            </div>
+            <button class="mobile-action-item" onclick="mobileActionRead()">Read</button>
+            <button class="mobile-action-item" onclick="mobileActionViewDetails()">View Details</button>
+            <button class="mobile-action-item" onclick="mobileActionEdit()">Edit Metadata</button>
+            <button class="mobile-action-item" onclick="mobileActionRefresh()">Refresh Metadata</button>
+            <button class="mobile-action-item" onclick="mobileActionSearch()">Search Metadata</button>
+            <button class="mobile-action-item danger" onclick="mobileActionDelete()">Delete</button>
+            <div class="mobile-action-cancel">
+                <button class="mobile-action-item" onclick="closeMobileActionMenu()">
+                    <span>Cancel</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api';
         let books = [];
         let viewMode = 'grid';
         let groupBy = null;
         let currentUser = null;
+        let groupSeries = false; // Series grouping mode
+        let expandedSeries = null; // Currently expanded series name
+
+        // Mobile action menu state
+        let mobileActionBookId = null;
+        let mobileActionBookData = null;
+        let longPressTimer = null;
+        const LONG_PRESS_DURATION = 500; // ms
 
         // Auth helpers
         function getAuthToken() {
@@ -1159,10 +1502,12 @@
             const library = document.getElementById('library');
             const sortBy = document.getElementById('sortSelect').value;
             const search = document.getElementById('searchBox').value;
+            const contentType = document.getElementById('typeSelect').value;
 
             try {
                 let url = `${API_BASE}/books?sort=${sortBy}`;
                 if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (contentType) url += `&type=${contentType}`;
 
                 const res = await fetch(url, { headers: getAuthHeaders() });
                 const data = await res.json();
@@ -1200,7 +1545,33 @@
             }
 
             const containerClass = viewMode === 'grid' ? 'books-grid' : 'books-list';
-            library.innerHTML = `<div class="${containerClass}">${books.map(renderBook).join('')}</div>`;
+
+            // Check if series grouping is enabled
+            if (groupSeries) {
+                const { seriesGroups, standalone } = groupBooksBySeries(books);
+                let html = `<div class="${containerClass}">`;
+
+                // Render series groups
+                Object.entries(seriesGroups).forEach(([seriesName, seriesBooks]) => {
+                    if (expandedSeries === seriesName) {
+                        // Show expanded series view
+                        html += renderExpandedSeries(seriesName, seriesBooks);
+                    } else {
+                        // Show collapsed series card
+                        html += renderSeriesCard(seriesName, seriesBooks);
+                    }
+                });
+
+                // Render standalone books (no series)
+                standalone.forEach(book => {
+                    html += renderBook(book);
+                });
+
+                html += '</div>';
+                library.innerHTML = html;
+            } else {
+                library.innerHTML = `<div class="${containerClass}">${books.map(renderBook).join('')}</div>`;
+            }
         }
 
         function renderGrouped(groups) {
@@ -1225,10 +1596,14 @@
         function renderBook(book) {
             const coverUrl = `${API_BASE}/books/${book.id}/cover`;
             const escapedTitle = book.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const contentType = book.content_type || 'book';
+            const showBadge = document.getElementById('typeSelect').value === ''; // Show badge only when viewing "All Items"
+            const badgeHtml = showBadge ? `<span class="content-type-badge ${contentType}">${contentType}</span>` : '';
             return `
-                <div class="book-card" onclick="openBookDetail('${book.id}')">
+                <div class="book-card" data-book-id="${book.id}" onclick="handleBookClick(event, '${book.id}')">
                     <div class="book-cover">
-                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${escapedTitle}'">
+                        ${badgeHtml}
+                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='${badgeHtml}${escapedTitle}'">
                     </div>
                     <div class="book-info">
                         <div class="book-title">${book.title}</div>
@@ -1237,6 +1612,18 @@
                     </div>
                 </div>
             `;
+        }
+
+        // Handle book card click - prevent if long press triggered
+        let longPressTriggered = false;
+        function handleBookClick(event, bookId) {
+            if (longPressTriggered) {
+                longPressTriggered = false;
+                event.preventDefault();
+                return;
+            }
+            // Left click/tap goes directly to reader
+            openReader(bookId);
         }
 
         function openReader(bookId) {
@@ -1294,7 +1681,10 @@
             const sourceEl = document.getElementById('metadataSource');
             if (book.metadata_source) {
                 sourceEl.textContent = book.metadata_source;
-                sourceEl.className = 'metadata-source-badge' + (book.metadata_source === 'openlibrary' ? ' openlibrary' : '');
+                let badgeClass = 'metadata-source-badge';
+                if (book.metadata_source === 'openlibrary') badgeClass += ' openlibrary';
+                else if (book.metadata_source === 'comicvine') badgeClass += ' comicvine';
+                sourceEl.className = badgeClass;
                 sourceEl.style.display = 'inline';
             } else {
                 sourceEl.style.display = 'none';
@@ -1497,7 +1887,7 @@
         }
 
         async function refreshMetadata() {
-            if (!currentBookId) return;
+            if (!currentBookId || !currentBookData) return;
 
             const btn = document.getElementById('refreshMetadataBtn');
             const resultDiv = document.getElementById('refreshResult');
@@ -1507,8 +1897,14 @@
             btn.disabled = true;
             resultDiv.innerHTML = '';
 
+            // Use comic endpoint for comics, book endpoint for books
+            const isComic = currentBookData.content_type === 'comic';
+            const endpoint = isComic
+                ? `${API_BASE}/books/${currentBookId}/metadata/comic/refresh`
+                : `${API_BASE}/books/${currentBookId}/metadata/refresh`;
+
             try {
-                const res = await fetch(`${API_BASE}/books/${currentBookId}/metadata/refresh`, {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: getAuthHeaders()
                 });
@@ -1520,6 +1916,13 @@
                     resultDiv.innerHTML = `
                         <div class="refresh-result error">
                             Rate limited. Please wait a moment and try again.
+                        </div>
+                    `;
+                } else if (res.status === 503) {
+                    // Service not configured (e.g., ComicVine API key missing)
+                    resultDiv.innerHTML = `
+                        <div class="refresh-result warning">
+                            ${data.message || 'Metadata service not configured. Contact your administrator.'}
                         </div>
                     `;
                 } else if (res.status === 404) {
@@ -1963,6 +2366,11 @@
             }
         });
 
+        document.getElementById('typeSelect').addEventListener('change', () => {
+            groupBy = null;
+            loadBooks();
+        });
+
         document.getElementById('searchBox').addEventListener('input', debounce(() => {
             groupBy = null;
             loadBooks();
@@ -1984,6 +2392,24 @@
             else renderBooks();
         });
 
+        // Series Grouping Toggle
+        document.getElementById('groupOffBtn').addEventListener('click', () => {
+            groupSeries = false;
+            expandedSeries = null;
+            document.getElementById('groupOffBtn').classList.add('active');
+            document.getElementById('groupSeriesBtn').classList.remove('active');
+            localStorage.setItem('webby-group-series', 'false');
+            renderBooks();
+        });
+
+        document.getElementById('groupSeriesBtn').addEventListener('click', () => {
+            groupSeries = true;
+            document.getElementById('groupSeriesBtn').classList.add('active');
+            document.getElementById('groupOffBtn').classList.remove('active');
+            localStorage.setItem('webby-group-series', 'true');
+            renderBooks();
+        });
+
         function debounce(fn, delay) {
             let timeout;
             return function(...args) {
@@ -1992,11 +2418,264 @@
             };
         }
 
+        // Group books by series for collapsed view
+        function groupBooksBySeries(bookList) {
+            const seriesGroups = {};
+            const standalone = [];
+
+            bookList.forEach(book => {
+                if (book.series && book.series.trim()) {
+                    const seriesName = book.series.trim();
+                    if (!seriesGroups[seriesName]) {
+                        seriesGroups[seriesName] = [];
+                    }
+                    seriesGroups[seriesName].push(book);
+                } else {
+                    standalone.push(book);
+                }
+            });
+
+            // Sort books within each series by series_index
+            Object.keys(seriesGroups).forEach(seriesName => {
+                seriesGroups[seriesName].sort((a, b) => (a.series_index || 0) - (b.series_index || 0));
+            });
+
+            return { seriesGroups, standalone };
+        }
+
+        // Render a series card (stacked cover visual)
+        function renderSeriesCard(seriesName, seriesBooks) {
+            const firstBook = seriesBooks[0];
+            const coverUrl = `${API_BASE}/books/${firstBook.id}/cover`;
+            const escapedTitle = firstBook.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const bookCount = seriesBooks.length;
+            const author = firstBook.author || 'Unknown Author';
+
+            return `
+                <div class="book-card series-card" data-series-name="${seriesName}" onclick="toggleSeriesExpand('${seriesName.replace(/'/g, "\\'")}')">
+                    <div class="series-cover-stack">
+                        <img src="${coverUrl}" alt="${seriesName}" onerror="this.outerHTML='<div class=\\'series-placeholder\\'>${escapedTitle}</div>'">
+                    </div>
+                    <div class="series-info">
+                        <div class="series-title">${seriesName}</div>
+                        <span class="series-count">${bookCount} book${bookCount > 1 ? 's' : ''}</span>
+                        <div class="series-author">${author}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render expanded series view
+        function renderExpandedSeries(seriesName, seriesBooks) {
+            return `
+                <div class="series-expanded" data-expanded-series="${seriesName}">
+                    <div class="series-expanded-header">
+                        <span class="series-expanded-title">${seriesName} (${seriesBooks.length} books)</span>
+                        <button class="series-collapse-btn" onclick="collapseSeriesView(event)">Collapse</button>
+                    </div>
+                    <div class="series-books-grid">
+                        ${seriesBooks.map(renderBook).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Toggle series expansion
+        function toggleSeriesExpand(seriesName) {
+            if (expandedSeries === seriesName) {
+                expandedSeries = null;
+            } else {
+                expandedSeries = seriesName;
+            }
+            renderBooks();
+        }
+
+        // Collapse expanded series view
+        function collapseSeriesView(event) {
+            event.stopPropagation();
+            expandedSeries = null;
+            renderBooks();
+        }
+
+        // Mobile Action Menu Functions
+        function openMobileActionMenu(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+
+            mobileActionBookId = bookId;
+            mobileActionBookData = book;
+
+            document.getElementById('mobileActionTitle').textContent = book.title;
+            document.getElementById('mobileActionAuthor').textContent = `by ${book.author}`;
+            document.getElementById('mobileActionMenu').classList.add('active');
+        }
+
+        function closeMobileActionMenu() {
+            document.getElementById('mobileActionMenu').classList.remove('active');
+            mobileActionBookId = null;
+            mobileActionBookData = null;
+        }
+
+        async function mobileActionRead() {
+            if (mobileActionBookId) {
+                openReader(mobileActionBookId);
+            }
+            closeMobileActionMenu();
+        }
+
+        async function mobileActionViewDetails() {
+            if (mobileActionBookId) {
+                openBookDetail(mobileActionBookId);
+            }
+            closeMobileActionMenu();
+        }
+
+        async function mobileActionEdit() {
+            if (mobileActionBookId) {
+                // Load book data first, then open edit modal
+                currentBookId = mobileActionBookId;
+                try {
+                    const res = await fetch(`${API_BASE}/books/${mobileActionBookId}`, { headers: getAuthHeaders() });
+                    if (res.ok) {
+                        currentBookData = await res.json();
+                        closeMobileActionMenu();
+                        openEditModal();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        async function mobileActionRefresh() {
+            if (mobileActionBookId) {
+                currentBookId = mobileActionBookId;
+                closeMobileActionMenu();
+                // Open detail modal and trigger refresh
+                await openBookDetail(mobileActionBookId);
+                refreshMetadata();
+            }
+        }
+
+        async function mobileActionSearch() {
+            if (mobileActionBookId) {
+                currentBookId = mobileActionBookId;
+                try {
+                    const res = await fetch(`${API_BASE}/books/${mobileActionBookId}`, { headers: getAuthHeaders() });
+                    if (res.ok) {
+                        currentBookData = await res.json();
+                        closeMobileActionMenu();
+                        openSearchModal();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        async function mobileActionDelete() {
+            if (!mobileActionBookId || !mobileActionBookData) return;
+
+            if (confirm(`Are you sure you want to delete "${mobileActionBookData.title}"?`)) {
+                try {
+                    const res = await fetch(`${API_BASE}/books/${mobileActionBookId}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    });
+                    if (res.ok) {
+                        closeMobileActionMenu();
+                        loadBooks();
+                    } else {
+                        alert('Failed to delete book');
+                    }
+                } catch (err) {
+                    alert('Failed to delete book');
+                }
+            }
+            closeMobileActionMenu();
+        }
+
+        // Close mobile menu when clicking backdrop
+        document.getElementById('mobileActionMenu').addEventListener('click', (e) => {
+            if (e.target.id === 'mobileActionMenu') {
+                closeMobileActionMenu();
+            }
+        });
+
+        // Long-press and right-click handler setup
+        function setupBookCardInteractions() {
+            // Use event delegation on the library container
+            const library = document.getElementById('library');
+
+            // Touch events for long-press (mobile)
+            library.addEventListener('touchstart', (e) => {
+                const bookCard = e.target.closest('.book-card');
+                if (!bookCard) return;
+
+                const bookId = bookCard.dataset.bookId;
+                if (!bookId) return;
+
+                bookCard.classList.add('pressing');
+
+                longPressTimer = setTimeout(() => {
+                    bookCard.classList.remove('pressing');
+                    longPressTriggered = true;
+                    openMobileActionMenu(bookId);
+                }, LONG_PRESS_DURATION);
+            }, { passive: false });
+
+            library.addEventListener('touchend', (e) => {
+                const bookCard = e.target.closest('.book-card');
+                if (bookCard) {
+                    bookCard.classList.remove('pressing');
+                }
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            library.addEventListener('touchmove', (e) => {
+                const bookCard = e.target.closest('.book-card');
+                if (bookCard) {
+                    bookCard.classList.remove('pressing');
+                }
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            // Right-click for desktop context menu
+            library.addEventListener('contextmenu', (e) => {
+                const bookCard = e.target.closest('.book-card');
+                if (!bookCard) return;
+
+                const bookId = bookCard.dataset.bookId;
+                if (!bookId) return;
+
+                e.preventDefault();
+                openMobileActionMenu(bookId);
+            });
+        }
+
+        // Load saved grouping preference
+        function loadGroupingPreference() {
+            const saved = localStorage.getItem('webby-group-series');
+            if (saved === 'true') {
+                groupSeries = true;
+                document.getElementById('groupSeriesBtn').classList.add('active');
+                document.getElementById('groupOffBtn').classList.remove('active');
+            }
+        }
+
         // Initialize
         async function init() {
             const isAuthenticated = await checkAuth();
             if (isAuthenticated) {
+                loadGroupingPreference();
                 loadBooks();
+                setupBookCardInteractions();
             }
         }
         init();

@@ -105,9 +105,14 @@ func main() {
 
 			// Reading
 			booksGroup.GET("/books/:id/cover", handler.GetBookCover)
+			booksGroup.GET("/books/:id/file", handler.GetBookFile)
 			booksGroup.GET("/books/:id/toc", handler.GetTableOfContents)
 			booksGroup.GET("/books/:id/content/:chapter", handler.GetChapterContent)
 			booksGroup.GET("/books/:id/text/:chapter", handler.GetChapterText)
+
+			// CBZ comic reading
+			booksGroup.GET("/books/:id/cbz/info", handler.GetCBZInfo)
+			booksGroup.GET("/books/:id/cbz/page/:page", handler.GetCBZPage)
 
 			// Reading position
 			booksGroup.GET("/books/:id/position", handler.GetReadingPosition)
@@ -116,11 +121,16 @@ func main() {
 			// Book collections (for a specific book)
 			booksGroup.GET("/books/:id/collections", handler.GetBookCollections)
 
-			// Metadata
+			// Book Metadata
 			booksGroup.GET("/metadata/lookup", handler.LookupMetadata)
 			booksGroup.GET("/metadata/search", handler.SearchMetadata)
 			booksGroup.POST("/books/:id/metadata/refresh", handler.RefreshBookMetadata)
 			booksGroup.PUT("/books/:id/metadata", handler.UpdateBookMetadata)
+
+			// Comic Metadata
+			booksGroup.GET("/metadata/comic/status", handler.GetComicMetadataStatus)
+			booksGroup.GET("/metadata/comic/search", handler.SearchComicMetadata)
+			booksGroup.POST("/books/:id/metadata/comic/refresh", handler.RefreshComicMetadata)
 
 			// Book sharing
 			booksGroup.GET("/books/shared", handler.GetSharedBooks)

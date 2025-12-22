@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Webby Comic Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #6eb5ff;
+            --header-bg: #2a2a2a;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .header.hidden {
+            transform: translateY(-100%);
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 10px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+            color: var(--text-color);
+        }
+
+        .comic-container {
+            position: fixed;
+            top: 50px;
+            left: 0;
+            right: 0;
+            bottom: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .comic-page {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: var(--header-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .footer.hidden {
+            transform: translateY(100%);
+        }
+
+        .page-info {
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .nav-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            min-height: 44px;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Touch zones for navigation */
+        .touch-zone {
+            position: fixed;
+            top: 50px;
+            bottom: 50px;
+            width: 25%;
+            z-index: 50;
+            cursor: pointer;
+        }
+
+        .touch-zone.left {
+            left: 0;
+        }
+
+        .touch-zone.right {
+            right: 0;
+        }
+
+        .touch-zone.center {
+            left: 25%;
+            width: 50%;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+        }
+
+        /* Zoom controls */
+        .zoom-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .zoom-btn {
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 18px;
+            min-height: 44px;
+        }
+
+        /* Fit modes */
+        .comic-page.fit-width {
+            width: 100%;
+            height: auto;
+            max-height: none;
+        }
+
+        .comic-page.fit-height {
+            width: auto;
+            height: 100%;
+            max-width: none;
+        }
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--header-bg);
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 280px;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+        }
+
+        .setting-row label {
+            font-size: 14px;
+        }
+
+        .setting-row select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 44px;
+        }
+
+        .close-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            min-height: 44px;
+        }
+
+        /* Page slider */
+        .page-slider {
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <button class="header-btn" onclick="goBack()">&#8592;</button>
+        <div class="header-title" id="title">Loading...</div>
+        <button class="header-btn" onclick="openSettings()">&#9881;</button>
+    </header>
+
+    <div class="touch-zone left" onclick="prevPage()"></div>
+    <div class="touch-zone center" onclick="toggleUI()"></div>
+    <div class="touch-zone right" onclick="nextPage()"></div>
+
+    <div class="comic-container" id="comicContainer">
+        <div class="loading" id="loading">Loading comic...</div>
+        <img class="comic-page" id="comicPage" style="display: none;">
+    </div>
+
+    <footer class="footer" id="footer">
+        <button class="nav-btn" id="prevBtn" onclick="prevPage()">&#8592; Prev</button>
+        <div class="page-info">
+            <span id="pageInfo">Page 1 of 1</span>
+            <input type="range" class="page-slider" id="pageSlider" min="1" max="1" value="1">
+        </div>
+        <button class="nav-btn" id="nextBtn" onclick="nextPage()">Next &#8594;</button>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h3>Settings</h3>
+            <div class="setting-row">
+                <label>Fit Mode</label>
+                <select id="fitModeSelect" onchange="changeFitMode()">
+                    <option value="contain">Fit Page</option>
+                    <option value="width">Fit Width</option>
+                    <option value="height">Fit Height</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Reading Direction</label>
+                <select id="directionSelect" onchange="changeDirection()">
+                    <option value="ltr">Left to Right</option>
+                    <option value="rtl">Right to Left (Manga)</option>
+                </select>
+            </div>
+            <button class="close-btn" onclick="closeSettings()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const bookId = window.location.pathname.split('/').pop();
+        const API_BASE = '/api';
+
+        let currentPage = 0;
+        let totalPages = 0;
+        let uiVisible = true;
+        let fitMode = 'contain';
+        let readingDirection = 'ltr';
+        let comicInfo = null;
+
+        // Get auth token
+        function getAuthHeaders() {
+            const token = localStorage.getItem('webby_token');
+            if (token) {
+                return { 'Authorization': `Bearer ${token}` };
+            }
+            return {};
+        }
+
+        // Load comic info
+        async function loadComicInfo() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/cbz/info`, { headers: getAuthHeaders() });
+                comicInfo = await res.json();
+                totalPages = comicInfo.pageCount;
+                document.getElementById('title').textContent = comicInfo.title;
+                document.title = `${comicInfo.title} - Webby Comic Reader`;
+                document.getElementById('pageSlider').max = totalPages;
+                updatePageInfo();
+            } catch (err) {
+                console.error('Failed to load comic info:', err);
+                document.getElementById('loading').textContent = 'Failed to load comic';
+            }
+        }
+
+        // Load a specific page
+        async function loadPage(pageIndex) {
+            if (pageIndex < 0 || pageIndex >= totalPages) return;
+
+            currentPage = pageIndex;
+            const img = document.getElementById('comicPage');
+            const loading = document.getElementById('loading');
+
+            loading.style.display = 'flex';
+            img.style.display = 'none';
+
+            img.onload = () => {
+                loading.style.display = 'none';
+                img.style.display = 'block';
+                applyFitMode();
+            };
+
+            img.onerror = () => {
+                loading.textContent = 'Failed to load page';
+                loading.style.display = 'flex';
+            };
+
+            // Add cache-busting and auth
+            const token = localStorage.getItem('webby_token');
+            img.src = `${API_BASE}/books/${bookId}/cbz/page/${pageIndex}`;
+
+            updatePageInfo();
+            savePosition();
+        }
+
+        function updatePageInfo() {
+            document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+            document.getElementById('pageSlider').value = currentPage + 1;
+            document.getElementById('prevBtn').disabled = currentPage <= 0;
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages - 1;
+        }
+
+        function prevPage() {
+            if (readingDirection === 'rtl') {
+                if (currentPage < totalPages - 1) loadPage(currentPage + 1);
+            } else {
+                if (currentPage > 0) loadPage(currentPage - 1);
+            }
+        }
+
+        function nextPage() {
+            if (readingDirection === 'rtl') {
+                if (currentPage > 0) loadPage(currentPage - 1);
+            } else {
+                if (currentPage < totalPages - 1) loadPage(currentPage + 1);
+            }
+        }
+
+        function toggleUI() {
+            uiVisible = !uiVisible;
+            document.getElementById('header').classList.toggle('hidden', !uiVisible);
+            document.getElementById('footer').classList.toggle('hidden', !uiVisible);
+
+            // Adjust container when UI is hidden
+            const container = document.getElementById('comicContainer');
+            if (uiVisible) {
+                container.style.top = '50px';
+                container.style.bottom = '50px';
+            } else {
+                container.style.top = '0';
+                container.style.bottom = '0';
+            }
+        }
+
+        function changeFitMode() {
+            fitMode = document.getElementById('fitModeSelect').value;
+            applyFitMode();
+            localStorage.setItem('cbz_fit_mode', fitMode);
+        }
+
+        function applyFitMode() {
+            const img = document.getElementById('comicPage');
+            img.classList.remove('fit-width', 'fit-height');
+
+            switch (fitMode) {
+                case 'width':
+                    img.classList.add('fit-width');
+                    break;
+                case 'height':
+                    img.classList.add('fit-height');
+                    break;
+                default:
+                    // contain - use max-width/max-height (default CSS)
+                    break;
+            }
+        }
+
+        function changeDirection() {
+            readingDirection = document.getElementById('directionSelect').value;
+            localStorage.setItem('cbz_direction', readingDirection);
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function goBack() {
+            savePosition();
+            window.location.href = '/';
+        }
+
+        // Save reading position
+        async function savePosition() {
+            try {
+                await fetch(`${API_BASE}/books/${bookId}/position`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        chapter: String(currentPage),
+                        position: 0
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to save position:', err);
+            }
+        }
+
+        // Load saved position
+        async function loadPosition() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/position`, { headers: getAuthHeaders() });
+                const data = await res.json();
+                if (data.position && data.position.chapter) {
+                    const savedPage = parseInt(data.position.chapter);
+                    if (savedPage >= 0 && savedPage < totalPages) {
+                        currentPage = savedPage;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load position:', err);
+            }
+        }
+
+        // Load saved settings
+        function loadSettings() {
+            const savedFit = localStorage.getItem('cbz_fit_mode');
+            if (savedFit) {
+                fitMode = savedFit;
+                document.getElementById('fitModeSelect').value = savedFit;
+            }
+
+            const savedDirection = localStorage.getItem('cbz_direction');
+            if (savedDirection) {
+                readingDirection = savedDirection;
+                document.getElementById('directionSelect').value = savedDirection;
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'PageUp':
+                    prevPage();
+                    break;
+                case 'ArrowRight':
+                case 'PageDown':
+                case ' ':
+                    nextPage();
+                    e.preventDefault();
+                    break;
+                case 'Home':
+                    loadPage(0);
+                    break;
+                case 'End':
+                    loadPage(totalPages - 1);
+                    break;
+                case 'Escape':
+                    closeSettings();
+                    break;
+            }
+        });
+
+        // Touch/swipe navigation
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    nextPage();
+                } else {
+                    prevPage();
+                }
+            }
+        }, { passive: true });
+
+        // Page slider
+        document.getElementById('pageSlider').addEventListener('input', (e) => {
+            loadPage(parseInt(e.target.value) - 1);
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                closeSettings();
+            }
+        });
+
+        // Initialize
+        async function init() {
+            loadSettings();
+            await loadComicInfo();
+            await loadPosition();
+            loadPage(currentPage);
+        }
+
+        init();
+    </script>
+</body>
+</html>
