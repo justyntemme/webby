@@ -23,6 +23,16 @@ type Book struct {
 	CoverPath   string    `json:"-"`
 	FileSize    int64     `json:"file_size"`
 	UploadedAt  time.Time `json:"uploaded_at"`
+
+	// Extended metadata fields
+	ISBN            string     `json:"isbn,omitempty"`
+	Publisher       string     `json:"publisher,omitempty"`
+	PublishDate     string     `json:"publish_date,omitempty"`
+	Description     string     `json:"description,omitempty"`
+	Language        string     `json:"language,omitempty"`
+	Subjects        string     `json:"subjects,omitempty"` // Comma-separated
+	MetadataSource  string     `json:"metadata_source,omitempty"`
+	MetadataUpdated *time.Time `json:"metadata_updated,omitempty"`
 }
 
 // Collection represents a user-defined collection of books

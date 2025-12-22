@@ -100,16 +100,59 @@ func (d *Database) migrate() error {
 	`
 
 	_, err := d.db.Exec(schema)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Add new metadata columns if they don't exist (migration for existing databases)
+	metadataColumns := []string{
+		"ALTER TABLE books ADD COLUMN isbn TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN publisher TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN publish_date TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN description TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN language TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN subjects TEXT DEFAULT ''",
+		"ALTER TABLE books ADD COLUMN metadata_source TEXT DEFAULT 'epub'",
+		"ALTER TABLE books ADD COLUMN metadata_updated DATETIME",
+	}
+
+	for _, col := range metadataColumns {
+		// Ignore errors - column may already exist
+		d.db.Exec(col)
+	}
+
+	// Add ISBN index
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn)")
+
+	return nil
 }
 
 // CreateBook inserts a new book into the database
 func (d *Database) CreateBook(book *models.Book) error {
 	_, err := d.db.Exec(`
-		INSERT INTO books (id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO books (id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
+			isbn, publisher, publish_date, description, language, subjects, metadata_source, metadata_updated)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		book.ID, book.UserID, book.Title, book.Author, book.Series, book.SeriesIndex,
 		book.FilePath, book.CoverPath, book.FileSize, book.UploadedAt,
+		book.ISBN, book.Publisher, book.PublishDate, book.Description,
+		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated,
+	)
+	return err
+}
+
+// UpdateBookMetadata updates the metadata fields for a book
+func (d *Database) UpdateBookMetadata(book *models.Book) error {
+	_, err := d.db.Exec(`
+		UPDATE books SET
+			title = ?, author = ?, series = ?, series_index = ?,
+			isbn = ?, publisher = ?, publish_date = ?, description = ?,
+			language = ?, subjects = ?, metadata_source = ?, metadata_updated = ?
+		WHERE id = ?`,
+		book.Title, book.Author, book.Series, book.SeriesIndex,
+		book.ISBN, book.Publisher, book.PublishDate, book.Description,
+		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated,
+		book.ID,
 	)
 	return err
 }
@@ -118,10 +161,14 @@ func (d *Database) CreateBook(book *models.Book) error {
 func (d *Database) GetBook(id string) (*models.Book, error) {
 	book := &models.Book{}
 	err := d.db.QueryRow(`
-		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at
+		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
+			COALESCE(isbn, ''), COALESCE(publisher, ''), COALESCE(publish_date, ''), COALESCE(description, ''),
+			COALESCE(language, ''), COALESCE(subjects, ''), COALESCE(metadata_source, 'epub'), metadata_updated
 		FROM books WHERE id = ?`, id,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
-		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt)
+		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
+		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated)
 	if err != nil {
 		return nil, err
 	}
@@ -132,12 +179,16 @@ func (d *Database) GetBook(id string) (*models.Book, error) {
 func (d *Database) GetBookForUser(id, userID string) (*models.Book, error) {
 	book := &models.Book{}
 	err := d.db.QueryRow(`
-		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index, b.file_path, b.cover_path, b.file_size, b.uploaded_at
+		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index, b.file_path, b.cover_path, b.file_size, b.uploaded_at,
+			COALESCE(b.isbn, ''), COALESCE(b.publisher, ''), COALESCE(b.publish_date, ''), COALESCE(b.description, ''),
+			COALESCE(b.language, ''), COALESCE(b.subjects, ''), COALESCE(b.metadata_source, 'epub'), b.metadata_updated
 		FROM books b
 		LEFT JOIN book_shares bs ON b.id = bs.book_id AND bs.shared_with_id = ?
 		WHERE b.id = ? AND (b.user_id = ? OR b.user_id = '' OR bs.id IS NOT NULL)`, userID, id, userID,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
-		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt)
+		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
+		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated)
 	if err != nil {
 		return nil, err
 	}

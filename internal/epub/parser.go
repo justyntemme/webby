@@ -19,6 +19,14 @@ type Metadata struct {
 	SeriesIndex float64
 	CoverData   []byte
 	CoverExt    string
+
+	// Extended metadata fields
+	ISBN        string
+	Description string
+	Publisher   string
+	Language    string
+	PublishDate string
+	Subjects    []string
 }
 
 // Container represents the META-INF/container.xml structure
@@ -46,6 +54,17 @@ type Package struct {
 			Refines  string `xml:"refines,attr"`
 			Value    string `xml:",chardata"`
 		} `xml:"meta"`
+		// Dublin Core elements
+		Identifier []struct {
+			Value  string `xml:",chardata"`
+			Scheme string `xml:"scheme,attr"`
+			ID     string `xml:"id,attr"`
+		} `xml:"identifier"`
+		Description []string `xml:"description"`
+		Publisher   []string `xml:"publisher"`
+		Language    []string `xml:"language"`
+		Date        []string `xml:"date"`
+		Subject     []string `xml:"subject"`
 	} `xml:"metadata"`
 	Manifest struct {
 		Items []struct {
@@ -112,6 +131,51 @@ func ParseEPUB(filePath string) (*Metadata, error) {
 		if creator.Value != "" {
 			meta.Author = strings.TrimSpace(creator.Value)
 			break
+		}
+	}
+
+	// Extract ISBN from identifiers
+	for _, ident := range pkg.Metadata.Identifier {
+		value := strings.TrimSpace(ident.Value)
+		scheme := strings.ToUpper(ident.Scheme)
+
+		// Check for ISBN scheme or pattern in value
+		if scheme == "ISBN" || strings.HasPrefix(strings.ToUpper(value), "URN:ISBN:") {
+			meta.ISBN = normalizeISBN(value)
+			break
+		}
+		// Look for ISBN pattern in the value itself
+		if isbn := extractISBN(value); isbn != "" && meta.ISBN == "" {
+			meta.ISBN = isbn
+		}
+	}
+
+	// Extract description
+	if len(pkg.Metadata.Description) > 0 {
+		// Clean HTML from description
+		desc := strings.TrimSpace(pkg.Metadata.Description[0])
+		meta.Description = StripHTML(desc)
+	}
+
+	// Extract publisher
+	if len(pkg.Metadata.Publisher) > 0 {
+		meta.Publisher = strings.TrimSpace(pkg.Metadata.Publisher[0])
+	}
+
+	// Extract language
+	if len(pkg.Metadata.Language) > 0 {
+		meta.Language = strings.TrimSpace(pkg.Metadata.Language[0])
+	}
+
+	// Extract publish date
+	if len(pkg.Metadata.Date) > 0 {
+		meta.PublishDate = strings.TrimSpace(pkg.Metadata.Date[0])
+	}
+
+	// Extract subjects
+	for _, subj := range pkg.Metadata.Subject {
+		if trimmed := strings.TrimSpace(subj); trimmed != "" {
+			meta.Subjects = append(meta.Subjects, trimmed)
 		}
 	}
 
@@ -334,6 +398,35 @@ func extractChapterTitle(r *zip.Reader, href string, fallbackIndex int) string {
 	}
 
 	return "Chapter " + strconv.Itoa(fallbackIndex+1)
+}
+
+// normalizeISBN cleans an ISBN string
+func normalizeISBN(isbn string) string {
+	// Remove URN prefix if present
+	isbn = strings.TrimPrefix(strings.ToLower(isbn), "urn:isbn:")
+	isbn = strings.ToUpper(isbn)
+	// Remove hyphens, spaces, and other separators
+	isbn = strings.ReplaceAll(isbn, "-", "")
+	isbn = strings.ReplaceAll(isbn, " ", "")
+	isbn = strings.ReplaceAll(isbn, ".", "")
+	return strings.TrimSpace(isbn)
+}
+
+// extractISBN attempts to find an ISBN pattern in a string
+func extractISBN(s string) string {
+	// ISBN-13 pattern: 978 or 979 prefix followed by 10 digits
+	isbn13Re := regexp.MustCompile(`(?:978|979)[-\s]?(?:\d[-\s]?){9}\d`)
+	if match := isbn13Re.FindString(s); match != "" {
+		return normalizeISBN(match)
+	}
+
+	// ISBN-10 pattern: 9 digits followed by digit or X
+	isbn10Re := regexp.MustCompile(`\d[-\s]?(?:\d[-\s]?){8}[\dXx]`)
+	if match := isbn10Re.FindString(s); match != "" {
+		return normalizeISBN(match)
+	}
+
+	return ""
 }
 
 // ValidateEPUB checks if a file is a valid EPUB

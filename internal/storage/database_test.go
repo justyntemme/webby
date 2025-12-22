@@ -527,3 +527,163 @@ func TestGetBooksBySeriesForUser(t *testing.T) {
 	assert.Len(t, grouped2, 1)
 	assert.Len(t, grouped2["Series X"], 1)
 }
+
+func TestCreateAndGetBookWithMetadata(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	now := time.Now()
+	book := &models.Book{
+		ID:              "test-book-id",
+		UserID:          "test-user-id",
+		Title:           "Test Book",
+		Author:          "Test Author",
+		Series:          "Test Series",
+		SeriesIndex:     1,
+		FilePath:        "/path/to/book.epub",
+		CoverPath:       "/path/to/cover.jpg",
+		FileSize:        1024,
+		UploadedAt:      now,
+		ISBN:            "9780123456789",
+		Publisher:       "Test Publisher",
+		PublishDate:     "2023-05-15",
+		Description:     "A great book about testing.",
+		Language:        "en",
+		Subjects:        "Fiction, Testing, Unit Tests",
+		MetadataSource:  "openlibrary",
+		MetadataUpdated: &now,
+	}
+
+	err := db.CreateBook(book)
+	require.NoError(t, err)
+
+	retrieved, err := db.GetBook(book.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, book.ID, retrieved.ID)
+	assert.Equal(t, book.Title, retrieved.Title)
+	assert.Equal(t, book.Author, retrieved.Author)
+	assert.Equal(t, book.ISBN, retrieved.ISBN)
+	assert.Equal(t, book.Publisher, retrieved.Publisher)
+	assert.Equal(t, book.PublishDate, retrieved.PublishDate)
+	assert.Equal(t, book.Description, retrieved.Description)
+	assert.Equal(t, book.Language, retrieved.Language)
+	assert.Equal(t, book.Subjects, retrieved.Subjects)
+	assert.Equal(t, book.MetadataSource, retrieved.MetadataSource)
+	assert.NotNil(t, retrieved.MetadataUpdated)
+}
+
+func TestUpdateBookMetadata(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create initial book
+	book := &models.Book{
+		ID:             "test-book-id",
+		UserID:         "test-user-id",
+		Title:          "Original Title",
+		Author:         "Original Author",
+		FilePath:       "/path/to/book.epub",
+		UploadedAt:     time.Now(),
+		MetadataSource: "epub",
+	}
+
+	err := db.CreateBook(book)
+	require.NoError(t, err)
+
+	// Update metadata
+	now := time.Now()
+	book.Title = "Updated Title"
+	book.Author = "Updated Author"
+	book.ISBN = "9780123456789"
+	book.Publisher = "New Publisher"
+	book.PublishDate = "2024-01-01"
+	book.Description = "Updated description"
+	book.Language = "en-US"
+	book.Subjects = "Updated, Subjects"
+	book.MetadataSource = "openlibrary"
+	book.MetadataUpdated = &now
+
+	err = db.UpdateBookMetadata(book)
+	require.NoError(t, err)
+
+	// Verify updates
+	retrieved, err := db.GetBook(book.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Updated Title", retrieved.Title)
+	assert.Equal(t, "Updated Author", retrieved.Author)
+	assert.Equal(t, "9780123456789", retrieved.ISBN)
+	assert.Equal(t, "New Publisher", retrieved.Publisher)
+	assert.Equal(t, "2024-01-01", retrieved.PublishDate)
+	assert.Equal(t, "Updated description", retrieved.Description)
+	assert.Equal(t, "en-US", retrieved.Language)
+	assert.Equal(t, "Updated, Subjects", retrieved.Subjects)
+	assert.Equal(t, "openlibrary", retrieved.MetadataSource)
+	assert.NotNil(t, retrieved.MetadataUpdated)
+}
+
+func TestGetBookForUserWithMetadata(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create users
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	now := time.Now()
+	book := &models.Book{
+		ID:              "book-id",
+		UserID:          user.ID,
+		Title:           "User's Book",
+		Author:          "Author",
+		FilePath:        "/path.epub",
+		UploadedAt:      now,
+		ISBN:            "9780123456789",
+		Publisher:       "Publisher",
+		Description:     "A description",
+		MetadataSource:  "epub",
+		MetadataUpdated: &now,
+	}
+	require.NoError(t, db.CreateBook(book))
+
+	// Get book for owner
+	retrieved, err := db.GetBookForUser(book.ID, user.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, book.ID, retrieved.ID)
+	assert.Equal(t, book.ISBN, retrieved.ISBN)
+	assert.Equal(t, book.Publisher, retrieved.Publisher)
+	assert.Equal(t, book.Description, retrieved.Description)
+	assert.Equal(t, book.MetadataSource, retrieved.MetadataSource)
+}
+
+func TestBookMetadataDefaultValues(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create book without metadata fields
+	book := &models.Book{
+		ID:         "test-book-id",
+		Title:      "Test Book",
+		Author:     "Test Author",
+		FilePath:   "/path/to/book.epub",
+		UploadedAt: time.Now(),
+	}
+
+	err := db.CreateBook(book)
+	require.NoError(t, err)
+
+	retrieved, err := db.GetBook(book.ID)
+	require.NoError(t, err)
+
+	// Metadata fields should have empty defaults
+	assert.Equal(t, "", retrieved.ISBN)
+	assert.Equal(t, "", retrieved.Publisher)
+	assert.Equal(t, "", retrieved.PublishDate)
+	assert.Equal(t, "", retrieved.Description)
+	assert.Equal(t, "", retrieved.Language)
+	assert.Equal(t, "", retrieved.Subjects)
+	// MetadataSource defaults to empty when not set
+	assert.Equal(t, "", retrieved.MetadataSource)
+}

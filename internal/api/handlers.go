@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,19 +14,29 @@ import (
 
 	"github.com/justyntemme/webby/internal/auth"
 	"github.com/justyntemme/webby/internal/epub"
+	"github.com/justyntemme/webby/internal/metadata"
 	"github.com/justyntemme/webby/internal/models"
 	"github.com/justyntemme/webby/internal/storage"
 )
 
 // Handler contains all HTTP handlers
 type Handler struct {
-	db    *storage.Database
-	files *storage.FileStorage
+	db       *storage.Database
+	files    *storage.FileStorage
+	metadata *metadata.Service
 }
 
 // NewHandler creates a new handler instance
 func NewHandler(db *storage.Database, files *storage.FileStorage) *Handler {
-	return &Handler{db: db, files: files}
+	// Initialize metadata service with Open Library provider
+	openLibrary := metadata.NewOpenLibraryProvider()
+	metadataService := metadata.NewService(openLibrary, nil) // No fallback for now
+
+	return &Handler{
+		db:       db,
+		files:    files,
+		metadata: metadataService,
+	}
 }
 
 // UploadBook handles EPUB file uploads
@@ -76,18 +88,27 @@ func (h *Handler) UploadBook(c *gin.Context) {
 	// Get user ID from context (if authenticated)
 	userID := auth.GetUserID(c)
 
-	// Create book record
+	// Create book record with extended metadata from EPUB
+	now := time.Now()
 	book := &models.Book{
-		ID:          bookID,
-		UserID:      userID,
-		Title:       meta.Title,
-		Author:      meta.Author,
-		Series:      meta.Series,
-		SeriesIndex: meta.SeriesIndex,
-		FilePath:    filePath,
-		CoverPath:   coverPath,
-		FileSize:    header.Size,
-		UploadedAt:  time.Now(),
+		ID:             bookID,
+		UserID:         userID,
+		Title:          meta.Title,
+		Author:         meta.Author,
+		Series:         meta.Series,
+		SeriesIndex:    meta.SeriesIndex,
+		FilePath:       filePath,
+		CoverPath:      coverPath,
+		FileSize:       header.Size,
+		UploadedAt:     now,
+		ISBN:           meta.ISBN,
+		Publisher:      meta.Publisher,
+		PublishDate:    meta.PublishDate,
+		Description:    meta.Description,
+		Language:       meta.Language,
+		Subjects:       strings.Join(meta.Subjects, ", "),
+		MetadataSource: "epub",
+		MetadataUpdated: &now,
 	}
 
 	if err := h.db.CreateBook(book); err != nil {
@@ -725,6 +746,225 @@ func (h *Handler) GetChapterText(c *gin.Context) {
 	})
 }
 
+// SearchMetadata searches for book metadata and returns all matches for selection
+func (h *Handler) SearchMetadata(c *gin.Context) {
+	isbn := c.Query("isbn")
+	title := c.Query("title")
+	author := c.Query("author")
+
+	if isbn == "" && title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least isbn or title is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	results, err := h.metadata.SearchBooks(ctx, isbn, title, author)
+	if err != nil {
+		if err == metadata.ErrNoMatch {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No matching metadata found"})
+			return
+		}
+		if err == metadata.ErrRateLimited {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limited, please try again later"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"results": results, "count": len(results)})
+}
+
+// LookupMetadata searches for book metadata from external sources
+func (h *Handler) LookupMetadata(c *gin.Context) {
+	isbn := c.Query("isbn")
+	title := c.Query("title")
+	author := c.Query("author")
+
+	if isbn == "" && title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least isbn or title is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.metadata.LookupBook(ctx, isbn, title, author)
+	if err != nil {
+		if err == metadata.ErrNoMatch {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No matching metadata found"})
+			return
+		}
+		if err == metadata.ErrRateLimited {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limited, please try again later"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to lookup metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"metadata": result})
+}
+
+// RefreshBookMetadata fetches and updates metadata for an existing book
+func (h *Handler) RefreshBookMetadata(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	// Get the book
+	var book *models.Book
+	var err error
+
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	// Lookup metadata
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.metadata.LookupBook(ctx, book.ISBN, book.Title, book.Author)
+	if err != nil {
+		if err == metadata.ErrNoMatch {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No matching metadata found"})
+			return
+		}
+		if err == metadata.ErrRateLimited {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limited, please try again later"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to lookup metadata"})
+		return
+	}
+
+	// Only update if confidence is above threshold
+	if result.Confidence < 0.5 {
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "Match confidence too low, metadata not updated",
+			"metadata":   result,
+			"confidence": result.Confidence,
+		})
+		return
+	}
+
+	// Update book with external metadata
+	now := time.Now()
+	book.Title = result.Title
+	if len(result.Authors) > 0 {
+		book.Author = result.Authors[0]
+	}
+	if result.ISBN13 != "" {
+		book.ISBN = result.ISBN13
+	} else if result.ISBN10 != "" {
+		book.ISBN = result.ISBN10
+	}
+	book.Publisher = result.Publisher
+	book.PublishDate = result.PublishDate
+	book.Description = result.Description
+	book.Language = result.Language
+	book.Subjects = strings.Join(result.Subjects, ", ")
+	book.MetadataSource = result.Source
+	book.MetadataUpdated = &now
+
+	if err := h.db.UpdateBookMetadata(book); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Metadata updated successfully",
+		"book":       book,
+		"confidence": result.Confidence,
+		"source":     result.Source,
+	})
+}
+
+// UpdateBookMetadata manually updates book metadata fields
+func (h *Handler) UpdateBookMetadata(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	// Get the book
+	var book *models.Book
+	var err error
+
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		Title       string  `json:"title"`
+		Author      string  `json:"author"`
+		Series      string  `json:"series"`
+		SeriesIndex float64 `json:"series_index"`
+		ISBN        string  `json:"isbn"`
+		Publisher   string  `json:"publisher"`
+		PublishDate string  `json:"publish_date"`
+		Language    string  `json:"language"`
+		Subjects    string  `json:"subjects"`
+		Description string  `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// Update book fields
+	if req.Title != "" {
+		book.Title = req.Title
+	}
+	if req.Author != "" {
+		book.Author = req.Author
+	}
+	book.Series = req.Series
+	book.SeriesIndex = req.SeriesIndex
+	book.ISBN = req.ISBN
+	book.Publisher = req.Publisher
+	book.PublishDate = req.PublishDate
+	book.Language = req.Language
+	book.Subjects = req.Subjects
+	book.Description = req.Description
+	book.MetadataSource = "manual"
+	now := time.Now()
+	book.MetadataUpdated = &now
+
+	if err := h.db.UpdateBookMetadata(book); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Metadata updated successfully",
+		"book":    book,
+	})
+}
+
 // APIInfo returns API documentation for TUI/programmatic clients
 func (h *Handler) APIInfo(c *gin.Context) {
 	endpoints := []gin.H{
@@ -753,6 +993,12 @@ func (h *Handler) APIInfo(c *gin.Context) {
 		{"method": "GET", "path": "/api/books/:id/text/:chapter", "description": "Get chapter plain text (TUI-friendly)"},
 		{"method": "GET", "path": "/api/books/:id/position", "description": "Get reading position"},
 		{"method": "POST", "path": "/api/books/:id/position", "description": "Save reading position", "body": "chapter, position"},
+
+		// Metadata
+		{"method": "GET", "path": "/api/metadata/lookup", "description": "Lookup book metadata from external sources", "query": "isbn, title, author"},
+		{"method": "GET", "path": "/api/metadata/search", "description": "Search for metadata and return all matches", "query": "isbn, title, author"},
+		{"method": "POST", "path": "/api/books/:id/metadata/refresh", "description": "Refresh book metadata from external sources"},
+		{"method": "PUT", "path": "/api/books/:id/metadata", "description": "Manually update book metadata", "body": "title, author, series, series_index, isbn, publisher, publish_date, language, subjects, description"},
 
 		// Sharing
 		{"method": "GET", "path": "/api/books/shared", "description": "Get books shared with you", "auth": true},
