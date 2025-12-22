@@ -17,6 +17,13 @@ const (
 	ContentTypeComic = "comic"
 )
 
+// ReadStatus constants for tracking reading progress
+const (
+	ReadStatusUnread    = "unread"
+	ReadStatusReading   = "reading"
+	ReadStatusCompleted = "completed"
+)
+
 // FileFormat constants for different file types
 const (
 	FileFormatEPUB = "epub"
@@ -40,6 +47,9 @@ type Book struct {
 	ContentType string    `json:"content_type"`  // "book" or "comic"
 	FileFormat  string    `json:"file_format"`   // "epub", "pdf", or "cbz"
 
+	// File hash for duplicate detection
+	FileHash string `json:"file_hash,omitempty"`
+
 	// Extended metadata fields
 	ISBN            string     `json:"isbn,omitempty"`
 	Publisher       string     `json:"publisher,omitempty"`
@@ -49,6 +59,13 @@ type Book struct {
 	Subjects        string     `json:"subjects,omitempty"` // Comma-separated
 	MetadataSource  string     `json:"metadata_source,omitempty"`
 	MetadataUpdated *time.Time `json:"metadata_updated,omitempty"`
+
+	// Reading status tracking
+	ReadStatus    string     `json:"read_status"`              // "unread", "reading", "completed"
+	DateCompleted *time.Time `json:"date_completed,omitempty"` // When book was marked completed
+
+	// Star rating (0-5, 0 means no rating)
+	Rating int `json:"rating"`
 }
 
 // Collection represents a user-defined collection of books
@@ -75,4 +92,71 @@ type BookShare struct {
 	OwnerID      string    `json:"owner_id"`
 	SharedWithID string    `json:"shared_with_id"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+// ReadingListType constants for predefined list types
+const (
+	ReadingListWantToRead = "want_to_read"
+	ReadingListFavorites  = "favorites"
+	ReadingListCustom     = "custom"
+)
+
+// ReadingList represents a user's reading list
+type ReadingList struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Name      string    `json:"name"`
+	ListType  string    `json:"list_type"` // "want_to_read", "favorites", or "custom"
+	CreatedAt time.Time `json:"created_at"`
+	BookCount int       `json:"book_count,omitempty"`
+}
+
+// ReadingListBook represents a book in a reading list
+type ReadingListBook struct {
+	BookID    string    `json:"book_id"`
+	ListID    string    `json:"list_id"`
+	AddedAt   time.Time `json:"added_at"`
+	Position  int       `json:"position"` // For ordering within the list
+}
+
+// Tag represents a custom user-defined tag for organizing books
+type Tag struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Name      string    `json:"name"`
+	Color     string    `json:"color"`
+	CreatedAt time.Time `json:"created_at"`
+	BookCount int       `json:"book_count,omitempty"`
+}
+
+// BookTag represents a book's association with a tag
+type BookTag struct {
+	BookID  string    `json:"book_id"`
+	TagID   string    `json:"tag_id"`
+	AddedAt time.Time `json:"added_at"`
+}
+
+// HighlightColor constants for highlight colors
+const (
+	HighlightColorYellow = "yellow"
+	HighlightColorGreen  = "green"
+	HighlightColorBlue   = "blue"
+	HighlightColorPink   = "pink"
+	HighlightColorOrange = "orange"
+)
+
+// Annotation represents a highlight or note on a book
+type Annotation struct {
+	ID            string    `json:"id"`
+	BookID        string    `json:"book_id"`
+	UserID        string    `json:"user_id"`
+	Chapter       string    `json:"chapter"`                  // Chapter/section identifier
+	CFI           string    `json:"cfi,omitempty"`            // EPUB CFI for precise location
+	StartOffset   int       `json:"start_offset"`             // Character offset start
+	EndOffset     int       `json:"end_offset"`               // Character offset end
+	SelectedText  string    `json:"selected_text"`            // The highlighted text
+	Note          string    `json:"note,omitempty"`           // User's note/comment
+	Color         string    `json:"color"`                    // Highlight color
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }

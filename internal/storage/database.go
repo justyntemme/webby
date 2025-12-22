@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"sort"
 	"strings"
 	"time"
 
@@ -124,10 +125,102 @@ func (d *Database) migrate() error {
 		d.db.Exec(col)
 	}
 
+	// Add file_hash column for duplicate detection
+	d.db.Exec("ALTER TABLE books ADD COLUMN file_hash TEXT DEFAULT ''")
+
+	// Add read status tracking columns
+	d.db.Exec("ALTER TABLE books ADD COLUMN read_status TEXT DEFAULT 'unread'")
+	d.db.Exec("ALTER TABLE books ADD COLUMN date_completed DATETIME")
+
+	// Add star rating column (0-5, 0 means no rating)
+	d.db.Exec("ALTER TABLE books ADD COLUMN rating INTEGER DEFAULT 0")
+
 	// Add indexes
 	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn)")
 	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_content_type ON books(content_type)")
 	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_file_format ON books(file_format)")
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_file_hash ON books(file_hash)")
+	d.db.Exec("CREATE INDEX IF NOT EXISTS idx_books_read_status ON books(read_status)")
+
+	// Create reading lists tables
+	readingListsSchema := `
+	CREATE TABLE IF NOT EXISTS reading_lists (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		name TEXT NOT NULL,
+		list_type TEXT NOT NULL DEFAULT 'custom',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS book_reading_list (
+		book_id TEXT NOT NULL,
+		list_id TEXT NOT NULL,
+		added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		position INTEGER DEFAULT 0,
+		PRIMARY KEY (book_id, list_id),
+		FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+		FOREIGN KEY (list_id) REFERENCES reading_lists(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_reading_lists_user ON reading_lists(user_id);
+	CREATE INDEX IF NOT EXISTS idx_reading_lists_type ON reading_lists(list_type);
+	CREATE INDEX IF NOT EXISTS idx_book_reading_list_list ON book_reading_list(list_id);
+	`
+	d.db.Exec(readingListsSchema)
+
+	// Create custom tags tables
+	tagsSchema := `
+	CREATE TABLE IF NOT EXISTS tags (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		name TEXT NOT NULL,
+		color TEXT DEFAULT '#3b82f6',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(user_id, name),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE TABLE IF NOT EXISTS book_tags (
+		book_id TEXT NOT NULL,
+		tag_id TEXT NOT NULL,
+		added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (book_id, tag_id),
+		FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+		FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_tags_user ON tags(user_id);
+	CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
+	CREATE INDEX IF NOT EXISTS idx_book_tags_tag ON book_tags(tag_id);
+	`
+	d.db.Exec(tagsSchema)
+
+	// Create annotations table for highlights and notes
+	annotationsSchema := `
+	CREATE TABLE IF NOT EXISTS annotations (
+		id TEXT PRIMARY KEY,
+		book_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		chapter TEXT NOT NULL,
+		cfi TEXT DEFAULT '',
+		start_offset INTEGER DEFAULT 0,
+		end_offset INTEGER DEFAULT 0,
+		selected_text TEXT NOT NULL,
+		note TEXT DEFAULT '',
+		color TEXT DEFAULT 'yellow',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_annotations_book ON annotations(book_id);
+	CREATE INDEX IF NOT EXISTS idx_annotations_user ON annotations(user_id);
+	CREATE INDEX IF NOT EXISTS idx_annotations_book_user ON annotations(book_id, user_id);
+	CREATE INDEX IF NOT EXISTS idx_annotations_chapter ON annotations(chapter);
+	`
+	d.db.Exec(annotationsSchema)
 
 	return nil
 }
@@ -144,14 +237,19 @@ func (d *Database) CreateBook(book *models.Book) error {
 	if fileFormat == "" {
 		fileFormat = models.FileFormatEPUB
 	}
+	// Default to "unread" if read status not set
+	readStatus := book.ReadStatus
+	if readStatus == "" {
+		readStatus = models.ReadStatusUnread
+	}
 	_, err := d.db.Exec(`
 		INSERT INTO books (id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
-			isbn, publisher, publish_date, description, language, subjects, metadata_source, metadata_updated, content_type, file_format)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			isbn, publisher, publish_date, description, language, subjects, metadata_source, metadata_updated, content_type, file_format, file_hash, read_status, date_completed, rating)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		book.ID, book.UserID, book.Title, book.Author, book.Series, book.SeriesIndex,
 		book.FilePath, book.CoverPath, book.FileSize, book.UploadedAt,
 		book.ISBN, book.Publisher, book.PublishDate, book.Description,
-		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated, contentType, fileFormat,
+		book.Language, book.Subjects, book.MetadataSource, book.MetadataUpdated, contentType, fileFormat, book.FileHash, readStatus, book.DateCompleted, book.Rating,
 	)
 	return err
 }
@@ -188,12 +286,14 @@ func (d *Database) GetBook(id string) (*models.Book, error) {
 		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
 			COALESCE(isbn, ''), COALESCE(publisher, ''), COALESCE(publish_date, ''), COALESCE(description, ''),
 			COALESCE(language, ''), COALESCE(subjects, ''), COALESCE(metadata_source, 'epub'), metadata_updated,
-			COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
+			COALESCE(content_type, 'book'), COALESCE(file_format, 'epub'), COALESCE(file_hash, ''),
+			COALESCE(read_status, 'unread'), date_completed, COALESCE(rating, 0)
 		FROM books WHERE id = ?`, id,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
 		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
 		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
-		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat)
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat, &book.FileHash,
+		&book.ReadStatus, &book.DateCompleted, &book.Rating)
 	if err != nil {
 		return nil, err
 	}
@@ -207,14 +307,16 @@ func (d *Database) GetBookForUser(id, userID string) (*models.Book, error) {
 		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index, b.file_path, b.cover_path, b.file_size, b.uploaded_at,
 			COALESCE(b.isbn, ''), COALESCE(b.publisher, ''), COALESCE(b.publish_date, ''), COALESCE(b.description, ''),
 			COALESCE(b.language, ''), COALESCE(b.subjects, ''), COALESCE(b.metadata_source, 'epub'), b.metadata_updated,
-			COALESCE(b.content_type, 'book'), COALESCE(b.file_format, 'epub')
+			COALESCE(b.content_type, 'book'), COALESCE(b.file_format, 'epub'), COALESCE(b.file_hash, ''),
+			COALESCE(b.read_status, 'unread'), b.date_completed, COALESCE(b.rating, 0)
 		FROM books b
 		LEFT JOIN book_shares bs ON b.id = bs.book_id AND bs.shared_with_id = ?
 		WHERE b.id = ? AND (b.user_id = ? OR b.user_id = '' OR bs.id IS NOT NULL)`, userID, id, userID,
 	).Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
 		&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
 		&book.ISBN, &book.Publisher, &book.PublishDate, &book.Description,
-		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat)
+		&book.Language, &book.Subjects, &book.MetadataSource, &book.MetadataUpdated, &book.ContentType, &book.FileFormat, &book.FileHash,
+		&book.ReadStatus, &book.DateCompleted, &book.Rating)
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +335,11 @@ func (d *Database) ListBooksForUser(userID, sortBy, order string) ([]models.Book
 
 // ListBooksForUserWithFilter returns books for a specific user with optional sorting and content type filter
 func (d *Database) ListBooksForUserWithFilter(userID, sortBy, order, contentType string) ([]models.Book, error) {
+	return d.ListBooksForUserWithFilters(userID, sortBy, order, contentType, "")
+}
+
+// ListBooksForUserWithFilters returns books for a specific user with optional sorting, content type, and read status filters
+func (d *Database) ListBooksForUserWithFilters(userID, sortBy, order, contentType, readStatus string) ([]models.Book, error) {
 	// Define sort columns - each column needs order applied
 	// Using COALESCE to handle NULL/empty authors - sort them at the end
 	validSort := map[string][]string{
@@ -262,7 +369,7 @@ func (d *Database) ListBooksForUserWithFilter(userID, sortBy, order, contentType
 	var query string
 	var args []interface{}
 
-	baseSelect := "SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at, COALESCE(content_type, 'book'), COALESCE(file_format, 'epub') FROM books WHERE "
+	baseSelect := "SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at, COALESCE(content_type, 'book'), COALESCE(file_format, 'epub'), COALESCE(read_status, 'unread') FROM books WHERE "
 
 	if userID != "" {
 		query = baseSelect + "user_id = ?"
@@ -277,6 +384,12 @@ func (d *Database) ListBooksForUserWithFilter(userID, sortBy, order, contentType
 		args = append(args, contentType)
 	}
 
+	// Add read status filter if specified
+	if readStatus != "" && (readStatus == models.ReadStatusUnread || readStatus == models.ReadStatusReading || readStatus == models.ReadStatusCompleted) {
+		query += " AND COALESCE(read_status, 'unread') = ?"
+		args = append(args, readStatus)
+	}
+
 	query += orderBy
 
 	rows, err := d.db.Query(query, args...)
@@ -289,7 +402,7 @@ func (d *Database) ListBooksForUserWithFilter(userID, sortBy, order, contentType
 	for rows.Next() {
 		var book models.Book
 		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
-			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat)
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat, &book.ReadStatus)
 		if err != nil {
 			return nil, err
 		}
@@ -760,6 +873,1031 @@ func (d *Database) IsBookSharedWith(bookID, userID string) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// UpdateBookFileHash updates the file hash for a book
+func (d *Database) UpdateBookFileHash(bookID, fileHash string) error {
+	_, err := d.db.Exec(`UPDATE books SET file_hash = ? WHERE id = ?`, fileHash, bookID)
+	return err
+}
+
+// GetBooksByHash returns all books with a given file hash
+func (d *Database) GetBooksByHash(fileHash string) ([]models.Book, error) {
+	if fileHash == "" {
+		return nil, nil
+	}
+	rows, err := d.db.Query(`
+		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size, uploaded_at,
+			COALESCE(content_type, 'book'), COALESCE(file_format, 'epub'), COALESCE(file_hash, '')
+		FROM books WHERE file_hash = ?
+		ORDER BY uploaded_at`, fileHash,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []models.Book
+	for rows.Next() {
+		var book models.Book
+		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat, &book.FileHash)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, nil
+}
+
+// DuplicateGroup represents a group of books with the same file hash
+type DuplicateGroup struct {
+	FileHash string
+	Books    []models.Book
+}
+
+// FindDuplicateBooks returns groups of books that have the same file hash
+func (d *Database) FindDuplicateBooks(userID string) ([]DuplicateGroup, error) {
+	// First find all hashes that appear more than once
+	var hashQuery string
+	var args []interface{}
+
+	if userID != "" {
+		hashQuery = `
+			SELECT file_hash, COUNT(*) as cnt
+			FROM books
+			WHERE user_id = ? AND file_hash != ''
+			GROUP BY file_hash
+			HAVING cnt > 1
+			ORDER BY cnt DESC`
+		args = append(args, userID)
+	} else {
+		hashQuery = `
+			SELECT file_hash, COUNT(*) as cnt
+			FROM books
+			WHERE file_hash != ''
+			GROUP BY file_hash
+			HAVING cnt > 1
+			ORDER BY cnt DESC`
+	}
+
+	rows, err := d.db.Query(hashQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var duplicateHashes []string
+	for rows.Next() {
+		var hash string
+		var count int
+		if err := rows.Scan(&hash, &count); err != nil {
+			return nil, err
+		}
+		duplicateHashes = append(duplicateHashes, hash)
+	}
+
+	// Now get the books for each duplicate hash
+	var groups []DuplicateGroup
+	for _, hash := range duplicateHashes {
+		books, err := d.GetBooksByHash(hash)
+		if err != nil {
+			return nil, err
+		}
+		// Filter by user if needed
+		if userID != "" {
+			var filtered []models.Book
+			for _, b := range books {
+				if b.UserID == userID {
+					filtered = append(filtered, b)
+				}
+			}
+			books = filtered
+		}
+		if len(books) > 1 {
+			groups = append(groups, DuplicateGroup{
+				FileHash: hash,
+				Books:    books,
+			})
+		}
+	}
+
+	return groups, nil
+}
+
+// GetBooksWithoutHash returns books that don't have a file hash computed yet
+func (d *Database) GetBooksWithoutHash(userID string, limit int) ([]models.Book, error) {
+	var query string
+	var args []interface{}
+
+	if userID != "" {
+		query = `
+			SELECT id, user_id, title, author, file_path, file_size, uploaded_at,
+				COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
+			FROM books
+			WHERE user_id = ? AND (file_hash IS NULL OR file_hash = '')
+			ORDER BY uploaded_at DESC
+			LIMIT ?`
+		args = append(args, userID, limit)
+	} else {
+		query = `
+			SELECT id, user_id, title, author, file_path, file_size, uploaded_at,
+				COALESCE(content_type, 'book'), COALESCE(file_format, 'epub')
+			FROM books
+			WHERE file_hash IS NULL OR file_hash = ''
+			ORDER BY uploaded_at DESC
+			LIMIT ?`
+		args = append(args, limit)
+	}
+
+	rows, err := d.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []models.Book
+	for rows.Next() {
+		var book models.Book
+		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author,
+			&book.FilePath, &book.FileSize, &book.UploadedAt, &book.ContentType, &book.FileFormat)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, nil
+}
+
+// CountBooksWithoutHash returns the count of books without file hashes
+func (d *Database) CountBooksWithoutHash(userID string) (int, error) {
+	var count int
+	var err error
+
+	if userID != "" {
+		err = d.db.QueryRow(`
+			SELECT COUNT(*) FROM books
+			WHERE user_id = ? AND (file_hash IS NULL OR file_hash = '')`, userID,
+		).Scan(&count)
+	} else {
+		err = d.db.QueryRow(`
+			SELECT COUNT(*) FROM books
+			WHERE file_hash IS NULL OR file_hash = ''`,
+		).Scan(&count)
+	}
+	return count, err
+}
+
+// UpdateBookReadStatus updates the read status for a book
+func (d *Database) UpdateBookReadStatus(bookID, status string, dateCompleted *time.Time) error {
+	_, err := d.db.Exec(`
+		UPDATE books SET read_status = ?, date_completed = ? WHERE id = ?`,
+		status, dateCompleted, bookID,
+	)
+	return err
+}
+
+// GetBookReadStatus returns the read status for a book
+func (d *Database) GetBookReadStatus(bookID string) (string, *time.Time, error) {
+	var status string
+	var dateCompleted *time.Time
+	err := d.db.QueryRow(`
+		SELECT COALESCE(read_status, 'unread'), date_completed FROM books WHERE id = ?`, bookID,
+	).Scan(&status, &dateCompleted)
+	if err != nil {
+		return "", nil, err
+	}
+	return status, dateCompleted, nil
+}
+
+// BulkUpdateBookReadStatus updates read status for multiple books
+func (d *Database) BulkUpdateBookReadStatus(bookIDs []string, status string, dateCompleted *time.Time) error {
+	if len(bookIDs) == 0 {
+		return nil
+	}
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(`UPDATE books SET read_status = ?, date_completed = ? WHERE id = ?`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	for _, bookID := range bookIDs {
+		if _, err := stmt.Exec(status, dateCompleted, bookID); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// ReadStatusCounts holds counts of books by read status
+type ReadStatusCounts struct {
+	Unread    int `json:"unread"`
+	Reading   int `json:"reading"`
+	Completed int `json:"completed"`
+	Total     int `json:"total"`
+}
+
+// UpdateBookRating updates the star rating for a book (0-5)
+func (d *Database) UpdateBookRating(bookID string, rating int) error {
+	if rating < 0 || rating > 5 {
+		rating = 0
+	}
+	_, err := d.db.Exec(`UPDATE books SET rating = ? WHERE id = ?`, rating, bookID)
+	return err
+}
+
+// GetReadStatusCounts returns counts of books by read status
+func (d *Database) GetReadStatusCounts(userID string) (*ReadStatusCounts, error) {
+	counts := &ReadStatusCounts{}
+
+	var query string
+	var args []interface{}
+
+	if userID != "" {
+		query = `
+			SELECT
+				COUNT(*) FILTER (WHERE COALESCE(read_status, 'unread') = 'unread') as unread,
+				COUNT(*) FILTER (WHERE read_status = 'reading') as reading,
+				COUNT(*) FILTER (WHERE read_status = 'completed') as completed,
+				COUNT(*) as total
+			FROM books WHERE user_id = ?`
+		args = append(args, userID)
+	} else {
+		query = `
+			SELECT
+				COUNT(*) FILTER (WHERE COALESCE(read_status, 'unread') = 'unread') as unread,
+				COUNT(*) FILTER (WHERE read_status = 'reading') as reading,
+				COUNT(*) FILTER (WHERE read_status = 'completed') as completed,
+				COUNT(*) as total
+			FROM books WHERE user_id = ''`
+	}
+
+	// SQLite doesn't support FILTER, use CASE instead
+	if userID != "" {
+		query = `
+			SELECT
+				SUM(CASE WHEN COALESCE(read_status, 'unread') = 'unread' THEN 1 ELSE 0 END) as unread,
+				SUM(CASE WHEN read_status = 'reading' THEN 1 ELSE 0 END) as reading,
+				SUM(CASE WHEN read_status = 'completed' THEN 1 ELSE 0 END) as completed,
+				COUNT(*) as total
+			FROM books WHERE user_id = ?`
+	} else {
+		query = `
+			SELECT
+				SUM(CASE WHEN COALESCE(read_status, 'unread') = 'unread' THEN 1 ELSE 0 END) as unread,
+				SUM(CASE WHEN read_status = 'reading' THEN 1 ELSE 0 END) as reading,
+				SUM(CASE WHEN read_status = 'completed' THEN 1 ELSE 0 END) as completed,
+				COUNT(*) as total
+			FROM books WHERE user_id = ''`
+	}
+
+	err := d.db.QueryRow(query, args...).Scan(&counts.Unread, &counts.Reading, &counts.Completed, &counts.Total)
+	if err != nil {
+		return nil, err
+	}
+
+	return counts, nil
+}
+
+// CreateReadingList creates a new reading list for a user
+func (d *Database) CreateReadingList(list *models.ReadingList) error {
+	_, err := d.db.Exec(`
+		INSERT INTO reading_lists (id, user_id, name, list_type, created_at)
+		VALUES (?, ?, ?, ?, ?)`,
+		list.ID, list.UserID, list.Name, list.ListType, list.CreatedAt,
+	)
+	return err
+}
+
+// GetReadingList retrieves a reading list by ID
+func (d *Database) GetReadingList(id string) (*models.ReadingList, error) {
+	list := &models.ReadingList{}
+	err := d.db.QueryRow(`
+		SELECT rl.id, rl.user_id, rl.name, rl.list_type, rl.created_at,
+			(SELECT COUNT(*) FROM book_reading_list brl WHERE brl.list_id = rl.id) as book_count
+		FROM reading_lists rl WHERE rl.id = ?`, id,
+	).Scan(&list.ID, &list.UserID, &list.Name, &list.ListType, &list.CreatedAt, &list.BookCount)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GetReadingListByType retrieves a user's reading list by type (for system lists)
+func (d *Database) GetReadingListByType(userID, listType string) (*models.ReadingList, error) {
+	list := &models.ReadingList{}
+	err := d.db.QueryRow(`
+		SELECT rl.id, rl.user_id, rl.name, rl.list_type, rl.created_at,
+			(SELECT COUNT(*) FROM book_reading_list brl WHERE brl.list_id = rl.id) as book_count
+		FROM reading_lists rl WHERE rl.user_id = ? AND rl.list_type = ?`, userID, listType,
+	).Scan(&list.ID, &list.UserID, &list.Name, &list.ListType, &list.CreatedAt, &list.BookCount)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// ListReadingLists returns all reading lists for a user
+func (d *Database) ListReadingLists(userID string) ([]models.ReadingList, error) {
+	rows, err := d.db.Query(`
+		SELECT rl.id, rl.user_id, rl.name, rl.list_type, rl.created_at,
+			(SELECT COUNT(*) FROM book_reading_list brl WHERE brl.list_id = rl.id) as book_count
+		FROM reading_lists rl
+		WHERE rl.user_id = ?
+		ORDER BY CASE rl.list_type
+			WHEN 'want_to_read' THEN 1
+			WHEN 'favorites' THEN 2
+			ELSE 3
+		END, rl.name`, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lists []models.ReadingList
+	for rows.Next() {
+		var list models.ReadingList
+		if err := rows.Scan(&list.ID, &list.UserID, &list.Name, &list.ListType, &list.CreatedAt, &list.BookCount); err != nil {
+			return nil, err
+		}
+		lists = append(lists, list)
+	}
+	return lists, nil
+}
+
+// UpdateReadingList updates a reading list's name
+func (d *Database) UpdateReadingList(id, name string) error {
+	_, err := d.db.Exec(`UPDATE reading_lists SET name = ? WHERE id = ?`, name, id)
+	return err
+}
+
+// DeleteReadingList removes a reading list
+func (d *Database) DeleteReadingList(id string) error {
+	_, err := d.db.Exec(`DELETE FROM reading_lists WHERE id = ?`, id)
+	return err
+}
+
+// AddBookToReadingList adds a book to a reading list
+func (d *Database) AddBookToReadingList(bookID, listID string) error {
+	// Get the max position in this list
+	var maxPos sql.NullInt64
+	d.db.QueryRow(`SELECT MAX(position) FROM book_reading_list WHERE list_id = ?`, listID).Scan(&maxPos)
+	nextPos := 0
+	if maxPos.Valid {
+		nextPos = int(maxPos.Int64) + 1
+	}
+
+	_, err := d.db.Exec(`
+		INSERT OR IGNORE INTO book_reading_list (book_id, list_id, added_at, position)
+		VALUES (?, ?, ?, ?)`, bookID, listID, time.Now(), nextPos,
+	)
+	return err
+}
+
+// RemoveBookFromReadingList removes a book from a reading list
+func (d *Database) RemoveBookFromReadingList(bookID, listID string) error {
+	_, err := d.db.Exec(`
+		DELETE FROM book_reading_list WHERE book_id = ? AND list_id = ?`,
+		bookID, listID,
+	)
+	return err
+}
+
+// GetBooksInReadingList returns all books in a reading list
+func (d *Database) GetBooksInReadingList(listID string) ([]models.Book, error) {
+	rows, err := d.db.Query(`
+		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index,
+			b.file_path, b.cover_path, b.file_size, b.uploaded_at,
+			COALESCE(b.content_type, 'book'), COALESCE(b.file_format, 'epub'),
+			COALESCE(b.read_status, 'unread')
+		FROM books b
+		JOIN book_reading_list brl ON b.id = brl.book_id
+		WHERE brl.list_id = ?
+		ORDER BY brl.position, brl.added_at`, listID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []models.Book
+	for rows.Next() {
+		var book models.Book
+		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
+			&book.ContentType, &book.FileFormat, &book.ReadStatus)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, nil
+}
+
+// GetReadingListsForBook returns all reading lists a book belongs to
+func (d *Database) GetReadingListsForBook(bookID, userID string) ([]models.ReadingList, error) {
+	rows, err := d.db.Query(`
+		SELECT rl.id, rl.user_id, rl.name, rl.list_type, rl.created_at
+		FROM reading_lists rl
+		JOIN book_reading_list brl ON rl.id = brl.list_id
+		WHERE brl.book_id = ? AND rl.user_id = ?
+		ORDER BY rl.list_type, rl.name`, bookID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lists []models.ReadingList
+	for rows.Next() {
+		var list models.ReadingList
+		if err := rows.Scan(&list.ID, &list.UserID, &list.Name, &list.ListType, &list.CreatedAt); err != nil {
+			return nil, err
+		}
+		lists = append(lists, list)
+	}
+	return lists, nil
+}
+
+// IsBookInReadingList checks if a book is in a reading list
+func (d *Database) IsBookInReadingList(bookID, listID string) (bool, error) {
+	var count int
+	err := d.db.QueryRow(`
+		SELECT COUNT(*) FROM book_reading_list WHERE book_id = ? AND list_id = ?`,
+		bookID, listID,
+	).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// EnsureSystemReadingLists creates the system reading lists for a user if they don't exist
+func (d *Database) EnsureSystemReadingLists(userID string) error {
+	systemLists := []struct {
+		listType string
+		name     string
+	}{
+		{models.ReadingListWantToRead, "Want to Read"},
+		{models.ReadingListFavorites, "Favorites"},
+	}
+
+	for _, sl := range systemLists {
+		// Check if list exists
+		var exists int
+		d.db.QueryRow(`SELECT COUNT(*) FROM reading_lists WHERE user_id = ? AND list_type = ?`, userID, sl.listType).Scan(&exists)
+		if exists == 0 {
+			id := userID + "-" + sl.listType
+			_, err := d.db.Exec(`
+				INSERT INTO reading_lists (id, user_id, name, list_type, created_at)
+				VALUES (?, ?, ?, ?, ?)`,
+				id, userID, sl.name, sl.listType, time.Now(),
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// ReorderReadingList updates positions of books in a reading list
+func (d *Database) ReorderReadingList(listID string, bookIDs []string) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(`UPDATE book_reading_list SET position = ? WHERE book_id = ? AND list_id = ?`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	for i, bookID := range bookIDs {
+		if _, err := stmt.Exec(i, bookID, listID); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// ==================== Tag Methods ====================
+
+// CreateTag creates a new tag for a user
+func (d *Database) CreateTag(tag *models.Tag) error {
+	_, err := d.db.Exec(`
+		INSERT INTO tags (id, user_id, name, color, created_at)
+		VALUES (?, ?, ?, ?, ?)`,
+		tag.ID, tag.UserID, tag.Name, tag.Color, tag.CreatedAt,
+	)
+	return err
+}
+
+// GetTag returns a tag by ID
+func (d *Database) GetTag(tagID string) (*models.Tag, error) {
+	tag := &models.Tag{}
+	err := d.db.QueryRow(`
+		SELECT t.id, t.user_id, t.name, t.color, t.created_at,
+			(SELECT COUNT(*) FROM book_tags WHERE tag_id = t.id) as book_count
+		FROM tags t WHERE t.id = ?`, tagID).Scan(
+		&tag.ID, &tag.UserID, &tag.Name, &tag.Color, &tag.CreatedAt, &tag.BookCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return tag, nil
+}
+
+// GetTagByName returns a tag by name for a specific user
+func (d *Database) GetTagByName(userID, name string) (*models.Tag, error) {
+	tag := &models.Tag{}
+	err := d.db.QueryRow(`
+		SELECT t.id, t.user_id, t.name, t.color, t.created_at,
+			(SELECT COUNT(*) FROM book_tags WHERE tag_id = t.id) as book_count
+		FROM tags t WHERE t.user_id = ? AND t.name = ?`, userID, name).Scan(
+		&tag.ID, &tag.UserID, &tag.Name, &tag.Color, &tag.CreatedAt, &tag.BookCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return tag, nil
+}
+
+// ListTags returns all tags for a user
+func (d *Database) ListTags(userID string) ([]*models.Tag, error) {
+	rows, err := d.db.Query(`
+		SELECT t.id, t.user_id, t.name, t.color, t.created_at,
+			(SELECT COUNT(*) FROM book_tags WHERE tag_id = t.id) as book_count
+		FROM tags t
+		WHERE t.user_id = ?
+		ORDER BY t.name ASC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tags []*models.Tag
+	for rows.Next() {
+		tag := &models.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.UserID, &tag.Name, &tag.Color, &tag.CreatedAt, &tag.BookCount); err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, rows.Err()
+}
+
+// UpdateTag updates a tag's name and/or color
+func (d *Database) UpdateTag(tagID, name, color string) error {
+	_, err := d.db.Exec(`UPDATE tags SET name = ?, color = ? WHERE id = ?`, name, color, tagID)
+	return err
+}
+
+// DeleteTag removes a tag and all its book associations
+func (d *Database) DeleteTag(tagID string) error {
+	_, err := d.db.Exec(`DELETE FROM tags WHERE id = ?`, tagID)
+	return err
+}
+
+// AddTagToBook adds a tag to a book
+func (d *Database) AddTagToBook(bookID, tagID string) error {
+	_, err := d.db.Exec(`
+		INSERT OR IGNORE INTO book_tags (book_id, tag_id, added_at)
+		VALUES (?, ?, ?)`,
+		bookID, tagID, time.Now(),
+	)
+	return err
+}
+
+// RemoveTagFromBook removes a tag from a book
+func (d *Database) RemoveTagFromBook(bookID, tagID string) error {
+	_, err := d.db.Exec(`DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?`, bookID, tagID)
+	return err
+}
+
+// GetBookTags returns all tags for a specific book
+func (d *Database) GetBookTags(bookID string) ([]*models.Tag, error) {
+	rows, err := d.db.Query(`
+		SELECT t.id, t.user_id, t.name, t.color, t.created_at
+		FROM tags t
+		INNER JOIN book_tags bt ON t.id = bt.tag_id
+		WHERE bt.book_id = ?
+		ORDER BY t.name ASC`, bookID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tags []*models.Tag
+	for rows.Next() {
+		tag := &models.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.UserID, &tag.Name, &tag.Color, &tag.CreatedAt); err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
+	}
+	return tags, rows.Err()
+}
+
+// GetBooksByTag returns all books with a specific tag
+func (d *Database) GetBooksByTag(tagID string) ([]*models.Book, error) {
+	rows, err := d.db.Query(`
+		SELECT b.id, b.user_id, b.title, b.author, b.series, b.series_index, b.file_path, b.cover_path,
+			b.file_size, b.uploaded_at, b.content_type, b.file_format, b.read_status, b.rating
+		FROM books b
+		INNER JOIN book_tags bt ON b.id = bt.book_id
+		WHERE bt.tag_id = ?
+		ORDER BY b.title ASC`, tagID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []*models.Book
+	for rows.Next() {
+		book := &models.Book{}
+		err := rows.Scan(&book.ID, &book.UserID, &book.Title, &book.Author, &book.Series, &book.SeriesIndex,
+			&book.FilePath, &book.CoverPath, &book.FileSize, &book.UploadedAt,
+			&book.ContentType, &book.FileFormat, &book.ReadStatus, &book.Rating)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+	return books, rows.Err()
+}
+
+// ToggleBookTag toggles a tag on a book (adds if not present, removes if present)
+func (d *Database) ToggleBookTag(bookID, tagID string) (bool, error) {
+	// Check if tag is currently on the book
+	var count int
+	err := d.db.QueryRow(`SELECT COUNT(*) FROM book_tags WHERE book_id = ? AND tag_id = ?`, bookID, tagID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	if count > 0 {
+		// Remove tag
+		_, err = d.db.Exec(`DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?`, bookID, tagID)
+		return false, err
+	}
+
+	// Add tag
+	_, err = d.db.Exec(`INSERT INTO book_tags (book_id, tag_id, added_at) VALUES (?, ?, ?)`, bookID, tagID, time.Now())
+	return true, err
+}
+
+// ==================== Annotation Methods ====================
+
+// CreateAnnotation creates a new annotation/highlight
+func (d *Database) CreateAnnotation(ann *models.Annotation) error {
+	_, err := d.db.Exec(`
+		INSERT INTO annotations (id, book_id, user_id, chapter, cfi, start_offset, end_offset, selected_text, note, color, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		ann.ID, ann.BookID, ann.UserID, ann.Chapter, ann.CFI, ann.StartOffset, ann.EndOffset,
+		ann.SelectedText, ann.Note, ann.Color, ann.CreatedAt, ann.UpdatedAt,
+	)
+	return err
+}
+
+// GetAnnotation returns an annotation by ID
+func (d *Database) GetAnnotation(annotationID string) (*models.Annotation, error) {
+	ann := &models.Annotation{}
+	err := d.db.QueryRow(`
+		SELECT id, book_id, user_id, chapter, cfi, start_offset, end_offset, selected_text, note, color, created_at, updated_at
+		FROM annotations WHERE id = ?`, annotationID).Scan(
+		&ann.ID, &ann.BookID, &ann.UserID, &ann.Chapter, &ann.CFI, &ann.StartOffset, &ann.EndOffset,
+		&ann.SelectedText, &ann.Note, &ann.Color, &ann.CreatedAt, &ann.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return ann, nil
+}
+
+// GetAnnotationsForBook returns all annotations for a book by a user
+func (d *Database) GetAnnotationsForBook(bookID, userID string) ([]*models.Annotation, error) {
+	rows, err := d.db.Query(`
+		SELECT id, book_id, user_id, chapter, cfi, start_offset, end_offset, selected_text, note, color, created_at, updated_at
+		FROM annotations
+		WHERE book_id = ? AND user_id = ?
+		ORDER BY chapter ASC, start_offset ASC`, bookID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var annotations []*models.Annotation
+	for rows.Next() {
+		ann := &models.Annotation{}
+		if err := rows.Scan(&ann.ID, &ann.BookID, &ann.UserID, &ann.Chapter, &ann.CFI, &ann.StartOffset, &ann.EndOffset,
+			&ann.SelectedText, &ann.Note, &ann.Color, &ann.CreatedAt, &ann.UpdatedAt); err != nil {
+			return nil, err
+		}
+		annotations = append(annotations, ann)
+	}
+	return annotations, rows.Err()
+}
+
+// GetAnnotationsForChapter returns annotations for a specific chapter
+func (d *Database) GetAnnotationsForChapter(bookID, userID, chapter string) ([]*models.Annotation, error) {
+	rows, err := d.db.Query(`
+		SELECT id, book_id, user_id, chapter, cfi, start_offset, end_offset, selected_text, note, color, created_at, updated_at
+		FROM annotations
+		WHERE book_id = ? AND user_id = ? AND chapter = ?
+		ORDER BY start_offset ASC`, bookID, userID, chapter)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var annotations []*models.Annotation
+	for rows.Next() {
+		ann := &models.Annotation{}
+		if err := rows.Scan(&ann.ID, &ann.BookID, &ann.UserID, &ann.Chapter, &ann.CFI, &ann.StartOffset, &ann.EndOffset,
+			&ann.SelectedText, &ann.Note, &ann.Color, &ann.CreatedAt, &ann.UpdatedAt); err != nil {
+			return nil, err
+		}
+		annotations = append(annotations, ann)
+	}
+	return annotations, rows.Err()
+}
+
+// GetAllAnnotationsForUser returns all annotations across all books for a user
+func (d *Database) GetAllAnnotationsForUser(userID string) ([]*models.Annotation, error) {
+	rows, err := d.db.Query(`
+		SELECT id, book_id, user_id, chapter, cfi, start_offset, end_offset, selected_text, note, color, created_at, updated_at
+		FROM annotations
+		WHERE user_id = ?
+		ORDER BY updated_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var annotations []*models.Annotation
+	for rows.Next() {
+		ann := &models.Annotation{}
+		if err := rows.Scan(&ann.ID, &ann.BookID, &ann.UserID, &ann.Chapter, &ann.CFI, &ann.StartOffset, &ann.EndOffset,
+			&ann.SelectedText, &ann.Note, &ann.Color, &ann.CreatedAt, &ann.UpdatedAt); err != nil {
+			return nil, err
+		}
+		annotations = append(annotations, ann)
+	}
+	return annotations, rows.Err()
+}
+
+// UpdateAnnotation updates an annotation's note and/or color
+func (d *Database) UpdateAnnotation(annotationID, note, color string) error {
+	_, err := d.db.Exec(`UPDATE annotations SET note = ?, color = ?, updated_at = ? WHERE id = ?`,
+		note, color, time.Now(), annotationID)
+	return err
+}
+
+// DeleteAnnotation removes an annotation
+func (d *Database) DeleteAnnotation(annotationID string) error {
+	_, err := d.db.Exec(`DELETE FROM annotations WHERE id = ?`, annotationID)
+	return err
+}
+
+// DeleteAnnotationsForBook removes all annotations for a book by a user
+func (d *Database) DeleteAnnotationsForBook(bookID, userID string) error {
+	_, err := d.db.Exec(`DELETE FROM annotations WHERE book_id = ? AND user_id = ?`, bookID, userID)
+	return err
+}
+
+// GetAnnotationCount returns the number of annotations for a book by a user
+func (d *Database) GetAnnotationCount(bookID, userID string) (int, error) {
+	var count int
+	err := d.db.QueryRow(`SELECT COUNT(*) FROM annotations WHERE book_id = ? AND user_id = ?`, bookID, userID).Scan(&count)
+	return count, err
+}
+
+// GetAnnotationStats returns annotation statistics for a user
+func (d *Database) GetAnnotationStats(userID string) (totalAnnotations int, booksWithAnnotations int, err error) {
+	err = d.db.QueryRow(`SELECT COUNT(*) FROM annotations WHERE user_id = ?`, userID).Scan(&totalAnnotations)
+	if err != nil {
+		return 0, 0, err
+	}
+	err = d.db.QueryRow(`SELECT COUNT(DISTINCT book_id) FROM annotations WHERE user_id = ?`, userID).Scan(&booksWithAnnotations)
+	return totalAnnotations, booksWithAnnotations, err
+}
+
+// SimilarBook represents a book with a similarity score
+type SimilarBook struct {
+	Book    *models.Book `json:"book"`
+	Score   int          `json:"score"`   // Similarity score (higher is more similar)
+	Reasons []string     `json:"reasons"` // Why this book is similar
+}
+
+// GetSimilarBooks finds books similar to the given book based on various criteria
+func (d *Database) GetSimilarBooks(bookID, userID string, limit int) ([]*SimilarBook, error) {
+	// First, get the source book
+	book, err := d.GetBook(bookID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map to accumulate scores for each book
+	similarBooks := make(map[string]*SimilarBook)
+
+	// Helper to add a book to the results
+	addBook := func(b *models.Book, score int, reason string) {
+		if sb, exists := similarBooks[b.ID]; exists {
+			sb.Score += score
+			// Check if reason already exists
+			found := false
+			for _, r := range sb.Reasons {
+				if r == reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				sb.Reasons = append(sb.Reasons, reason)
+			}
+		} else {
+			similarBooks[b.ID] = &SimilarBook{
+				Book:    b,
+				Score:   score,
+				Reasons: []string{reason},
+			}
+		}
+	}
+
+	// 1. Find books by same author (weight: 30)
+	if book.Author != "" {
+		rows, err := d.db.Query(`
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size,
+				   uploaded_at, content_type, file_format, read_status, rating
+			FROM books
+			WHERE author = ? AND id != ? AND (user_id = ? OR user_id = '')
+			LIMIT 20`, book.Author, bookID, userID)
+		if err == nil {
+			for rows.Next() {
+				b := &models.Book{}
+				err := rows.Scan(&b.ID, &b.UserID, &b.Title, &b.Author, &b.Series, &b.SeriesIndex,
+					&b.FilePath, &b.CoverPath, &b.FileSize, &b.UploadedAt,
+					&b.ContentType, &b.FileFormat, &b.ReadStatus, &b.Rating)
+				if err != nil {
+					continue
+				}
+				addBook(b, 30, "same author")
+			}
+			rows.Close()
+		}
+	}
+
+	// 2. Find books in same series (weight: 50)
+	if book.Series != "" {
+		rows, err := d.db.Query(`
+			SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size,
+				   uploaded_at, content_type, file_format, read_status, rating
+			FROM books
+			WHERE series = ? AND id != ? AND (user_id = ? OR user_id = '')
+			ORDER BY series_index ASC
+			LIMIT 20`, book.Series, bookID, userID)
+		if err == nil {
+			for rows.Next() {
+				b := &models.Book{}
+				err := rows.Scan(&b.ID, &b.UserID, &b.Title, &b.Author, &b.Series, &b.SeriesIndex,
+					&b.FilePath, &b.CoverPath, &b.FileSize, &b.UploadedAt,
+					&b.ContentType, &b.FileFormat, &b.ReadStatus, &b.Rating)
+				if err != nil {
+					continue
+				}
+				addBook(b, 50, "same series")
+			}
+			rows.Close()
+		}
+	}
+
+	// 3. Find books with overlapping subjects (weight: 20 per matching subject)
+	if book.Subjects != "" {
+		subjects := strings.Split(book.Subjects, ",")
+		for _, subject := range subjects {
+			subject = strings.TrimSpace(subject)
+			if subject == "" {
+				continue
+			}
+			rows, err := d.db.Query(`
+				SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size,
+					   uploaded_at, content_type, file_format, read_status, rating
+				FROM books
+				WHERE subjects LIKE ? AND id != ? AND (user_id = ? OR user_id = '')
+				LIMIT 20`, "%"+subject+"%", bookID, userID)
+			if err == nil {
+				for rows.Next() {
+					b := &models.Book{}
+					err := rows.Scan(&b.ID, &b.UserID, &b.Title, &b.Author, &b.Series, &b.SeriesIndex,
+						&b.FilePath, &b.CoverPath, &b.FileSize, &b.UploadedAt,
+						&b.ContentType, &b.FileFormat, &b.ReadStatus, &b.Rating)
+					if err != nil {
+						continue
+					}
+					addBook(b, 20, "similar subjects")
+				}
+				rows.Close()
+			}
+		}
+	}
+
+	// 4. Find books with same tags (weight: 15 per matching tag)
+	tagRows, err := d.db.Query(`
+		SELECT DISTINCT bt2.book_id
+		FROM book_tags bt1
+		JOIN book_tags bt2 ON bt1.tag_id = bt2.tag_id
+		JOIN books b ON bt2.book_id = b.id
+		WHERE bt1.book_id = ? AND bt2.book_id != ? AND (b.user_id = ? OR b.user_id = '')
+		LIMIT 50`, bookID, bookID, userID)
+	if err == nil {
+		for tagRows.Next() {
+			var relatedBookID string
+			if err := tagRows.Scan(&relatedBookID); err != nil {
+				continue
+			}
+			if sb, exists := similarBooks[relatedBookID]; exists {
+				sb.Score += 15
+				found := false
+				for _, r := range sb.Reasons {
+					if r == "shared tags" {
+						found = true
+						break
+					}
+				}
+				if !found {
+					sb.Reasons = append(sb.Reasons, "shared tags")
+				}
+			} else {
+				// Fetch the book
+				relatedBook, err := d.GetBook(relatedBookID)
+				if err == nil {
+					similarBooks[relatedBookID] = &SimilarBook{
+						Book:    relatedBook,
+						Score:   15,
+						Reasons: []string{"shared tags"},
+					}
+				}
+			}
+		}
+		tagRows.Close()
+	}
+
+	// 5. Find books with same content type (weight: 5)
+	rows, err := d.db.Query(`
+		SELECT id, user_id, title, author, series, series_index, file_path, cover_path, file_size,
+			   uploaded_at, content_type, file_format, read_status, rating
+		FROM books
+		WHERE content_type = ? AND id != ? AND (user_id = ? OR user_id = '')
+		LIMIT 50`, book.ContentType, bookID, userID)
+	if err == nil {
+		for rows.Next() {
+			b := &models.Book{}
+			err := rows.Scan(&b.ID, &b.UserID, &b.Title, &b.Author, &b.Series, &b.SeriesIndex,
+				&b.FilePath, &b.CoverPath, &b.FileSize, &b.UploadedAt,
+				&b.ContentType, &b.FileFormat, &b.ReadStatus, &b.Rating)
+			if err != nil {
+				continue
+			}
+			addBook(b, 5, "same type")
+		}
+		rows.Close()
+	}
+
+	// Convert map to slice and sort by score
+	result := make([]*SimilarBook, 0, len(similarBooks))
+	for _, sb := range similarBooks {
+		// Only include books with score > 5 (just same type isn't enough)
+		if sb.Score > 5 {
+			result = append(result, sb)
+		}
+	}
+
+	// Sort by score descending
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Score > result[j].Score
+	})
+
+	// Apply limit
+	if limit > 0 && len(result) > limit {
+		result = result[:limit]
+	}
+
+	return result, nil
 }
 
 // Close closes the database connection

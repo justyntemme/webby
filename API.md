@@ -136,6 +136,8 @@ Response 201:
     "file_size": 1024,
     "file_format": "epub|pdf|cbz|cbr",
     "content_type": "book|comic",
+    "read_status": "unread|reading|completed",
+    "rating": 0,
     "uploaded_at": "timestamp"
   }
 }
@@ -169,6 +171,8 @@ Response 200:
       "file_size": 1024,
       "file_format": "epub|pdf|cbz",
       "content_type": "book|comic",
+      "read_status": "unread|reading|completed",
+      "rating": 0,
       "uploaded_at": "timestamp"
     }
   ],
@@ -447,6 +451,44 @@ Response 200:
 }
 ```
 
+### Bulk Refresh Metadata
+```
+POST /api/metadata/bulk-refresh
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "book_ids": ["uuid1", "uuid2", "uuid3"],
+  "content_type": "book"
+}
+
+Either book_ids or content_type can be specified:
+- book_ids: Specific books to refresh
+- content_type: "book" or "comic" to refresh all books of that type (max 50 per request)
+
+Response 200:
+{
+  "message": "Bulk metadata refresh complete",
+  "processed": 10,
+  "succeeded": 8,
+  "failed": 2,
+  "results": [
+    {
+      "book_id": "uuid",
+      "title": "string",
+      "status": "success",
+      "confidence": 0.85
+    },
+    {
+      "book_id": "uuid2",
+      "title": "string",
+      "status": "failed",
+      "reason": "No matching metadata found"
+    }
+  ]
+}
+```
+
 ---
 
 ## Comic Metadata
@@ -555,6 +597,561 @@ Response 200:
     "volume": 0,
     "year": 2020
   }
+}
+```
+
+---
+
+## Read Status Tracking
+
+Track reading progress with status values: `unread`, `reading`, `completed`.
+
+### Get Book Read Status
+```
+GET /api/books/:id/status
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "book_id": "uuid",
+  "read_status": "reading",
+  "date_completed": null
+}
+```
+
+### Update Book Read Status
+```
+PUT /api/books/:id/status
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "status": "completed"  // "unread", "reading", or "completed"
+}
+
+Response 200:
+{
+  "message": "Read status updated",
+  "book_id": "uuid",
+  "read_status": "completed",
+  "date_completed": "2025-01-15T12:00:00Z"
+}
+```
+
+### Get Read Status Counts
+```
+GET /api/books/status/counts
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "unread": 50,
+  "reading": 5,
+  "completed": 20,
+  "total": 75
+}
+```
+
+### Bulk Update Read Status
+```
+POST /api/books/status/bulk
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "book_ids": ["uuid-1", "uuid-2", "uuid-3"],
+  "status": "completed"
+}
+
+Response 200:
+{
+  "message": "Read status updated",
+  "updated_count": 3,
+  "requested_count": 3,
+  "status": "completed"
+}
+```
+
+### Filter Books by Read Status
+```
+GET /api/books?status=reading
+Authorization: Bearer <token>
+
+Query Parameters:
+- status: "unread", "reading", or "completed" (optional)
+
+Note: The status filter can be combined with other filters (type, search, sort).
+```
+
+**Auto-Status Updates:**
+- When a reading position is saved and the book's status is "unread", it automatically updates to "reading"
+
+---
+
+## Star Ratings
+
+Rate books from 1-5 stars. A rating of 0 means no rating.
+
+### Get Book Rating
+```
+GET /api/books/:id/rating
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "book_id": "uuid",
+  "rating": 4
+}
+```
+
+### Update Book Rating
+```
+PUT /api/books/:id/rating
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "rating": 5
+}
+
+Response 200:
+{
+  "message": "Rating updated",
+  "rating": 5
+}
+
+Notes:
+- Rating must be between 0 and 5
+- Rating of 0 clears the rating
+- Users can only rate books they own or have been shared with them
+```
+
+---
+
+## Custom Tags
+
+Create and manage custom tags to organize your library. Tags have a name and optional color.
+
+### List All Tags
+```
+GET /api/tags
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "tags": [
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "name": "Sci-Fi",
+      "color": "#3b82f6",
+      "created_at": "timestamp",
+      "book_count": 5
+    }
+  ],
+  "count": 1
+}
+```
+
+### Create Tag
+```
+POST /api/tags
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Sci-Fi",
+  "color": "#3b82f6"
+}
+
+Response 201:
+{
+  "message": "Tag created",
+  "tag": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "name": "Sci-Fi",
+    "color": "#3b82f6",
+    "created_at": "timestamp"
+  }
+}
+
+Notes:
+- Name is required, color defaults to #3b82f6 if not provided
+- Tag names must be unique per user
+```
+
+### Get Tag
+```
+GET /api/tags/:id
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "name": "Sci-Fi",
+  "color": "#3b82f6",
+  "created_at": "timestamp",
+  "book_count": 5
+}
+```
+
+### Update Tag
+```
+PUT /api/tags/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "Science Fiction",
+  "color": "#ef4444"
+}
+
+Response 200:
+{
+  "message": "Tag updated",
+  "tag": { ... }
+}
+```
+
+### Delete Tag
+```
+DELETE /api/tags/:id
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Tag deleted",
+  "tag_id": "uuid"
+}
+
+Note: Deleting a tag removes it from all books.
+```
+
+### Get Books by Tag
+```
+GET /api/tags/:id/books
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "tag": { ... },
+  "books": [ ... ],
+  "count": 5
+}
+```
+
+### Get Tags for a Book
+```
+GET /api/books/:id/tags
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "book_id": "uuid",
+  "tags": [ ... ],
+  "count": 2
+}
+```
+
+### Add Tag to Book
+```
+POST /api/books/:id/tags/:tagId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Tag added to book",
+  "book_id": "uuid",
+  "tag_id": "uuid"
+}
+```
+
+### Remove Tag from Book
+```
+DELETE /api/books/:id/tags/:tagId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Tag removed from book",
+  "book_id": "uuid",
+  "tag_id": "uuid"
+}
+```
+
+### Toggle Tag on Book
+```
+PUT /api/books/:id/tags/:tagId/toggle
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "book_id": "uuid",
+  "tag_id": "uuid",
+  "in_tag": true
+}
+
+Note: Adds the tag if not present, removes it if already applied.
+```
+
+---
+
+## Annotations & Highlights
+
+Create and manage annotations (highlights and notes) on your books. Annotations support multiple highlight colors and optional notes.
+
+### Highlight Colors
+
+Available colors:
+- `yellow` (default)
+- `green`
+- `blue`
+- `pink`
+- `orange`
+
+### List All Annotations
+```
+GET /api/annotations
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "annotations": [
+    {
+      "id": "uuid",
+      "book_id": "uuid",
+      "user_id": "uuid",
+      "chapter": "chapter1",
+      "cfi": "/6/4[chap01ref]!/4/2/2/1:0",
+      "start_offset": 0,
+      "end_offset": 50,
+      "selected_text": "The highlighted text",
+      "note": "My personal note",
+      "color": "yellow",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get Annotation Statistics
+```
+GET /api/annotations/stats
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "total_annotations": 42,
+  "books_with_annotations": 5
+}
+```
+
+### List Annotations for a Book
+```
+GET /api/books/:id/annotations
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "annotations": [ ... ],
+  "count": 5
+}
+
+Note: Returns annotations ordered by chapter and start_offset.
+```
+
+### List Annotations for a Chapter
+```
+GET /api/books/:id/annotations/chapter/:chapter
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "annotations": [ ... ],
+  "count": 2
+}
+
+Note: Returns only annotations for the specified chapter.
+```
+
+### Create Annotation
+```
+POST /api/books/:id/annotations
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "chapter": "chapter1",
+  "cfi": "/6/4[chap01ref]!/4/2/2/1:0",
+  "start_offset": 100,
+  "end_offset": 150,
+  "selected_text": "The text to highlight",
+  "note": "Optional note about this highlight",
+  "color": "yellow"
+}
+
+Response 201:
+{
+  "message": "Annotation created",
+  "annotation": {
+    "id": "uuid",
+    "book_id": "uuid",
+    "user_id": "uuid",
+    "chapter": "chapter1",
+    "cfi": "/6/4[chap01ref]!/4/2/2/1:0",
+    "start_offset": 100,
+    "end_offset": 150,
+    "selected_text": "The text to highlight",
+    "note": "Optional note about this highlight",
+    "color": "yellow",
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
+  }
+}
+
+Required fields:
+- chapter: Chapter/section identifier
+- selected_text: The highlighted text
+
+Optional fields:
+- cfi: EPUB CFI for precise location
+- start_offset / end_offset: Character offsets
+- note: User's note/comment
+- color: Highlight color (defaults to "yellow")
+```
+
+### Get Annotation
+```
+GET /api/books/:id/annotations/:annotationId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "id": "uuid",
+  "book_id": "uuid",
+  "user_id": "uuid",
+  "chapter": "chapter1",
+  "selected_text": "The highlighted text",
+  "note": "My note",
+  "color": "yellow",
+  "created_at": "timestamp",
+  "updated_at": "timestamp"
+}
+```
+
+### Update Annotation
+```
+PUT /api/books/:id/annotations/:annotationId
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "note": "Updated note",
+  "color": "green"
+}
+
+Response 200:
+{
+  "message": "Annotation updated",
+  "annotation": { ... }
+}
+
+Note: Only note and color can be updated. Text selection cannot be changed.
+```
+
+### Delete Annotation
+```
+DELETE /api/books/:id/annotations/:annotationId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Annotation deleted"
+}
+```
+
+---
+
+## Duplicate Detection
+
+Duplicate detection uses SHA256 file hashes to identify identical books in your library.
+
+### Get Duplicate Status
+```
+GET /api/duplicates/status
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "books_without_hash": 0,
+  "duplicate_groups": 3,
+  "duplicate_books": 5,
+  "ready": true
+}
+```
+
+### Find Duplicates
+```
+GET /api/duplicates
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "groups": [
+    {
+      "file_hash": "sha256hash...",
+      "count": 2,
+      "books": [
+        {
+          "id": "uuid",
+          "title": "string",
+          "author": "string",
+          "uploaded_at": "timestamp"
+        }
+      ]
+    }
+  ],
+  "count": 3
+}
+```
+
+### Compute Missing Hashes
+```
+POST /api/duplicates/compute
+Authorization: Bearer <token>
+
+Computes file hashes for books uploaded before duplicate detection was enabled.
+
+Response 200:
+{
+  "message": "Hash computation complete",
+  "total": 100,
+  "processed": 98,
+  "failed": 2
+}
+```
+
+### Merge Duplicates
+```
+POST /api/duplicates/merge
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "keep_id": "uuid-of-book-to-keep",
+  "delete_ids": ["uuid-to-delete-1", "uuid-to-delete-2"]
+}
+
+Response 200:
+{
+  "message": "Duplicates merged successfully",
+  "kept_book": { ... },
+  "deleted_books": ["uuid-1", "uuid-2"],
+  "files_removed": 2
 }
 ```
 
@@ -737,6 +1334,188 @@ GET /api/books/:id/collections
 Response 200:
 {
   "collections": [ ... ]
+}
+```
+
+---
+
+## Reading Lists
+
+Reading lists are user-curated lists for organizing books. System lists ("Want to Read", "Favorites") are auto-created for each user.
+
+### List Reading Lists
+```
+GET /api/reading-lists
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "lists": [
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "name": "Want to Read",
+      "list_type": "want_to_read",
+      "created_at": "timestamp",
+      "book_count": 5
+    },
+    {
+      "id": "uuid",
+      "user_id": "uuid",
+      "name": "Favorites",
+      "list_type": "favorites",
+      "created_at": "timestamp",
+      "book_count": 3
+    }
+  ],
+  "count": 2
+}
+```
+
+### Get Reading List
+```
+GET /api/reading-lists/:id
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "list": {
+    "id": "uuid",
+    "name": "Want to Read",
+    "list_type": "want_to_read",
+    "book_count": 5
+  },
+  "books": [ ... ]
+}
+```
+
+### Create Custom Reading List
+```
+POST /api/reading-lists
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "My Summer Reads"
+}
+
+Response 201:
+{
+  "message": "Reading list created",
+  "list": {
+    "id": "uuid",
+    "name": "My Summer Reads",
+    "list_type": "custom",
+    "created_at": "timestamp"
+  }
+}
+```
+
+### Update Reading List
+```
+PUT /api/reading-lists/:id
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "name": "New List Name"
+}
+
+Response 200:
+{
+  "message": "Reading list updated",
+  "list": { ... }
+}
+```
+
+### Delete Reading List
+```
+DELETE /api/reading-lists/:id
+Authorization: Bearer <token>
+
+Note: System lists (want_to_read, favorites) cannot be deleted.
+
+Response 200:
+{
+  "message": "Reading list deleted"
+}
+```
+
+### Add Book to Reading List
+```
+POST /api/reading-lists/:id/books/:bookId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Book added to reading list",
+  "list_id": "uuid",
+  "book_id": "uuid"
+}
+```
+
+### Remove Book from Reading List
+```
+DELETE /api/reading-lists/:id/books/:bookId
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "message": "Book removed from reading list",
+  "list_id": "uuid",
+  "book_id": "uuid"
+}
+```
+
+### Toggle Book in Reading List
+```
+PUT /api/reading-lists/:id/books/:bookId/toggle
+Authorization: Bearer <token>
+
+Adds the book if not in list, removes if already in list.
+
+Response 200:
+{
+  "message": "Book added from reading list",
+  "action": "added",
+  "list_id": "uuid",
+  "book_id": "uuid",
+  "in_list": true
+}
+```
+
+### Get Reading Lists for Book
+```
+GET /api/books/:id/reading-lists
+Authorization: Bearer <token>
+
+Response 200:
+{
+  "book_id": "uuid",
+  "lists": [
+    {
+      "id": "uuid",
+      "name": "Want to Read",
+      "list_type": "want_to_read"
+    }
+  ]
+}
+```
+
+### Reorder Reading List
+```
+PUT /api/reading-lists/:id/reorder
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "book_ids": ["uuid-1", "uuid-2", "uuid-3"]
+}
+
+Response 200:
+{
+  "message": "Reading list reordered",
+  "list_id": "uuid"
 }
 ```
 

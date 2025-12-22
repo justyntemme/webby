@@ -86,6 +86,40 @@ func main() {
 			// Current user
 			protected.GET("/auth/me", authHandler.GetCurrentUser)
 			protected.GET("/users/search", authHandler.SearchUsers)
+
+			// Reading Lists
+			protected.GET("/reading-lists", handler.ListReadingLists)
+			protected.POST("/reading-lists", handler.CreateReadingList)
+			protected.GET("/reading-lists/:id", handler.GetReadingList)
+			protected.PUT("/reading-lists/:id", handler.UpdateReadingList)
+			protected.DELETE("/reading-lists/:id", handler.DeleteReadingList)
+			protected.POST("/reading-lists/:id/books/:bookId", handler.AddBookToReadingList)
+			protected.DELETE("/reading-lists/:id/books/:bookId", handler.RemoveBookFromReadingList)
+			protected.PUT("/reading-lists/:id/books/:bookId/toggle", handler.ToggleBookInReadingList)
+			protected.PUT("/reading-lists/:id/reorder", handler.ReorderReadingList)
+			protected.GET("/books/:id/reading-lists", handler.GetBookReadingLists)
+
+			// Custom Tags
+			protected.GET("/tags", handler.ListTags)
+			protected.POST("/tags", handler.CreateTag)
+			protected.GET("/tags/:id", handler.GetTag)
+			protected.PUT("/tags/:id", handler.UpdateTag)
+			protected.DELETE("/tags/:id", handler.DeleteTag)
+			protected.GET("/tags/:id/books", handler.GetBooksByTag)
+			protected.GET("/books/:id/tags", handler.GetBookTags)
+			protected.POST("/books/:id/tags/:tagId", handler.AddTagToBook)
+			protected.DELETE("/books/:id/tags/:tagId", handler.RemoveTagFromBook)
+			protected.PUT("/books/:id/tags/:tagId/toggle", handler.ToggleBookTag)
+
+			// Annotations & Highlights
+			protected.GET("/annotations", handler.ListAllAnnotations)
+			protected.GET("/annotations/stats", handler.GetAnnotationStats)
+			protected.GET("/books/:id/annotations", handler.ListAnnotationsForBook)
+			protected.GET("/books/:id/annotations/chapter/:chapter", handler.ListAnnotationsForChapter)
+			protected.POST("/books/:id/annotations", handler.CreateAnnotation)
+			protected.GET("/books/:id/annotations/:annotationId", handler.GetAnnotation)
+			protected.PUT("/books/:id/annotations/:annotationId", handler.UpdateAnnotation)
+			protected.DELETE("/books/:id/annotations/:annotationId", handler.DeleteAnnotation)
 		}
 
 		// Book routes - use optional auth for backward compatibility
@@ -118,6 +152,16 @@ func main() {
 			booksGroup.GET("/books/:id/position", handler.GetReadingPosition)
 			booksGroup.POST("/books/:id/position", handler.SaveReadingPosition)
 
+			// Read status tracking
+			booksGroup.GET("/books/status/counts", handler.GetReadStatusCounts)
+			booksGroup.GET("/books/:id/status", handler.GetBookReadStatus)
+			booksGroup.PUT("/books/:id/status", handler.UpdateBookReadStatus)
+			booksGroup.POST("/books/status/bulk", handler.BulkUpdateReadStatus)
+
+			// Star ratings
+			booksGroup.GET("/books/:id/rating", handler.GetBookRating)
+			booksGroup.PUT("/books/:id/rating", handler.UpdateBookRating)
+
 			// Book collections (for a specific book)
 			booksGroup.GET("/books/:id/collections", handler.GetBookCollections)
 
@@ -126,12 +170,19 @@ func main() {
 			booksGroup.GET("/metadata/search", handler.SearchMetadata)
 			booksGroup.POST("/books/:id/metadata/refresh", handler.RefreshBookMetadata)
 			booksGroup.PUT("/books/:id/metadata", handler.UpdateBookMetadata)
+			booksGroup.POST("/metadata/bulk-refresh", handler.BulkRefreshMetadata)
 
 			// Comic Metadata
 			booksGroup.GET("/metadata/comic/status", handler.GetComicMetadataStatus)
 			booksGroup.GET("/metadata/comic/search", handler.SearchComicMetadata)
 			booksGroup.POST("/books/:id/metadata/comic/refresh", handler.RefreshComicMetadata)
 			booksGroup.POST("/books/:id/metadata/comic/reprocess", handler.ReprocessComicFilename)
+
+			// Duplicate Detection
+			booksGroup.GET("/duplicates", handler.GetDuplicates)
+			booksGroup.GET("/duplicates/status", handler.GetDuplicatesStatus)
+			booksGroup.POST("/duplicates/compute", handler.ComputeHashes)
+			booksGroup.POST("/duplicates/merge", handler.MergeDuplicates)
 
 			// Book sharing
 			booksGroup.GET("/books/shared", handler.GetSharedBooks)
@@ -158,6 +209,11 @@ func main() {
 	// Serve auth page
 	r.GET("/auth", func(c *gin.Context) {
 		c.File("web/static/auth.html")
+	})
+
+	// Serve duplicates page
+	r.GET("/duplicates", func(c *gin.Context) {
+		c.File("web/static/duplicates.html")
 	})
 
 	// Serve library index at root

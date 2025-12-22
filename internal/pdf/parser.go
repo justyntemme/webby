@@ -291,3 +291,42 @@ func HasImages(filePath string) bool {
 	}
 	return false
 }
+
+// UpdateMetadata writes metadata to a PDF file
+func UpdateMetadata(filePath string, meta *Metadata) error {
+	// Build properties map for pdfcpu
+	properties := make(map[string]string)
+
+	if meta.Title != "" {
+		properties["Title"] = meta.Title
+	}
+	if meta.Author != "" {
+		properties["Author"] = meta.Author
+	}
+	if meta.Subject != "" {
+		properties["Subject"] = meta.Subject
+	}
+	if len(meta.Keywords) > 0 {
+		properties["Keywords"] = strings.Join(meta.Keywords, ", ")
+	}
+
+	if len(properties) == 0 {
+		return nil // Nothing to update
+	}
+
+	// pdfcpu AddPropertiesFile adds/updates properties
+	// When outFile is empty, it modifies the file in place
+	conf := model.NewDefaultConfiguration()
+	return api.AddPropertiesFile(filePath, "", properties, conf)
+}
+
+// SetMetadata is an alias for UpdateMetadata for consistency with other packages
+func SetMetadata(filePath, title, author, subject string, keywords []string) error {
+	meta := &Metadata{
+		Title:    title,
+		Author:   author,
+		Subject:  subject,
+		Keywords: keywords,
+	}
+	return UpdateMetadata(filePath, meta)
+}

@@ -687,3 +687,263 @@ func TestBookMetadataDefaultValues(t *testing.T) {
 	// MetadataSource defaults to empty when not set
 	assert.Equal(t, "", retrieved.MetadataSource)
 }
+
+func TestCreateAndGetAnnotation(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	// Create annotation
+	now := time.Now()
+	ann := &models.Annotation{
+		ID:           "ann-id",
+		BookID:       book.ID,
+		UserID:       user.ID,
+		Chapter:      "chapter-1",
+		CFI:          "/6/4[chap01]!/4/2/1:0",
+		StartOffset:  100,
+		EndOffset:    150,
+		SelectedText: "This is the highlighted text",
+		Note:         "My note about this",
+		Color:        "yellow",
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	err := db.CreateAnnotation(ann)
+	require.NoError(t, err)
+
+	// Get annotation
+	retrieved, err := db.GetAnnotation(ann.ID)
+	require.NoError(t, err)
+	assert.Equal(t, ann.ID, retrieved.ID)
+	assert.Equal(t, ann.BookID, retrieved.BookID)
+	assert.Equal(t, ann.UserID, retrieved.UserID)
+	assert.Equal(t, ann.Chapter, retrieved.Chapter)
+	assert.Equal(t, ann.CFI, retrieved.CFI)
+	assert.Equal(t, ann.StartOffset, retrieved.StartOffset)
+	assert.Equal(t, ann.EndOffset, retrieved.EndOffset)
+	assert.Equal(t, ann.SelectedText, retrieved.SelectedText)
+	assert.Equal(t, ann.Note, retrieved.Note)
+	assert.Equal(t, ann.Color, retrieved.Color)
+}
+
+func TestGetAnnotationsForBook(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+
+	// Create multiple annotations
+	ann1 := &models.Annotation{ID: "ann-1", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 100, EndOffset: 150, SelectedText: "Text 1", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	ann2 := &models.Annotation{ID: "ann-2", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 200, EndOffset: 250, SelectedText: "Text 2", Color: "green", CreatedAt: now, UpdatedAt: now}
+	ann3 := &models.Annotation{ID: "ann-3", BookID: book.ID, UserID: user.ID, Chapter: "chapter-2", StartOffset: 50, EndOffset: 100, SelectedText: "Text 3", Color: "blue", CreatedAt: now, UpdatedAt: now}
+
+	require.NoError(t, db.CreateAnnotation(ann1))
+	require.NoError(t, db.CreateAnnotation(ann2))
+	require.NoError(t, db.CreateAnnotation(ann3))
+
+	// Get all annotations for book
+	annotations, err := db.GetAnnotationsForBook(book.ID, user.ID)
+	require.NoError(t, err)
+	assert.Len(t, annotations, 3)
+
+	// Should be sorted by chapter then offset
+	assert.Equal(t, "ann-1", annotations[0].ID)
+	assert.Equal(t, "ann-2", annotations[1].ID)
+	assert.Equal(t, "ann-3", annotations[2].ID)
+}
+
+func TestGetAnnotationsForChapter(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+
+	// Create annotations in different chapters
+	ann1 := &models.Annotation{ID: "ann-1", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 100, EndOffset: 150, SelectedText: "Text 1", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	ann2 := &models.Annotation{ID: "ann-2", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 200, EndOffset: 250, SelectedText: "Text 2", Color: "green", CreatedAt: now, UpdatedAt: now}
+	ann3 := &models.Annotation{ID: "ann-3", BookID: book.ID, UserID: user.ID, Chapter: "chapter-2", StartOffset: 50, EndOffset: 100, SelectedText: "Text 3", Color: "blue", CreatedAt: now, UpdatedAt: now}
+
+	require.NoError(t, db.CreateAnnotation(ann1))
+	require.NoError(t, db.CreateAnnotation(ann2))
+	require.NoError(t, db.CreateAnnotation(ann3))
+
+	// Get annotations for chapter-1 only
+	annotations, err := db.GetAnnotationsForChapter(book.ID, user.ID, "chapter-1")
+	require.NoError(t, err)
+	assert.Len(t, annotations, 2)
+
+	// Get annotations for chapter-2 only
+	annotations, err = db.GetAnnotationsForChapter(book.ID, user.ID, "chapter-2")
+	require.NoError(t, err)
+	assert.Len(t, annotations, 1)
+	assert.Equal(t, "ann-3", annotations[0].ID)
+}
+
+func TestUpdateAnnotation(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+	ann := &models.Annotation{ID: "ann-id", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 100, EndOffset: 150, SelectedText: "Text", Note: "Original note", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	require.NoError(t, db.CreateAnnotation(ann))
+
+	// Update annotation
+	err := db.UpdateAnnotation(ann.ID, "Updated note", "green")
+	require.NoError(t, err)
+
+	// Verify update
+	retrieved, err := db.GetAnnotation(ann.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Updated note", retrieved.Note)
+	assert.Equal(t, "green", retrieved.Color)
+}
+
+func TestDeleteAnnotation(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+	ann := &models.Annotation{ID: "ann-id", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 100, EndOffset: 150, SelectedText: "Text", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	require.NoError(t, db.CreateAnnotation(ann))
+
+	// Delete annotation
+	err := db.DeleteAnnotation(ann.ID)
+	require.NoError(t, err)
+
+	// Verify deleted
+	_, err = db.GetAnnotation(ann.ID)
+	assert.Error(t, err)
+}
+
+func TestAnnotationCount(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and book
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book := &models.Book{ID: "book-id", UserID: user.ID, Title: "Test Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+
+	// Initially no annotations
+	count, err := db.GetAnnotationCount(book.ID, user.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 0, count)
+
+	// Add annotations
+	ann1 := &models.Annotation{ID: "ann-1", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 100, EndOffset: 150, SelectedText: "Text 1", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	ann2 := &models.Annotation{ID: "ann-2", BookID: book.ID, UserID: user.ID, Chapter: "chapter-1", StartOffset: 200, EndOffset: 250, SelectedText: "Text 2", Color: "green", CreatedAt: now, UpdatedAt: now}
+
+	require.NoError(t, db.CreateAnnotation(ann1))
+	require.NoError(t, db.CreateAnnotation(ann2))
+
+	count, err = db.GetAnnotationCount(book.ID, user.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+}
+
+func TestAnnotationStats(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create user and books
+	user := &models.User{ID: "user-id", Username: "user", Email: "user@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user))
+
+	book1 := &models.Book{ID: "book-1", UserID: user.ID, Title: "Book 1", Author: "Author", FilePath: "/path1.epub", UploadedAt: time.Now()}
+	book2 := &models.Book{ID: "book-2", UserID: user.ID, Title: "Book 2", Author: "Author", FilePath: "/path2.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book1))
+	require.NoError(t, db.CreateBook(book2))
+
+	now := time.Now()
+
+	// Add annotations to different books
+	ann1 := &models.Annotation{ID: "ann-1", BookID: book1.ID, UserID: user.ID, Chapter: "ch1", StartOffset: 100, EndOffset: 150, SelectedText: "Text 1", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	ann2 := &models.Annotation{ID: "ann-2", BookID: book1.ID, UserID: user.ID, Chapter: "ch2", StartOffset: 200, EndOffset: 250, SelectedText: "Text 2", Color: "green", CreatedAt: now, UpdatedAt: now}
+	ann3 := &models.Annotation{ID: "ann-3", BookID: book2.ID, UserID: user.ID, Chapter: "ch1", StartOffset: 50, EndOffset: 100, SelectedText: "Text 3", Color: "blue", CreatedAt: now, UpdatedAt: now}
+
+	require.NoError(t, db.CreateAnnotation(ann1))
+	require.NoError(t, db.CreateAnnotation(ann2))
+	require.NoError(t, db.CreateAnnotation(ann3))
+
+	// Get stats
+	totalAnnotations, booksWithAnnotations, err := db.GetAnnotationStats(user.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, totalAnnotations)
+	assert.Equal(t, 2, booksWithAnnotations)
+}
+
+func TestAnnotationsPerUser(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create two users
+	user1 := &models.User{ID: "user-1", Username: "user1", Email: "user1@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	user2 := &models.User{ID: "user-2", Username: "user2", Email: "user2@example.com", PasswordHash: "hash", CreatedAt: time.Now()}
+	require.NoError(t, db.CreateUser(user1))
+	require.NoError(t, db.CreateUser(user2))
+
+	// Create a shared book
+	book := &models.Book{ID: "book-id", UserID: user1.ID, Title: "Shared Book", Author: "Author", FilePath: "/path.epub", UploadedAt: time.Now()}
+	require.NoError(t, db.CreateBook(book))
+
+	now := time.Now()
+
+	// Each user creates their own annotations on the same book
+	ann1 := &models.Annotation{ID: "ann-1", BookID: book.ID, UserID: user1.ID, Chapter: "ch1", StartOffset: 100, EndOffset: 150, SelectedText: "User 1 highlight", Color: "yellow", CreatedAt: now, UpdatedAt: now}
+	ann2 := &models.Annotation{ID: "ann-2", BookID: book.ID, UserID: user2.ID, Chapter: "ch1", StartOffset: 100, EndOffset: 150, SelectedText: "User 2 highlight", Color: "green", CreatedAt: now, UpdatedAt: now}
+
+	require.NoError(t, db.CreateAnnotation(ann1))
+	require.NoError(t, db.CreateAnnotation(ann2))
+
+	// User 1 only sees their annotations
+	annotations1, err := db.GetAnnotationsForBook(book.ID, user1.ID)
+	require.NoError(t, err)
+	assert.Len(t, annotations1, 1)
+	assert.Equal(t, "User 1 highlight", annotations1[0].SelectedText)
+
+	// User 2 only sees their annotations
+	annotations2, err := db.GetAnnotationsForBook(book.ID, user2.ID)
+	require.NoError(t, err)
+	assert.Len(t, annotations2, 1)
+	assert.Equal(t, "User 2 highlight", annotations2[0].SelectedText)
+}

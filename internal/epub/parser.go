@@ -479,6 +479,14 @@ func findCoverID(pkg *Package) string {
 		}
 	}
 
+	// Fallback: find the first image in the manifest
+	// This helps when no explicit cover is defined
+	for _, item := range pkg.Manifest.Items {
+		if strings.HasPrefix(item.MediaType, "image/") {
+			return item.ID
+		}
+	}
+
 	return ""
 }
 

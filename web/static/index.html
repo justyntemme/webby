@@ -272,6 +272,276 @@
             color: white;
         }
 
+        /* Read Status Badges */
+        .read-status-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .read-status-badge.reading {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .read-status-badge.completed {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+
+        .read-status-badge.unread {
+            display: none; /* Don't show unread badge by default */
+        }
+
+        /* Reading List Buttons */
+        .reading-lists-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .reading-list-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .reading-list-btn:hover {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .reading-list-btn.active {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-color);
+        }
+
+        .reading-list-btn.want-to-read.active {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .reading-list-btn.favorites.active {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .reading-list-btn .icon {
+            font-size: 16px;
+        }
+
+        /* Star Rating */
+        .star-rating-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .star-rating-section label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 2px;
+        }
+
+        .star-rating .star {
+            font-size: 24px;
+            cursor: pointer;
+            color: #d1d5db;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+
+        .star-rating .star:hover {
+            transform: scale(1.1);
+        }
+
+        .star-rating .star.filled {
+            color: #fbbf24;
+        }
+
+        .star-rating .star.hover {
+            color: #fcd34d;
+        }
+
+        .star-rating-display {
+            display: flex;
+            gap: 1px;
+            font-size: 14px;
+        }
+
+        .star-rating-display .star {
+            color: #d1d5db;
+        }
+
+        .star-rating-display .star.filled {
+            color: #fbbf24;
+        }
+
+        /* Custom Tags */
+        .tags-section {
+            margin-bottom: 12px;
+        }
+
+        .tags-section label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .tag-chip:hover {
+            filter: brightness(0.9);
+        }
+
+        .tag-chip .remove-tag {
+            font-size: 14px;
+            opacity: 0.7;
+            cursor: pointer;
+            margin-left: 2px;
+        }
+
+        .tag-chip .remove-tag:hover {
+            opacity: 1;
+        }
+
+        .add-tag-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: var(--card-bg);
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .add-tag-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .tag-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tag-dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tag-dropdown-content.show {
+            display: block;
+        }
+
+        .tag-dropdown-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .tag-dropdown-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .tag-dropdown-item .tag-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .tag-dropdown-item.create-new {
+            border-top: 1px solid var(--border-color);
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+
+        .tag-input-container {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tag-input-container input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .tag-input-container input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .no-tags-message {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-style: italic;
+        }
+
         .book-info {
             padding: 14px;
             min-height: 80px;
@@ -509,9 +779,18 @@
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px;
-            text-align: center;
-            padding: 10px;
+            font-size: 48px;
+        }
+
+        .book-cover .no-cover {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
         }
 
         .book-detail-main h2 {
@@ -1357,6 +1636,15 @@
                 <option value="book">Books Only</option>
                 <option value="comic">Comics Only</option>
             </select>
+            <select class="type-select" id="statusSelect">
+                <option value="">All Status</option>
+                <option value="unread">Unread</option>
+                <option value="reading">Reading</option>
+                <option value="completed">Completed</option>
+            </select>
+            <select class="type-select" id="tagSelect">
+                <option value="">All Tags</option>
+            </select>
             <select class="sort-select" id="sortSelect">
                 <option value="title">Sort by Title</option>
                 <option value="author">Sort by Author</option>
@@ -1388,6 +1676,49 @@
                     <h2 id="detailTitle"></h2>
                     <div class="book-detail-author" id="detailAuthor"></div>
                     <div class="book-detail-series" id="detailSeries"></div>
+                    <div class="book-detail-status" style="margin-bottom: 12px;">
+                        <label style="font-size: 13px; color: var(--text-secondary); margin-right: 8px;">Status:</label>
+                        <select id="detailStatusSelect" class="type-select" style="min-width: 140px; padding: 8px 12px;">
+                            <option value="unread">Unread</option>
+                            <option value="reading">Reading</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="star-rating-section">
+                        <label>Rating:</label>
+                        <div class="star-rating" id="detailStarRating">
+                            <span class="star" data-value="1">★</span>
+                            <span class="star" data-value="2">★</span>
+                            <span class="star" data-value="3">★</span>
+                            <span class="star" data-value="4">★</span>
+                            <span class="star" data-value="5">★</span>
+                        </div>
+                    </div>
+                    <div class="reading-lists-section" id="readingListsSection">
+                        <button class="reading-list-btn want-to-read" id="wantToReadBtn" onclick="toggleReadingList('want_to_read')">
+                            <span class="icon">📚</span>
+                            <span>Want to Read</span>
+                        </button>
+                        <button class="reading-list-btn favorites" id="favoritesBtn" onclick="toggleReadingList('favorites')">
+                            <span class="icon">❤️</span>
+                            <span>Favorites</span>
+                        </button>
+                    </div>
+                    <div class="tags-section" id="tagsSection">
+                        <label>Tags:</label>
+                        <div class="tags-container" id="bookTagsContainer">
+                            <span class="no-tags-message" id="noTagsMsg">No tags</span>
+                            <div class="tag-dropdown">
+                                <button class="add-tag-btn" onclick="toggleTagDropdown(event)">+ Add tag</button>
+                                <div class="tag-dropdown-content" id="tagDropdown">
+                                    <div class="tag-input-container">
+                                        <input type="text" id="tagSearchInput" placeholder="Search or create tag..." oninput="filterTags(this.value)">
+                                    </div>
+                                    <div id="tagDropdownList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="book-detail-actions">
                         <button class="primary-btn" id="readBookBtn">Read Book</button>
                         <button id="editMetadataBtn">✎ Edit</button>
@@ -1636,15 +1967,44 @@
             const sortBy = document.getElementById('sortSelect').value;
             const search = document.getElementById('searchBox').value;
             const contentType = document.getElementById('typeSelect').value;
+            const readStatus = document.getElementById('statusSelect').value;
+            const selectedTag = document.getElementById('tagSelect').value;
 
             try {
-                let url = `${API_BASE}/books?sort=${sortBy}`;
-                if (search) url += `&search=${encodeURIComponent(search)}`;
-                if (contentType) url += `&type=${contentType}`;
+                let fetchedBooks;
 
-                const res = await fetch(url, { headers: getAuthHeaders() });
-                const data = await res.json();
-                books = data.books || [];
+                // If tag is selected, fetch books by tag first then apply other filters
+                if (selectedTag) {
+                    const tagRes = await fetch(`${API_BASE}/tags/${selectedTag}/books`, { headers: getAuthHeaders() });
+                    const tagData = await tagRes.json();
+                    fetchedBooks = tagData.books || [];
+
+                    // Apply additional filters client-side
+                    if (search) {
+                        const searchLower = search.toLowerCase();
+                        fetchedBooks = fetchedBooks.filter(b =>
+                            b.title.toLowerCase().includes(searchLower) ||
+                            b.author.toLowerCase().includes(searchLower)
+                        );
+                    }
+                    if (contentType) {
+                        fetchedBooks = fetchedBooks.filter(b => b.content_type === contentType);
+                    }
+                    if (readStatus) {
+                        fetchedBooks = fetchedBooks.filter(b => b.read_status === readStatus);
+                    }
+                } else {
+                    let url = `${API_BASE}/books?sort=${sortBy}`;
+                    if (search) url += `&search=${encodeURIComponent(search)}`;
+                    if (contentType) url += `&type=${contentType}`;
+                    if (readStatus) url += `&status=${readStatus}`;
+
+                    const res = await fetch(url, { headers: getAuthHeaders() });
+                    const data = await res.json();
+                    fetchedBooks = data.books || [];
+                }
+
+                books = fetchedBooks;
                 renderBooks();
             } catch (err) {
                 library.innerHTML = '<div class="empty-state"><h2>Failed to load library</h2></div>';
@@ -1730,21 +2090,37 @@
             const coverUrl = `${API_BASE}/books/${book.id}/cover`;
             const escapedTitle = book.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const contentType = book.content_type || 'book';
-            const showBadge = document.getElementById('typeSelect').value === ''; // Show badge only when viewing "All Items"
-            const badgeHtml = showBadge ? `<span class="content-type-badge ${contentType}">${contentType}</span>` : '';
+            const readStatus = book.read_status || 'unread';
+            const showTypeBadge = document.getElementById('typeSelect').value === ''; // Show badge only when viewing "All Items"
+            const showStatusBadge = document.getElementById('statusSelect').value === ''; // Show status badge only when viewing "All Status"
+            const typeBadgeHtml = showTypeBadge ? `<span class="content-type-badge ${contentType}">${contentType}</span>` : '';
+            const statusBadgeHtml = showStatusBadge && readStatus !== 'unread' ? `<span class="read-status-badge ${readStatus}">${readStatus}</span>` : '';
+            const coverIcon = contentType === 'comic' ? '📚' : '📖';
+            const ratingHtml = book.rating > 0 ? `<div class="star-rating-display">${renderStarsHtml(book.rating)}</div>` : '';
             return `
                 <div class="book-card" data-book-id="${book.id}" onclick="handleBookClick(event, '${book.id}')">
                     <div class="book-cover">
-                        ${badgeHtml}
-                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.innerHTML='${badgeHtml}${escapedTitle}'">
+                        ${typeBadgeHtml}
+                        ${statusBadgeHtml}
+                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="no-cover" style="display:none">${coverIcon}</div>
                     </div>
                     <div class="book-info">
                         <div class="book-title">${book.title}</div>
                         <div class="book-author">${book.author}</div>
                         ${book.series ? `<div class="book-series">${book.series} #${book.series_index}</div>` : ''}
+                        ${ratingHtml}
                     </div>
                 </div>
             `;
+        }
+
+        function renderStarsHtml(rating) {
+            let html = '';
+            for (let i = 1; i <= 5; i++) {
+                html += `<span class="star${i <= rating ? ' filled' : ''}">★</span>`;
+            }
+            return html;
         }
 
         // Handle book card click - prevent if long press triggered
@@ -1774,7 +2150,7 @@
             document.getElementById('detailTitle').textContent = 'Loading...';
             document.getElementById('detailAuthor').textContent = '';
             document.getElementById('detailSeries').textContent = '';
-            document.getElementById('detailCover').innerHTML = '<div class="no-cover">Loading...</div>';
+            document.getElementById('detailCover').innerHTML = '<div class="no-cover">⏳</div>';
             document.getElementById('metadataGrid').innerHTML = '';
             document.getElementById('metadataSource').textContent = '';
             document.getElementById('metadataUpdated').textContent = '';
@@ -1785,6 +2161,10 @@
                 const book = await res.json();
                 currentBookData = book;
                 renderBookDetail(book);
+                // Update reading list button states
+                updateReadingListButtons();
+                // Load book tags
+                loadBookTags();
             } catch (err) {
                 document.getElementById('detailTitle').textContent = 'Error loading book';
                 console.error(err);
@@ -1793,10 +2173,13 @@
 
         function renderBookDetail(book) {
             const coverUrl = `${API_BASE}/books/${book.id}/cover`;
+            const contentType = book.content_type || 'book';
+            const coverIcon = contentType === 'comic' ? '📚' : '📖';
 
             // Cover
             document.getElementById('detailCover').innerHTML = `
-                <img src="${coverUrl}" alt="${book.title}" onerror="this.parentElement.innerHTML='<div class=\\'no-cover\\'>${book.title}</div>'">
+                <img src="${coverUrl}" alt="${book.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="no-cover" style="display:none">${coverIcon}</div>
             `;
 
             // Basic info
@@ -1809,6 +2192,12 @@
             } else {
                 document.getElementById('detailSeries').style.display = 'none';
             }
+
+            // Set read status
+            document.getElementById('detailStatusSelect').value = book.read_status || 'unread';
+
+            // Set star rating
+            updateStarRatingDisplay(book.rating || 0);
 
             // Metadata source badge
             const sourceEl = document.getElementById('metadataSource');
@@ -1897,9 +2286,439 @@
             document.getElementById('bookDetailModal').classList.remove('active');
             document.getElementById('refreshResult').innerHTML = '';
             currentBookId = null;
+            // Reset reading list buttons
+            document.getElementById('wantToReadBtn').classList.remove('active');
+            document.getElementById('favoritesBtn').classList.remove('active');
+            // Reset tags
+            currentBookTags = [];
+            document.getElementById('noTagsMsg').style.display = 'inline';
+            document.getElementById('bookTagsContainer').querySelectorAll('.tag-chip').forEach(el => el.remove());
+            document.getElementById('tagDropdown').classList.remove('show');
         }
 
         let currentBookData = null;
+        let userReadingLists = null; // Cache for user's reading lists
+
+        // Load user's reading lists
+        async function loadReadingLists() {
+            if (!isAuthenticated()) {
+                document.getElementById('readingListsSection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('readingListsSection').style.display = 'flex';
+
+            try {
+                const res = await fetch(`${API_BASE}/reading-lists`, { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    userReadingLists = data.lists || [];
+                }
+            } catch (err) {
+                console.error('Failed to load reading lists:', err);
+            }
+        }
+
+        // Check if current book is in reading lists and update button states
+        async function updateReadingListButtons() {
+            if (!currentBookId || !isAuthenticated()) return;
+
+            // Reset buttons first
+            document.getElementById('wantToReadBtn').classList.remove('active');
+            document.getElementById('favoritesBtn').classList.remove('active');
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/reading-lists`, { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    const lists = data.lists || [];
+
+                    lists.forEach(list => {
+                        if (list.list_type === 'want_to_read') {
+                            document.getElementById('wantToReadBtn').classList.add('active');
+                        } else if (list.list_type === 'favorites') {
+                            document.getElementById('favoritesBtn').classList.add('active');
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to check reading lists:', err);
+            }
+        }
+
+        // Toggle a book in a reading list
+        async function toggleReadingList(listType) {
+            if (!currentBookId || !isAuthenticated()) {
+                alert('Please log in to use reading lists');
+                return;
+            }
+
+            // Ensure reading lists are loaded
+            if (!userReadingLists) {
+                await loadReadingLists();
+            }
+
+            // Find the list ID for this type
+            const list = userReadingLists?.find(l => l.list_type === listType);
+            if (!list) {
+                console.error('Reading list not found:', listType);
+                return;
+            }
+
+            const btn = listType === 'want_to_read' ? document.getElementById('wantToReadBtn') : document.getElementById('favoritesBtn');
+
+            try {
+                const res = await fetch(`${API_BASE}/reading-lists/${list.id}/books/${currentBookId}/toggle`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders()
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.in_list) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to update reading list');
+                }
+            } catch (err) {
+                console.error('Failed to toggle reading list:', err);
+                alert('Failed to update reading list');
+            }
+        }
+
+        // Star rating functions
+        function updateStarRatingDisplay(rating) {
+            const container = document.getElementById('detailStarRating');
+            if (!container) return;
+
+            const stars = container.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('filled');
+                } else {
+                    star.classList.remove('filled');
+                }
+            });
+        }
+
+        function initStarRating() {
+            const container = document.getElementById('detailStarRating');
+            if (!container) return;
+
+            const stars = container.querySelectorAll('.star');
+
+            // Hover effects
+            stars.forEach((star, index) => {
+                star.addEventListener('mouseenter', () => {
+                    stars.forEach((s, i) => {
+                        if (i <= index) {
+                            s.classList.add('hover');
+                        } else {
+                            s.classList.remove('hover');
+                        }
+                    });
+                });
+
+                star.addEventListener('mouseleave', () => {
+                    stars.forEach(s => s.classList.remove('hover'));
+                });
+
+                // Click to set rating
+                star.addEventListener('click', async () => {
+                    const value = parseInt(star.dataset.value);
+                    await saveBookRating(value);
+                });
+            });
+
+            // Click outside to clear (optional - click on label to clear)
+            const label = container.parentElement.querySelector('label');
+            if (label) {
+                label.style.cursor = 'pointer';
+                label.title = 'Click to clear rating';
+                label.addEventListener('click', async () => {
+                    await saveBookRating(0);
+                });
+            }
+        }
+
+        async function saveBookRating(rating) {
+            if (!currentBookId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/rating`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({ rating })
+                });
+
+                if (res.ok) {
+                    updateStarRatingDisplay(rating);
+                    // Update cached book data
+                    if (currentBookData) {
+                        currentBookData.rating = rating;
+                    }
+                    // Refresh the library to show updated rating
+                    loadBooks();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to save rating');
+                }
+            } catch (err) {
+                console.error('Failed to save rating:', err);
+                alert('Failed to save rating');
+            }
+        }
+
+        // ==================== Tag Functions ====================
+
+        let userTags = null; // Cache for user's tags
+        let currentBookTags = []; // Tags on the current book
+
+        // Load all user's tags
+        async function loadUserTags() {
+            const tagSelect = document.getElementById('tagSelect');
+
+            if (!isAuthenticated()) {
+                document.getElementById('tagsSection').style.display = 'none';
+                tagSelect.style.display = 'none';
+                return;
+            }
+
+            document.getElementById('tagsSection').style.display = 'block';
+            tagSelect.style.display = 'block';
+
+            try {
+                const res = await fetch(`${API_BASE}/tags`, { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    userTags = data.tags || [];
+                    // Populate tag filter dropdown
+                    populateTagFilter();
+                }
+            } catch (err) {
+                console.error('Failed to load tags:', err);
+            }
+        }
+
+        // Populate the tag filter dropdown
+        function populateTagFilter() {
+            const tagSelect = document.getElementById('tagSelect');
+            const currentValue = tagSelect.value;
+
+            // Clear existing options except first
+            tagSelect.innerHTML = '<option value="">All Tags</option>';
+
+            if (userTags && userTags.length > 0) {
+                userTags.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag.id;
+                    option.textContent = tag.name;
+                    tagSelect.appendChild(option);
+                });
+            }
+
+            // Restore selection if still valid
+            if (currentValue && userTags?.some(t => t.id === currentValue)) {
+                tagSelect.value = currentValue;
+            }
+        }
+
+        // Load tags for the current book
+        async function loadBookTags() {
+            if (!currentBookId || !isAuthenticated()) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/tags`, { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentBookTags = data.tags || [];
+                    renderBookTags();
+                }
+            } catch (err) {
+                console.error('Failed to load book tags:', err);
+            }
+        }
+
+        // Render the tags on the current book
+        function renderBookTags() {
+            const container = document.getElementById('bookTagsContainer');
+            const noTagsMsg = document.getElementById('noTagsMsg');
+            const dropdown = container.querySelector('.tag-dropdown');
+
+            // Remove existing tag chips (but keep no-tags message and dropdown)
+            container.querySelectorAll('.tag-chip').forEach(el => el.remove());
+
+            if (currentBookTags.length === 0) {
+                noTagsMsg.style.display = 'inline';
+            } else {
+                noTagsMsg.style.display = 'none';
+                currentBookTags.forEach(tag => {
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.style.backgroundColor = tag.color + '20';
+                    chip.style.color = tag.color;
+                    chip.style.borderColor = tag.color;
+                    chip.innerHTML = `${tag.name}<span class="remove-tag" onclick="removeTagFromBook('${tag.id}')">&times;</span>`;
+                    container.insertBefore(chip, dropdown);
+                });
+            }
+        }
+
+        // Toggle tag dropdown
+        function toggleTagDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('tagDropdown');
+            dropdown.classList.toggle('show');
+            if (dropdown.classList.contains('show')) {
+                document.getElementById('tagSearchInput').value = '';
+                document.getElementById('tagSearchInput').focus();
+                renderTagDropdown('');
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('tagDropdown');
+            if (dropdown && !e.target.closest('.tag-dropdown')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Filter and render tag dropdown
+        function filterTags(query) {
+            renderTagDropdown(query);
+        }
+
+        // Render the tag dropdown list
+        function renderTagDropdown(query) {
+            const list = document.getElementById('tagDropdownList');
+            const filtered = (userTags || []).filter(tag =>
+                tag.name.toLowerCase().includes(query.toLowerCase()) &&
+                !currentBookTags.some(bt => bt.id === tag.id)
+            );
+
+            let html = '';
+
+            filtered.forEach(tag => {
+                html += `
+                    <div class="tag-dropdown-item" onclick="addTagToBook('${tag.id}')">
+                        <span class="tag-color" style="background-color: ${tag.color}"></span>
+                        <span>${tag.name}</span>
+                    </div>
+                `;
+            });
+
+            // Show create option if query doesn't match existing tag
+            const queryTrimmed = query.trim();
+            if (queryTrimmed && !userTags?.some(t => t.name.toLowerCase() === queryTrimmed.toLowerCase())) {
+                html += `
+                    <div class="tag-dropdown-item create-new" onclick="createAndAddTag('${queryTrimmed.replace(/'/g, "\\'")}')">
+                        + Create "${queryTrimmed}"
+                    </div>
+                `;
+            }
+
+            if (!html) {
+                html = '<div class="tag-dropdown-item" style="color: var(--text-secondary); cursor: default;">No tags available</div>';
+            }
+
+            list.innerHTML = html;
+        }
+
+        // Add existing tag to book
+        async function addTagToBook(tagId) {
+            if (!currentBookId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/tags/${tagId}`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                if (res.ok) {
+                    await loadBookTags();
+                    document.getElementById('tagDropdown').classList.remove('show');
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to add tag');
+                }
+            } catch (err) {
+                console.error('Failed to add tag:', err);
+                alert('Failed to add tag');
+            }
+        }
+
+        // Remove tag from book
+        async function removeTagFromBook(tagId) {
+            if (!currentBookId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/tags/${tagId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                if (res.ok) {
+                    await loadBookTags();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to remove tag');
+                }
+            } catch (err) {
+                console.error('Failed to remove tag:', err);
+                alert('Failed to remove tag');
+            }
+        }
+
+        // Create a new tag and add it to the book
+        async function createAndAddTag(name) {
+            if (!currentBookId) return;
+
+            // Generate a random color
+            const colors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            try {
+                // Create tag
+                const createRes = await fetch(`${API_BASE}/tags`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({ name, color })
+                });
+
+                if (createRes.ok) {
+                    const data = await createRes.json();
+                    const newTag = data.tag;
+
+                    // Add to user tags cache
+                    if (userTags) userTags.push(newTag);
+
+                    // Add to book
+                    await addTagToBook(newTag.id);
+                } else {
+                    const data = await createRes.json();
+                    // If tag already exists, try to add it
+                    if (data.tag) {
+                        await addTagToBook(data.tag.id);
+                    } else {
+                        alert(data.error || 'Failed to create tag');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to create tag:', err);
+                alert('Failed to create tag');
+            }
+        }
 
         function openEditModal() {
             if (!currentBookData) return;
@@ -2421,6 +3240,41 @@
             if (e.target.id === 'bookDetailModal') closeBookDetailModal();
         });
 
+        // Read status change in detail modal
+        document.getElementById('detailStatusSelect').addEventListener('change', async (e) => {
+            if (!currentBookId) return;
+
+            const newStatus = e.target.value;
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (res.ok) {
+                    // Update current book data
+                    if (currentBookData) {
+                        currentBookData.read_status = newStatus;
+                    }
+                    // Refresh library to show updated status
+                    loadBooks();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to update status');
+                    // Revert select to previous value
+                    e.target.value = currentBookData?.read_status || 'unread';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to update status');
+                e.target.value = currentBookData?.read_status || 'unread';
+            }
+        });
+
         // Edit Metadata Modal Event Listeners
         document.getElementById('editMetadataBtn').addEventListener('click', openEditModal);
 
@@ -2502,6 +3356,17 @@
         document.getElementById('typeSelect').addEventListener('change', () => {
             groupBy = null;
             localStorage.setItem('webby-content-type', document.getElementById('typeSelect').value);
+            loadBooks();
+        });
+
+        document.getElementById('statusSelect').addEventListener('change', () => {
+            groupBy = null;
+            localStorage.setItem('webby-read-status', document.getElementById('statusSelect').value);
+            loadBooks();
+        });
+
+        document.getElementById('tagSelect').addEventListener('change', () => {
+            groupBy = null;
             loadBooks();
         });
 
@@ -2811,14 +3676,29 @@
             }
         }
 
+        // Load saved read status filter preference
+        function loadStatusPreference() {
+            const saved = localStorage.getItem('webby-read-status');
+            if (saved !== null) {
+                document.getElementById('statusSelect').value = saved;
+            }
+        }
+
         // Initialize
         async function init() {
-            const isAuthenticated = await checkAuth();
-            if (isAuthenticated) {
+            const isLoggedIn = await checkAuth();
+            if (isLoggedIn) {
                 loadGroupingPreference();
                 loadContentTypePreference();
+                loadStatusPreference();
                 loadBooks();
                 setupBookCardInteractions();
+                // Pre-load reading lists for authenticated users
+                loadReadingLists();
+                // Pre-load user tags
+                loadUserTags();
+                // Initialize star rating interactions
+                initStarRating();
             }
         }
         init();
