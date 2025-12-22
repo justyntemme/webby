@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -884,6 +885,35 @@ func (h *Handler) RefreshBookMetadata(c *gin.Context) {
 		return
 	}
 
+	// Write metadata to EPUB file
+	epubMeta := &epub.Metadata{
+		Title:       book.Title,
+		Author:      book.Author,
+		Series:      book.Series,
+		SeriesIndex: book.SeriesIndex,
+		ISBN:        book.ISBN,
+		Publisher:   book.Publisher,
+		PublishDate: book.PublishDate,
+		Language:    book.Language,
+		Description: book.Description,
+		Subjects:    result.Subjects,
+	}
+	if err := epub.UpdateMetadata(book.FilePath, epubMeta); err != nil {
+		log.Printf("Warning: failed to update EPUB metadata for book %s: %v", book.ID, err)
+	}
+
+	// Reorganize book to correct folder structure
+	newPaths, err := h.files.ReorganizeBook(book.FilePath, book.CoverPath, book.Author, book.Series, book.Title)
+	if err != nil {
+		log.Printf("Warning: failed to reorganize book %s: %v", book.ID, err)
+	} else if newPaths.BookPath != book.FilePath || newPaths.CoverPath != book.CoverPath {
+		if err := h.db.UpdateBookFilePaths(book.ID, newPaths.BookPath, newPaths.CoverPath); err != nil {
+			log.Printf("Warning: failed to update file paths for book %s: %v", book.ID, err)
+		}
+		book.FilePath = newPaths.BookPath
+		book.CoverPath = newPaths.CoverPath
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Metadata updated successfully",
 		"book":       book,
@@ -954,9 +984,49 @@ func (h *Handler) UpdateBookMetadata(c *gin.Context) {
 	now := time.Now()
 	book.MetadataUpdated = &now
 
+	// Update database metadata
 	if err := h.db.UpdateBookMetadata(book); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update metadata"})
 		return
+	}
+
+	// Write metadata to EPUB file
+	subjects := []string{}
+	if book.Subjects != "" {
+		subjects = strings.Split(book.Subjects, ",")
+		for i := range subjects {
+			subjects[i] = strings.TrimSpace(subjects[i])
+		}
+	}
+	epubMeta := &epub.Metadata{
+		Title:       book.Title,
+		Author:      book.Author,
+		Series:      book.Series,
+		SeriesIndex: book.SeriesIndex,
+		ISBN:        book.ISBN,
+		Publisher:   book.Publisher,
+		PublishDate: book.PublishDate,
+		Language:    book.Language,
+		Description: book.Description,
+		Subjects:    subjects,
+	}
+	if err := epub.UpdateMetadata(book.FilePath, epubMeta); err != nil {
+		log.Printf("Warning: failed to update EPUB metadata for book %s: %v", book.ID, err)
+		// Continue anyway - database was updated
+	}
+
+	// Reorganize book to correct folder structure
+	newPaths, err := h.files.ReorganizeBook(book.FilePath, book.CoverPath, book.Author, book.Series, book.Title)
+	if err != nil {
+		log.Printf("Warning: failed to reorganize book %s: %v", book.ID, err)
+		// Continue anyway - metadata was updated
+	} else if newPaths.BookPath != book.FilePath || newPaths.CoverPath != book.CoverPath {
+		// Update file paths in database
+		if err := h.db.UpdateBookFilePaths(book.ID, newPaths.BookPath, newPaths.CoverPath); err != nil {
+			log.Printf("Warning: failed to update file paths for book %s: %v", book.ID, err)
+		}
+		book.FilePath = newPaths.BookPath
+		book.CoverPath = newPaths.CoverPath
 	}
 
 	c.JSON(http.StatusOK, gin.H{

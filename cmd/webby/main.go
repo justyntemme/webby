@@ -116,6 +116,12 @@ func main() {
 			// Book collections (for a specific book)
 			booksGroup.GET("/books/:id/collections", handler.GetBookCollections)
 
+			// Metadata
+			booksGroup.GET("/metadata/lookup", handler.LookupMetadata)
+			booksGroup.GET("/metadata/search", handler.SearchMetadata)
+			booksGroup.POST("/books/:id/metadata/refresh", handler.RefreshBookMetadata)
+			booksGroup.PUT("/books/:id/metadata", handler.UpdateBookMetadata)
+
 			// Book sharing
 			booksGroup.GET("/books/shared", handler.GetSharedBooks)
 			booksGroup.GET("/books/:id/shares", handler.GetBookShares)

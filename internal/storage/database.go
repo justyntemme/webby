@@ -157,6 +157,15 @@ func (d *Database) UpdateBookMetadata(book *models.Book) error {
 	return err
 }
 
+// UpdateBookFilePaths updates the file paths for a book after reorganization
+func (d *Database) UpdateBookFilePaths(bookID, filePath, coverPath string) error {
+	_, err := d.db.Exec(`
+		UPDATE books SET file_path = ?, cover_path = ? WHERE id = ?`,
+		filePath, coverPath, bookID,
+	)
+	return err
+}
+
 // GetBook retrieves a book by ID
 func (d *Database) GetBook(id string) (*models.Book, error) {
 	book := &models.Book{}
@@ -204,14 +213,15 @@ func (d *Database) ListBooks(sortBy, order string) ([]models.Book, error) {
 func (d *Database) ListBooksForUser(userID, sortBy, order string) ([]models.Book, error) {
 	validSort := map[string]string{
 		"title":  "title",
-		"author": "author",
-		"series": "series, series_index",
+		"author": "author, series, series_index, title",
+		"series": "series, series_index, title",
 		"date":   "uploaded_at",
 	}
 
 	sortColumn, ok := validSort[sortBy]
 	if !ok {
-		sortColumn = "title"
+		// Default: sort by author, then series, then title
+		sortColumn = "author, series, series_index, title"
 	}
 
 	if order != "desc" {

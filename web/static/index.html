@@ -344,6 +344,564 @@
             text-align: center;
             padding: 40px;
         }
+
+        /* Book Detail Modal */
+        .book-detail-modal .modal-content {
+            max-width: 600px;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .book-detail-header {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .book-detail-cover {
+            width: 150px;
+            flex-shrink: 0;
+        }
+
+        .book-detail-cover img {
+            width: 100%;
+            border-radius: 5px;
+            box-shadow: var(--shadow);
+        }
+
+        .book-detail-cover .no-cover {
+            width: 100%;
+            aspect-ratio: 2/3;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .book-detail-main h2 {
+            margin-bottom: 5px;
+            font-size: 22px;
+        }
+
+        .book-detail-author {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .book-detail-series {
+            color: var(--accent-color);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .book-detail-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .book-detail-actions button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .book-detail-actions .primary-btn {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .book-detail-actions .primary-btn:hover {
+            opacity: 0.9;
+        }
+
+        .book-detail-actions button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .book-detail-actions button.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .book-detail-actions button.loading::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #999;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .refresh-result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .refresh-result.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .refresh-result.warning {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+        }
+
+        .refresh-result.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        .confidence-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .confidence-fill.high { background: #4caf50; }
+        .confidence-fill.medium { background: #ff9800; }
+        .confidence-fill.low { background: #f44336; }
+
+        /* Edit Metadata Modal */
+        .edit-modal .modal-content {
+            max-width: 500px;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .edit-modal h2 {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-group.error input,
+        .form-group.error textarea {
+            border-color: #f44336;
+        }
+
+        .form-group .error-message {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-actions button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .form-actions .save-btn {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .form-actions .save-btn:hover {
+            opacity: 0.9;
+        }
+
+        .form-actions .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 500px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Search Metadata Modal */
+        .search-modal .modal-content {
+            max-width: 600px;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .search-modal h2 {
+            margin-bottom: 20px;
+        }
+
+        .search-form-section {
+            margin-bottom: 20px;
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .search-actions button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .search-actions .primary-btn {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .search-results {
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .search-results h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .result-item {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .result-item:hover {
+            border-color: var(--accent-color);
+            background: #f8f9fa;
+        }
+
+        .result-item.selected {
+            border-color: var(--accent-color);
+            background: #e3f2fd;
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .result-author {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .result-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .result-confidence {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .confidence-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .confidence-dot.high { background: #4caf50; }
+        .confidence-dot.medium { background: #ff9800; }
+        .confidence-dot.low { background: #f44336; }
+
+        .no-results {
+            text-align: center;
+            color: #666;
+            padding: 30px;
+        }
+
+        .search-loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+
+        .search-error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .selected-preview {
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .selected-preview h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 8px 15px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .preview-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .preview-value {
+            color: var(--text-color);
+        }
+
+        .preview-description {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        .preview-description .preview-value {
+            max-height: 80px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .preview-actions button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .preview-actions .primary-btn {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .metadata-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .metadata-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .metadata-source-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #e0e0e0;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .metadata-source-badge.openlibrary {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px 15px;
+            font-size: 14px;
+        }
+
+        .metadata-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metadata-value {
+            color: var(--text-color);
+        }
+
+        .metadata-value.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .metadata-description {
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+
+        .metadata-description .metadata-label {
+            margin-bottom: 5px;
+        }
+
+        .metadata-description .metadata-value {
+            line-height: 1.6;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .metadata-description .metadata-value.expanded {
+            max-height: none;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 5px 0;
+        }
+
+        .metadata-updated {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+        }
+
+        .subjects-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .subject-tag {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 500px) {
+            .book-detail-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .book-detail-cover {
+                width: 120px;
+            }
+
+            .metadata-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metadata-label {
+                margin-bottom: -5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -373,6 +931,134 @@
     <main class="library" id="library">
         <div class="loading">Loading library...</div>
     </main>
+
+    <!-- Book Detail Modal -->
+    <div class="modal book-detail-modal" id="bookDetailModal">
+        <div class="modal-content">
+            <div class="book-detail-header">
+                <div class="book-detail-cover" id="detailCover"></div>
+                <div class="book-detail-main">
+                    <h2 id="detailTitle"></h2>
+                    <div class="book-detail-author" id="detailAuthor"></div>
+                    <div class="book-detail-series" id="detailSeries"></div>
+                    <div class="book-detail-actions">
+                        <button class="primary-btn" id="readBookBtn">Read Book</button>
+                        <button id="editMetadataBtn">✎ Edit</button>
+                        <button id="searchMetadataBtn">🔍 Search</button>
+                        <button id="refreshMetadataBtn">↻ Refresh</button>
+                        <button id="closeDetailBtn">Close</button>
+                    </div>
+                </div>
+            </div>
+            <div id="refreshResult"></div>
+            <div class="metadata-section">
+                <h3>
+                    Book Details
+                    <span class="metadata-source-badge" id="metadataSource"></span>
+                </h3>
+                <div class="metadata-grid" id="metadataGrid"></div>
+                <div class="metadata-updated" id="metadataUpdated"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Metadata Modal -->
+    <div class="modal edit-modal" id="editMetadataModal">
+        <div class="modal-content">
+            <h2>Edit Book Metadata</h2>
+            <form id="editMetadataForm">
+                <div class="form-group">
+                    <label for="editTitle">Title</label>
+                    <input type="text" id="editTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAuthor">Author</label>
+                    <input type="text" id="editAuthor" name="author" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editSeries">Series</label>
+                        <input type="text" id="editSeries" name="series" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSeriesIndex">Series #</label>
+                        <input type="number" id="editSeriesIndex" name="series_index" step="0.1" min="0" placeholder="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editISBN">ISBN</label>
+                    <input type="text" id="editISBN" name="isbn" placeholder="10 or 13 digits">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editPublisher">Publisher</label>
+                        <input type="text" id="editPublisher" name="publisher">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPublishDate">Publish Date</label>
+                        <input type="text" id="editPublishDate" name="publish_date" placeholder="e.g., 2023">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editLanguage">Language</label>
+                        <input type="text" id="editLanguage" name="language" placeholder="e.g., en">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSubjects">Subjects</label>
+                        <input type="text" id="editSubjects" name="subjects" placeholder="Comma-separated">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description</label>
+                    <textarea id="editDescription" name="description" placeholder="Book description..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelEditBtn">Cancel</button>
+                    <button type="submit" class="save-btn" id="saveEditBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Metadata Modal -->
+    <div class="modal search-modal" id="searchMetadataModal">
+        <div class="modal-content">
+            <h2>Search for Metadata</h2>
+            <div class="search-form-section">
+                <div class="form-group">
+                    <label for="searchTitle">Title</label>
+                    <input type="text" id="searchTitle" placeholder="Book title">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="searchAuthor">Author</label>
+                        <input type="text" id="searchAuthor" placeholder="Author name">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchISBN">ISBN</label>
+                        <input type="text" id="searchISBN" placeholder="ISBN-10 or ISBN-13">
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button type="button" id="doSearchBtn" class="primary-btn">Search</button>
+                    <button type="button" id="cancelSearchBtn">Cancel</button>
+                </div>
+            </div>
+            <div id="searchResults" class="search-results" style="display: none;">
+                <h3>Search Results</h3>
+                <div id="resultsContainer"></div>
+            </div>
+            <div id="selectedPreview" class="selected-preview" style="display: none;">
+                <h3>Selected Metadata</h3>
+                <div id="previewContent"></div>
+                <div class="preview-actions">
+                    <button type="button" id="applyMetadataBtn" class="primary-btn">Apply to Book</button>
+                    <button type="button" id="backToResultsBtn">Back to Results</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Upload Modal -->
     <div class="modal" id="uploadModal">
@@ -538,10 +1224,11 @@
 
         function renderBook(book) {
             const coverUrl = `${API_BASE}/books/${book.id}/cover`;
+            const escapedTitle = book.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             return `
-                <div class="book-card" onclick="openReader('${book.id}')">
+                <div class="book-card" onclick="openBookDetail('${book.id}')">
                     <div class="book-cover">
-                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${book.title}'">
+                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.parentElement.textContent='${escapedTitle}'">
                     </div>
                     <div class="book-info">
                         <div class="book-title">${book.title}</div>
@@ -554,6 +1241,575 @@
 
         function openReader(bookId) {
             window.location.href = `/reader/${bookId}`;
+        }
+
+        let currentBookId = null;
+
+        async function openBookDetail(bookId) {
+            currentBookId = bookId;
+            const modal = document.getElementById('bookDetailModal');
+            modal.classList.add('active');
+
+            // Show loading state
+            document.getElementById('detailTitle').textContent = 'Loading...';
+            document.getElementById('detailAuthor').textContent = '';
+            document.getElementById('detailSeries').textContent = '';
+            document.getElementById('detailCover').innerHTML = '<div class="no-cover">Loading...</div>';
+            document.getElementById('metadataGrid').innerHTML = '';
+            document.getElementById('metadataSource').textContent = '';
+            document.getElementById('metadataUpdated').textContent = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}`, { headers: getAuthHeaders() });
+                if (!res.ok) throw new Error('Failed to fetch book');
+                const book = await res.json();
+                currentBookData = book;
+                renderBookDetail(book);
+            } catch (err) {
+                document.getElementById('detailTitle').textContent = 'Error loading book';
+                console.error(err);
+            }
+        }
+
+        function renderBookDetail(book) {
+            const coverUrl = `${API_BASE}/books/${book.id}/cover`;
+
+            // Cover
+            document.getElementById('detailCover').innerHTML = `
+                <img src="${coverUrl}" alt="${book.title}" onerror="this.parentElement.innerHTML='<div class=\\'no-cover\\'>${book.title}</div>'">
+            `;
+
+            // Basic info
+            document.getElementById('detailTitle').textContent = book.title;
+            document.getElementById('detailAuthor').textContent = `by ${book.author}`;
+
+            if (book.series) {
+                document.getElementById('detailSeries').textContent = `${book.series} #${book.series_index}`;
+                document.getElementById('detailSeries').style.display = 'block';
+            } else {
+                document.getElementById('detailSeries').style.display = 'none';
+            }
+
+            // Metadata source badge
+            const sourceEl = document.getElementById('metadataSource');
+            if (book.metadata_source) {
+                sourceEl.textContent = book.metadata_source;
+                sourceEl.className = 'metadata-source-badge' + (book.metadata_source === 'openlibrary' ? ' openlibrary' : '');
+                sourceEl.style.display = 'inline';
+            } else {
+                sourceEl.style.display = 'none';
+            }
+
+            // Build metadata grid
+            let metadataHtml = '';
+
+            // ISBN
+            metadataHtml += renderMetadataRow('ISBN', book.isbn);
+
+            // Publisher
+            metadataHtml += renderMetadataRow('Publisher', book.publisher);
+
+            // Publish Date
+            metadataHtml += renderMetadataRow('Published', book.publish_date);
+
+            // Language
+            metadataHtml += renderMetadataRow('Language', book.language);
+
+            // File size
+            if (book.file_size) {
+                const sizeStr = formatFileSize(book.file_size);
+                metadataHtml += renderMetadataRow('File Size', sizeStr);
+            }
+
+            // Subjects
+            if (book.subjects) {
+                const subjects = book.subjects.split(',').map(s => s.trim()).filter(s => s);
+                if (subjects.length > 0) {
+                    const tagsHtml = subjects.map(s => `<span class="subject-tag">${s}</span>`).join('');
+                    metadataHtml += `
+                        <div class="metadata-label">Subjects</div>
+                        <div class="metadata-value"><div class="subjects-list">${tagsHtml}</div></div>
+                    `;
+                }
+            }
+
+            // Description (full width)
+            if (book.description) {
+                metadataHtml += `
+                    <div class="metadata-description">
+                        <div class="metadata-label">Description</div>
+                        <div class="metadata-value" id="descriptionText">${book.description}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('metadataGrid').innerHTML = metadataHtml;
+
+            // Metadata updated timestamp
+            if (book.metadata_updated) {
+                const date = new Date(book.metadata_updated);
+                document.getElementById('metadataUpdated').textContent = `Metadata last updated: ${date.toLocaleDateString()}`;
+            } else {
+                document.getElementById('metadataUpdated').textContent = '';
+            }
+        }
+
+        function renderMetadataRow(label, value) {
+            if (value) {
+                return `
+                    <div class="metadata-label">${label}</div>
+                    <div class="metadata-value">${value}</div>
+                `;
+            }
+            return '';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function closeBookDetailModal() {
+            document.getElementById('bookDetailModal').classList.remove('active');
+            document.getElementById('refreshResult').innerHTML = '';
+            currentBookId = null;
+        }
+
+        let currentBookData = null;
+
+        function openEditModal() {
+            if (!currentBookData) return;
+
+            // Populate form with current data
+            document.getElementById('editTitle').value = currentBookData.title || '';
+            document.getElementById('editAuthor').value = currentBookData.author || '';
+            document.getElementById('editSeries').value = currentBookData.series || '';
+            document.getElementById('editSeriesIndex').value = currentBookData.series_index || '';
+            document.getElementById('editISBN').value = currentBookData.isbn || '';
+            document.getElementById('editPublisher').value = currentBookData.publisher || '';
+            document.getElementById('editPublishDate').value = currentBookData.publish_date || '';
+            document.getElementById('editLanguage').value = currentBookData.language || '';
+            document.getElementById('editSubjects').value = currentBookData.subjects || '';
+            document.getElementById('editDescription').value = currentBookData.description || '';
+
+            // Clear any previous errors
+            document.querySelectorAll('.form-group.error').forEach(el => el.classList.remove('error'));
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+            document.getElementById('editMetadataModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editMetadataModal').classList.remove('active');
+        }
+
+        function validateISBN(isbn) {
+            if (!isbn) return true; // Empty is OK
+            const cleaned = isbn.replace(/[-\s]/g, '');
+            // ISBN-10 or ISBN-13
+            if (cleaned.length === 10) {
+                return /^\d{9}[\dXx]$/.test(cleaned);
+            } else if (cleaned.length === 13) {
+                return /^\d{13}$/.test(cleaned);
+            }
+            return false;
+        }
+
+        async function saveMetadata(e) {
+            e.preventDefault();
+
+            if (!currentBookId) return;
+
+            // Clear previous errors
+            document.querySelectorAll('.form-group.error').forEach(el => el.classList.remove('error'));
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+            // Validate ISBN
+            const isbnInput = document.getElementById('editISBN');
+            const isbn = isbnInput.value.trim();
+            if (isbn && !validateISBN(isbn)) {
+                const group = isbnInput.closest('.form-group');
+                group.classList.add('error');
+                const errMsg = document.createElement('div');
+                errMsg.className = 'error-message';
+                errMsg.textContent = 'Invalid ISBN format (must be 10 or 13 digits)';
+                group.appendChild(errMsg);
+                isbnInput.focus();
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveEditBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            const formData = {
+                title: document.getElementById('editTitle').value.trim(),
+                author: document.getElementById('editAuthor').value.trim(),
+                series: document.getElementById('editSeries').value.trim(),
+                series_index: parseFloat(document.getElementById('editSeriesIndex').value) || 0,
+                isbn: isbn,
+                publisher: document.getElementById('editPublisher').value.trim(),
+                publish_date: document.getElementById('editPublishDate').value.trim(),
+                language: document.getElementById('editLanguage').value.trim(),
+                subjects: document.getElementById('editSubjects').value.trim(),
+                description: document.getElementById('editDescription').value.trim()
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/metadata`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to save changes');
+                }
+
+                const data = await res.json();
+
+                // Close edit modal
+                closeEditModal();
+
+                // Refresh the book detail
+                if (data.book) {
+                    renderBookDetail(data.book);
+                    currentBookData = data.book;
+                }
+
+                // Show success message
+                document.getElementById('refreshResult').innerHTML = `
+                    <div class="refresh-result success">
+                        Metadata saved successfully!
+                    </div>
+                `;
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Changes';
+            }
+        }
+
+        async function refreshMetadata() {
+            if (!currentBookId) return;
+
+            const btn = document.getElementById('refreshMetadataBtn');
+            const resultDiv = document.getElementById('refreshResult');
+
+            // Show loading state
+            btn.classList.add('loading');
+            btn.disabled = true;
+            resultDiv.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/metadata/refresh`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+
+                const data = await res.json();
+
+                if (res.status === 429) {
+                    // Rate limited
+                    resultDiv.innerHTML = `
+                        <div class="refresh-result error">
+                            Rate limited. Please wait a moment and try again.
+                        </div>
+                    `;
+                } else if (res.status === 404) {
+                    // No match found
+                    resultDiv.innerHTML = `
+                        <div class="refresh-result warning">
+                            No matching metadata found. Try editing the title or ISBN manually.
+                        </div>
+                    `;
+                } else if (!res.ok) {
+                    // Other error
+                    resultDiv.innerHTML = `
+                        <div class="refresh-result error">
+                            ${data.error || 'Failed to refresh metadata'}
+                        </div>
+                    `;
+                } else {
+                    // Success
+                    const confidence = data.confidence || 0;
+                    const confidencePercent = Math.round(confidence * 100);
+                    const confidenceClass = confidence >= 0.7 ? 'high' : confidence >= 0.5 ? 'medium' : 'low';
+
+                    if (confidence < 0.5) {
+                        // Low confidence warning
+                        resultDiv.innerHTML = `
+                            <div class="refresh-result warning">
+                                <strong>Low confidence match (${confidencePercent}%)</strong>
+                                <p style="margin-top: 5px;">${data.message}</p>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Good match
+                        resultDiv.innerHTML = `
+                            <div class="refresh-result success">
+                                <strong>Metadata updated!</strong> (${confidencePercent}% confidence from ${data.source})
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill ${confidenceClass}" style="width: ${confidencePercent}%"></div>
+                                </div>
+                            </div>
+                        `;
+                        // Refresh the book details
+                        if (data.book) {
+                            renderBookDetail(data.book);
+                        }
+                    }
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `
+                    <div class="refresh-result error">
+                        Network error. Please check your connection.
+                    </div>
+                `;
+                console.error(err);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        // Search Metadata functionality
+        let searchResults = [];
+        let selectedMetadata = null;
+
+        function openSearchModal() {
+            if (!currentBookData) return;
+
+            // Pre-fill search fields with current book data
+            document.getElementById('searchTitle').value = currentBookData.title || '';
+            document.getElementById('searchAuthor').value = currentBookData.author || '';
+            document.getElementById('searchISBN').value = currentBookData.isbn || '';
+
+            // Reset search state
+            searchResults = [];
+            selectedMetadata = null;
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('selectedPreview').style.display = 'none';
+            document.getElementById('resultsContainer').innerHTML = '';
+
+            document.getElementById('searchMetadataModal').classList.add('active');
+        }
+
+        function closeSearchModal() {
+            document.getElementById('searchMetadataModal').classList.remove('active');
+            searchResults = [];
+            selectedMetadata = null;
+        }
+
+        async function performSearch() {
+            const title = document.getElementById('searchTitle').value.trim();
+            const author = document.getElementById('searchAuthor').value.trim();
+            const isbn = document.getElementById('searchISBN').value.trim();
+
+            if (!title && !author && !isbn) {
+                alert('Please enter at least a title, author, or ISBN to search');
+                return;
+            }
+
+            const btn = document.getElementById('doSearchBtn');
+            const resultsDiv = document.getElementById('searchResults');
+            const container = document.getElementById('resultsContainer');
+
+            btn.disabled = true;
+            btn.textContent = 'Searching...';
+            resultsDiv.style.display = 'block';
+            document.getElementById('selectedPreview').style.display = 'none';
+            container.innerHTML = '<div class="search-loading">Searching for metadata...</div>';
+
+            try {
+                const params = new URLSearchParams();
+                if (isbn) params.append('isbn', isbn);
+                if (title) params.append('title', title);
+                if (author) params.append('author', author);
+
+                const res = await fetch(`${API_BASE}/metadata/search?${params}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (res.status === 429) {
+                    container.innerHTML = '<div class="search-error">Rate limited. Please wait a moment and try again.</div>';
+                    return;
+                }
+
+                if (res.status === 404) {
+                    container.innerHTML = '<div class="no-results">No matching metadata found. Try different search terms.</div>';
+                    return;
+                }
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    container.innerHTML = `<div class="search-error">${data.error || 'Search failed'}</div>`;
+                    return;
+                }
+
+                const data = await res.json();
+                searchResults = data.results || [];
+
+                if (searchResults.length === 0) {
+                    container.innerHTML = '<div class="no-results">No matching metadata found. Try different search terms.</div>';
+                    return;
+                }
+
+                renderSearchResults();
+            } catch (err) {
+                container.innerHTML = '<div class="search-error">Network error. Please check your connection.</div>';
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Search';
+            }
+        }
+
+        function renderSearchResults() {
+            const container = document.getElementById('resultsContainer');
+
+            container.innerHTML = searchResults.map((result, index) => {
+                const confidence = result.confidence || 0;
+                const confidenceClass = confidence >= 0.7 ? 'high' : confidence >= 0.5 ? 'medium' : 'low';
+                const confidencePercent = Math.round(confidence * 100);
+                const authors = result.authors ? result.authors.join(', ') : '';
+
+                return `
+                    <div class="result-item" onclick="selectSearchResult(${index})">
+                        <div class="result-title">${result.title || 'Unknown Title'}</div>
+                        <div class="result-author">${authors || 'Unknown Author'}</div>
+                        <div class="result-details">
+                            ${result.isbn13 ? `<span>ISBN: ${result.isbn13}</span>` : ''}
+                            ${result.publish_date ? `<span>${result.publish_date}</span>` : ''}
+                            ${result.publisher ? `<span>${result.publisher}</span>` : ''}
+                            <span class="result-confidence">
+                                <span class="confidence-dot ${confidenceClass}"></span>
+                                ${confidencePercent}% match
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectSearchResult(index) {
+            selectedMetadata = searchResults[index];
+            showMetadataPreview();
+        }
+
+        function showMetadataPreview() {
+            if (!selectedMetadata) return;
+
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('selectedPreview').style.display = 'block';
+
+            const previewContent = document.getElementById('previewContent');
+            const meta = selectedMetadata;
+            const authors = meta.authors ? meta.authors.join(', ') : '';
+            const subjects = meta.subjects ? meta.subjects.join(', ') : '';
+
+            let html = '<div class="preview-grid">';
+            html += `<div class="preview-label">Title</div><div class="preview-value">${meta.title || '-'}</div>`;
+            html += `<div class="preview-label">Author</div><div class="preview-value">${authors || '-'}</div>`;
+            if (meta.isbn13 || meta.isbn10) {
+                html += `<div class="preview-label">ISBN</div><div class="preview-value">${meta.isbn13 || meta.isbn10}</div>`;
+            }
+            if (meta.publisher) {
+                html += `<div class="preview-label">Publisher</div><div class="preview-value">${meta.publisher}</div>`;
+            }
+            if (meta.publish_date) {
+                html += `<div class="preview-label">Published</div><div class="preview-value">${meta.publish_date}</div>`;
+            }
+            if (meta.language) {
+                html += `<div class="preview-label">Language</div><div class="preview-value">${meta.language}</div>`;
+            }
+            if (subjects) {
+                html += `<div class="preview-label">Subjects</div><div class="preview-value">${subjects}</div>`;
+            }
+            if (meta.description) {
+                html += `<div class="preview-description">
+                    <div class="preview-label">Description</div>
+                    <div class="preview-value">${meta.description}</div>
+                </div>`;
+            }
+            html += '</div>';
+
+            previewContent.innerHTML = html;
+        }
+
+        function backToResults() {
+            document.getElementById('selectedPreview').style.display = 'none';
+            document.getElementById('searchResults').style.display = 'block';
+        }
+
+        async function applySelectedMetadata() {
+            if (!selectedMetadata || !currentBookId) return;
+
+            const btn = document.getElementById('applyMetadataBtn');
+            btn.disabled = true;
+            btn.textContent = 'Applying...';
+
+            const meta = selectedMetadata;
+            const formData = {
+                title: meta.title || currentBookData.title,
+                author: meta.authors ? meta.authors[0] : currentBookData.author,
+                series: currentBookData.series, // Keep existing series
+                series_index: currentBookData.series_index,
+                isbn: meta.isbn13 || meta.isbn10 || '',
+                publisher: meta.publisher || '',
+                publish_date: meta.publish_date || '',
+                language: meta.language || '',
+                subjects: meta.subjects ? meta.subjects.join(', ') : '',
+                description: meta.description || ''
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${currentBookId}/metadata`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Failed to apply metadata');
+                }
+
+                const data = await res.json();
+
+                // Close search modal
+                closeSearchModal();
+
+                // Refresh the book detail
+                if (data.book) {
+                    renderBookDetail(data.book);
+                    currentBookData = data.book;
+                }
+
+                // Show success message
+                document.getElementById('refreshResult').innerHTML = `
+                    <div class="refresh-result success">
+                        Metadata applied successfully from ${meta.source || 'search'}!
+                    </div>
+                `;
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Apply to Book';
+            }
         }
 
         async function uploadFile(file) {
@@ -614,6 +1870,48 @@
         }
 
         // Event Listeners
+        // Book Detail Modal Event Listeners
+        document.getElementById('readBookBtn').addEventListener('click', () => {
+            if (currentBookId) {
+                openReader(currentBookId);
+            }
+        });
+
+        document.getElementById('closeDetailBtn').addEventListener('click', closeBookDetailModal);
+
+        document.getElementById('refreshMetadataBtn').addEventListener('click', refreshMetadata);
+
+        document.getElementById('bookDetailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'bookDetailModal') closeBookDetailModal();
+        });
+
+        // Edit Metadata Modal Event Listeners
+        document.getElementById('editMetadataBtn').addEventListener('click', openEditModal);
+
+        document.getElementById('cancelEditBtn').addEventListener('click', closeEditModal);
+
+        document.getElementById('editMetadataForm').addEventListener('submit', saveMetadata);
+
+        document.getElementById('editMetadataModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editMetadataModal') closeEditModal();
+        });
+
+        // Search Metadata Modal Event Listeners
+        document.getElementById('searchMetadataBtn').addEventListener('click', openSearchModal);
+
+        document.getElementById('cancelSearchBtn').addEventListener('click', closeSearchModal);
+
+        document.getElementById('doSearchBtn').addEventListener('click', performSearch);
+
+        document.getElementById('backToResultsBtn').addEventListener('click', backToResults);
+
+        document.getElementById('applyMetadataBtn').addEventListener('click', applySelectedMetadata);
+
+        document.getElementById('searchMetadataModal').addEventListener('click', (e) => {
+            if (e.target.id === 'searchMetadataModal') closeSearchModal();
+        });
+
+        // Upload Modal Event Listeners
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('uploadModal').classList.add('active');
         });
