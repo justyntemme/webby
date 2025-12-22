@@ -2501,6 +2501,7 @@
 
         document.getElementById('typeSelect').addEventListener('change', () => {
             groupBy = null;
+            localStorage.setItem('webby-content-type', document.getElementById('typeSelect').value);
             loadBooks();
         });
 
@@ -2802,11 +2803,20 @@
             }
         }
 
+        // Load saved content type filter preference
+        function loadContentTypePreference() {
+            const saved = localStorage.getItem('webby-content-type');
+            if (saved !== null) {
+                document.getElementById('typeSelect').value = saved;
+            }
+        }
+
         // Initialize
         async function init() {
             const isAuthenticated = await checkAuth();
             if (isAuthenticated) {
                 loadGroupingPreference();
+                loadContentTypePreference();
                 loadBooks();
                 setupBookCardInteractions();
             }
