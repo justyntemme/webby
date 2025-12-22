@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -1440,11 +1441,37 @@ func (h *Handler) RefreshComicMetadata(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 	defer cancel()
 
-	// Use series and title as search hints
-	result, err := h.comicMetadata.LookupComic(ctx, book.Series, "", book.Title)
+	// Re-parse filename for better metadata extraction
+	filename := filepath.Base(book.FilePath)
+	parsedInfo := cbz.ParseComicFilename(filename)
+
+	// Use parsed data for better search - prefer parsed series over stored if available
+	searchSeries := book.Series
+	if parsedInfo.Series != "" {
+		searchSeries = parsedInfo.Series
+	}
+
+	// Get issue number from parsed info or stored SeriesIndex
+	issueNumber := parsedInfo.IssueNumber
+	if issueNumber == "" && book.SeriesIndex > 0 {
+		// Convert float to string, removing trailing zeros
+		issueNumber = strconv.FormatFloat(book.SeriesIndex, 'f', -1, 64)
+	}
+
+	// Use year from parsed filename for filtering
+	year := parsedInfo.Year
+
+	result, err := h.comicMetadata.LookupComic(ctx, searchSeries, issueNumber, book.Title, year)
 	if err != nil {
 		if err == metadata.ErrNoMatch {
-			c.JSON(http.StatusNotFound, gin.H{"error": "No matching comic metadata found"})
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":       "No matching comic metadata found",
+				"parsed_info": gin.H{
+					"series":       searchSeries,
+					"issue_number": issueNumber,
+					"year":         year,
+				},
+			})
 			return
 		}
 		if err == metadata.ErrRateLimited {
@@ -1530,6 +1557,78 @@ func (h *Handler) GetComicMetadataStatus(c *gin.Context) {
 			}
 			return "Set COMICVINE_API_KEY environment variable to enable"
 		}(),
+	})
+}
+
+// ReprocessComicFilename re-parses a comic's filename to extract better metadata
+func (h *Handler) ReprocessComicFilename(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	// Get the book
+	var book *models.Book
+	var err error
+
+	if userID != "" {
+		book, err = h.db.GetBookForUser(id, userID)
+	} else {
+		book, err = h.db.GetBook(id)
+	}
+
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch book"})
+		return
+	}
+
+	// Verify this is a comic
+	if book.ContentType != models.ContentTypeComic {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This is not a comic"})
+		return
+	}
+
+	// Re-parse filename
+	filename := filepath.Base(book.FilePath)
+	parsedInfo := cbz.ParseComicFilename(filename)
+
+	// Update book with parsed metadata
+	oldTitle := book.Title
+	oldSeries := book.Series
+	oldSeriesIndex := book.SeriesIndex
+
+	book.Title = parsedInfo.Title
+	book.Series = parsedInfo.Series
+	book.SeriesIndex = parsedInfo.IssueFloat
+
+	now := time.Now()
+	book.MetadataSource = "filename"
+	book.MetadataUpdated = &now
+
+	if err := h.db.UpdateBookMetadata(book); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Comic filename reprocessed successfully",
+		"book":    book,
+		"changes": gin.H{
+			"title":        gin.H{"old": oldTitle, "new": book.Title},
+			"series":       gin.H{"old": oldSeries, "new": book.Series},
+			"series_index": gin.H{"old": oldSeriesIndex, "new": book.SeriesIndex},
+			"year":         parsedInfo.Year,
+			"volume":       parsedInfo.Volume,
+		},
+		"parsed_info": gin.H{
+			"raw_filename": parsedInfo.RawFilename,
+			"series":       parsedInfo.Series,
+			"issue_number": parsedInfo.IssueNumber,
+			"volume":       parsedInfo.Volume,
+			"year":         parsedInfo.Year,
+		},
 	})
 }
 

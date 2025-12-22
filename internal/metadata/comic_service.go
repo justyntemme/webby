@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -20,14 +22,18 @@ func NewComicService(provider ComicProvider) *ComicService {
 }
 
 // LookupComic attempts to find metadata using series/issue or title
-func (s *ComicService) LookupComic(ctx context.Context, series, issueNumber, title string) (*ComicMetadata, error) {
+// year is optional (0 means ignore) and used to filter/rank results
+func (s *ComicService) LookupComic(ctx context.Context, series, issueNumber, title string, year int) (*ComicMetadata, error) {
 	s.rateLimit.Wait()
 
 	// Try series + issue lookup first (most accurate for comics)
 	if series != "" {
 		results, err := s.provider.SearchBySeriesAndIssue(ctx, series, issueNumber)
 		if err == nil && len(results) > 0 {
-			return s.selectBestMatch(results, series, issueNumber), nil
+			results = s.filterAndRankByYear(results, year)
+			if len(results) > 0 {
+				return s.selectBestMatch(results, series, issueNumber), nil
+			}
 		}
 	}
 
@@ -36,7 +42,10 @@ func (s *ComicService) LookupComic(ctx context.Context, series, issueNumber, tit
 		s.rateLimit.Wait()
 		results, err := s.provider.SearchByTitle(ctx, title)
 		if err == nil && len(results) > 0 {
-			return s.selectBestMatch(results, title, issueNumber), nil
+			results = s.filterAndRankByYear(results, year)
+			if len(results) > 0 {
+				return s.selectBestMatch(results, title, issueNumber), nil
+			}
 		}
 	}
 
@@ -45,11 +54,65 @@ func (s *ComicService) LookupComic(ctx context.Context, series, issueNumber, tit
 		s.rateLimit.Wait()
 		results, err := s.provider.SearchByTitle(ctx, series)
 		if err == nil && len(results) > 0 {
-			return s.selectBestMatch(results, series, issueNumber), nil
+			results = s.filterAndRankByYear(results, year)
+			if len(results) > 0 {
+				return s.selectBestMatch(results, series, issueNumber), nil
+			}
 		}
 	}
 
 	return nil, ErrNoMatch
+}
+
+// filterAndRankByYear filters results by year and boosts confidence for matches
+func (s *ComicService) filterAndRankByYear(results []ComicMetadata, year int) []ComicMetadata {
+	if year == 0 {
+		return results // No year to filter by
+	}
+
+	var filtered []ComicMetadata
+	for i := range results {
+		// Extract year from release date (format: YYYY-MM-DD or YYYY)
+		resultYear := extractYearFromDate(results[i].ReleaseDate)
+
+		if resultYear > 0 {
+			// Boost confidence for year match, reduce for mismatch
+			yearDiff := abs(resultYear - year)
+			if yearDiff == 0 {
+				results[i].Confidence += 0.15 // Boost for exact year match
+			} else if yearDiff <= 1 {
+				results[i].Confidence += 0.05 // Small boost for ±1 year
+			} else if yearDiff > 5 {
+				results[i].Confidence -= 0.1 // Penalty for >5 year difference
+			}
+		}
+		filtered = append(filtered, results[i])
+	}
+
+	return filtered
+}
+
+// extractYearFromDate extracts year from various date formats
+func extractYearFromDate(date string) int {
+	if date == "" {
+		return 0
+	}
+	// Try YYYY-MM-DD format
+	parts := strings.Split(date, "-")
+	if len(parts) >= 1 {
+		if y, err := strconv.Atoi(parts[0]); err == nil && y >= 1900 && y <= 2100 {
+			return y
+		}
+	}
+	return 0
+}
+
+// abs returns absolute value of an int
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 // SearchComics searches for metadata and returns all results with confidence scores

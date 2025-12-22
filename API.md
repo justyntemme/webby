@@ -500,6 +500,7 @@ Response 200:
 POST /api/books/:id/metadata/comic/refresh
 
 Only works for books with content_type="comic".
+Uses intelligent filename parsing to extract series, issue number, and year for better ComicVine matching.
 
 Response 200:
 {
@@ -509,10 +510,51 @@ Response 200:
   "source": "comicvine"
 }
 
+Response 404 (no match):
+{
+  "error": "No matching comic metadata found",
+  "parsed_info": {
+    "series": "Batman",
+    "issue_number": "001",
+    "year": 2020
+  }
+}
+
 Response 503 (not configured):
 {
   "error": "Comic metadata service not configured",
   "message": "Set COMICVINE_API_KEY environment variable to enable"
+}
+```
+
+### Reprocess Comic Filename
+```
+POST /api/books/:id/metadata/comic/reprocess
+
+Re-parses the comic filename to extract cleaner metadata without external API lookup.
+Useful for fixing titles that weren't properly parsed on initial upload.
+
+Common filename patterns recognized:
+- "Series Name 001 (2020).cbz"
+- "Series Name #1 (2020) (Digital).cbr"
+- "Series Name v01 - Issue Title (2020).cbz"
+
+Response 200:
+{
+  "message": "Comic filename reprocessed successfully",
+  "book": { ... },
+  "changes": {
+    "title": {"old": "Batman 001 (2020) (Digital)", "new": "Batman #001 (2020)"},
+    "series": {"old": "", "new": "Batman"},
+    "series_index": {"old": 0, "new": 1}
+  },
+  "parsed_info": {
+    "raw_filename": "Batman 001 (2020) (Digital).cbz",
+    "series": "Batman",
+    "issue_number": "001",
+    "volume": 0,
+    "year": 2020
+  }
 }
 ```
 

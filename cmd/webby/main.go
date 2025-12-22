@@ -131,6 +131,7 @@ func main() {
 			booksGroup.GET("/metadata/comic/status", handler.GetComicMetadataStatus)
 			booksGroup.GET("/metadata/comic/search", handler.SearchComicMetadata)
 			booksGroup.POST("/books/:id/metadata/comic/refresh", handler.RefreshComicMetadata)
+			booksGroup.POST("/books/:id/metadata/comic/reprocess", handler.ReprocessComicFilename)
 
 			// Book sharing
 			booksGroup.GET("/books/shared", handler.GetSharedBooks)

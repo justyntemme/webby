@@ -11,14 +11,17 @@ import (
 	"github.com/nwaples/rardecode/v2"
 )
 
-// Metadata contains CBZ metadata
+// Metadata contains CBZ/CBR metadata
 type Metadata struct {
 	Title       string
 	Author      string
 	Series      string
 	SeriesIndex float64
+	Volume      int
+	Year        int
 	PageCount   int
-	ContentType string // Always "comic" for CBZ
+	ContentType string // Always "comic" for CBZ/CBR
+	RawFilename string // Original filename for reference
 }
 
 // CoverImage contains extracted cover image data
@@ -59,15 +62,19 @@ func ParseCBZ(filePath string) (*Metadata, error) {
 	}
 	meta.PageCount = len(imageFiles)
 
-	// Try to extract title from filename
+	// Parse filename using the robust parser
 	baseName := filepath.Base(filePath)
-	meta.Title = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+	meta.RawFilename = baseName
+	filenameInfo := ParseComicFilename(baseName)
 
-	// Try to parse series info from common naming patterns
-	// e.g., "Series Name 001.cbz", "Series Name - 01.cbz", "Series Name #1.cbz"
-	meta.Series, meta.SeriesIndex = parseSeriesFromFilename(meta.Title)
+	// Use parsed data
+	meta.Title = filenameInfo.Title
+	meta.Series = filenameInfo.Series
+	meta.SeriesIndex = filenameInfo.IssueFloat
+	meta.Volume = filenameInfo.Volume
+	meta.Year = filenameInfo.Year
 
-	// Look for ComicInfo.xml (standard comic metadata format)
+	// Look for ComicInfo.xml (standard comic metadata format) - overrides filename data
 	for _, f := range r.File {
 		if strings.EqualFold(filepath.Base(f.Name), "ComicInfo.xml") {
 			if info, err := parseComicInfo(f); err == nil {
@@ -396,14 +403,19 @@ func ParseCBR(filePath string) (*Metadata, error) {
 
 	meta.PageCount = len(imageFiles)
 
-	// Try to extract title from filename
-	baseName := filepath.Base(filePath)
-	meta.Title = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+	// Parse filename using the robust parser
+	fileBaseName := filepath.Base(filePath)
+	meta.RawFilename = fileBaseName
+	filenameInfo := ParseComicFilename(fileBaseName)
 
-	// Try to parse series info from common naming patterns
-	meta.Series, meta.SeriesIndex = parseSeriesFromFilename(meta.Title)
+	// Use parsed data
+	meta.Title = filenameInfo.Title
+	meta.Series = filenameInfo.Series
+	meta.SeriesIndex = filenameInfo.IssueFloat
+	meta.Volume = filenameInfo.Volume
+	meta.Year = filenameInfo.Year
 
-	// Parse ComicInfo.xml if found
+	// Parse ComicInfo.xml if found - overrides filename data
 	if comicInfoData != nil {
 		if info := parseComicInfoData(comicInfoData); info != nil {
 			if info.Title != "" {
