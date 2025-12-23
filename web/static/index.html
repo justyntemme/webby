@@ -2422,14 +2422,14 @@
 
                 booksContainer.innerHTML = data.books.map(book => `
                     <div class="book-card" onclick="openBookDetail('${book.id}')" style="cursor: pointer;">
-                        <div class="cover-wrapper">
-                            <img class="cover" src="${API_BASE}/books/${book.id}/cover"
+                        <div class="book-cover">
+                            <img src="${API_BASE}/books/${book.id}/cover" alt=""
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div class="cover-fallback" style="display: none;">${book.title.charAt(0)}</div>
+                            <div class="no-cover" style="display: none;">${book.content_type === 'comic' ? '📚' : '📖'}</div>
                         </div>
                         <div class="book-info">
-                            <div class="title">${book.title}</div>
-                            <div class="author">${book.author || 'Unknown'}</div>
+                            <div class="book-title">${book.title}</div>
+                            <div class="book-author">${book.author || 'Unknown'}</div>
                         </div>
                     </div>
                 `).join('');
