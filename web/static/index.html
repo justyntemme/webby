@@ -163,9 +163,9 @@
                 <button id="groupOffBtn" class="active">All</button>
                 <button id="groupSeriesBtn">Group Series</button>
             </div>
-            <button class="upload-btn" id="statsBtn" style="background: var(--info-color, #17a2b8);">Stats</button>
-            <button class="upload-btn" id="collectionsBtn" style="background: var(--secondary-color, #6c757d);">Collections</button>
-            <button class="upload-btn" id="uploadBtn">+ Upload</button>
+            <button class="btn btn-info btn-lg" id="statsBtn">Stats</button>
+            <button class="btn btn-secondary btn-lg" id="collectionsBtn">Collections</button>
+            <button class="btn btn-gradient btn-lg" id="uploadBtn">+ Upload</button>
         </div>
     </header>
 
@@ -322,11 +322,11 @@
                         </div>
                     </div>
                     <div class="book-detail-actions">
-                        <button class="primary-btn" id="readBookBtn">Read Book</button>
-                        <button id="editMetadataBtn">✎ Edit</button>
-                        <button id="searchMetadataBtn">🔍 Search</button>
-                        <button id="refreshMetadataBtn">↻ Refresh</button>
-                        <button id="closeDetailBtn">Close</button>
+                        <button class="btn btn-gradient" id="readBookBtn">Read Book</button>
+                        <button class="btn btn-secondary" id="editMetadataBtn">✎ Edit</button>
+                        <button class="btn btn-secondary" id="searchMetadataBtn">🔍 Search</button>
+                        <button class="btn btn-secondary" id="refreshMetadataBtn">↻ Refresh</button>
+                        <button class="btn btn-outline" id="closeDetailBtn">Close</button>
                     </div>
                 </div>
             </div>
@@ -402,9 +402,9 @@
                     <textarea id="editDescription" name="description" placeholder="Book description..."></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" id="searchFromEditBtn" class="search-btn" title="Search for metadata online">Search Metadata</button>
-                    <button type="button" id="cancelEditBtn">Cancel</button>
-                    <button type="submit" class="save-btn" id="saveEditBtn">Save Changes</button>
+                    <button type="button" id="searchFromEditBtn" class="btn btn-outline" title="Search for metadata online">Search Metadata</button>
+                    <button type="button" id="cancelEditBtn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveEditBtn">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -440,8 +440,8 @@
                     </div>
                 </div>
                 <div class="search-actions">
-                    <button type="button" id="doSearchBtn" class="primary-btn">Search</button>
-                    <button type="button" id="cancelSearchBtn">Cancel</button>
+                    <button type="button" id="doSearchBtn" class="btn btn-primary">Search</button>
+                    <button type="button" id="cancelSearchBtn" class="btn btn-secondary">Cancel</button>
                 </div>
             </div>
             <div id="searchResults" class="search-results" style="display: none;">
@@ -452,8 +452,8 @@
                 <h3>Selected Metadata</h3>
                 <div id="previewContent"></div>
                 <div class="preview-actions">
-                    <button type="button" id="applyMetadataBtn" class="primary-btn">Apply to Book</button>
-                    <button type="button" id="backToResultsBtn">Back to Results</button>
+                    <button type="button" id="applyMetadataBtn" class="btn btn-primary">Apply to Book</button>
+                    <button type="button" id="backToResultsBtn" class="btn btn-secondary">Back to Results</button>
                 </div>
             </div>
         </div>
@@ -468,7 +468,7 @@
                 <div style="flex: 1; max-height: 400px; overflow-y: auto;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="margin: 0;">Your Collections</h3>
-                        <button id="newCollectionBtn" class="primary-btn">+ New Collection</button>
+                        <button id="newCollectionBtn" class="btn btn-primary">+ New Collection</button>
                     </div>
                     <div id="collectionsList" style="display: flex; flex-direction: column; gap: 10px;">
                         <div class="loading">Loading collections...</div>
@@ -476,7 +476,7 @@
                 </div>
             </div>
             <div style="margin-top: 20px; text-align: right;">
-                <button id="closeCollectionsBtn">Close</button>
+                <button id="closeCollectionsBtn" class="btn btn-secondary">Close</button>
             </div>
         </div>
     </div>
@@ -527,14 +527,14 @@
                                 <option value="less_than">Less Than</option>
                             </select>
                             <input type="text" class="rule-value" style="flex: 1;" placeholder="Value">
-                            <button type="button" class="remove-rule-btn" style="padding: 5px 10px;">X</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-rule-btn">X</button>
                         </div>
                     </div>
-                    <button type="button" id="addRuleBtn" style="margin-bottom: 15px;">+ Add Rule</button>
+                    <button type="button" id="addRuleBtn" class="btn btn-outline btn-sm" style="margin-bottom: 15px;">+ Add Rule</button>
                 </div>
                 <div class="form-actions">
-                    <button type="button" id="cancelNewCollectionBtn">Cancel</button>
-                    <button type="submit" class="save-btn">Create Collection</button>
+                    <button type="button" id="cancelNewCollectionBtn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Collection</button>
                 </div>
             </form>
         </div>
@@ -554,8 +554,8 @@
                 <div class="loading">Loading books...</div>
             </div>
             <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="deleteCollectionBtn" style="background: var(--danger-color); color: white;">Delete Collection</button>
-                <button id="closeViewCollectionBtn">Close</button>
+                <button id="deleteCollectionBtn" class="btn btn-danger">Delete Collection</button>
+                <button id="closeViewCollectionBtn" class="btn btn-secondary">Close</button>
             </div>
         </div>
     </div>
@@ -606,7 +606,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="closeStatsBtn">Close</button>
+                <button id="closeStatsBtn" class="btn btn-secondary">Close</button>
             </div>
         </div>
     </div>
@@ -646,12 +646,12 @@
                     <div><span style="color: var(--secondary-color); font-weight: bold;" id="skippedCount">0</span> Skipped</div>
                 </div>
                 <div id="failedFilesList" style="display: none; max-height: 100px; overflow-y: auto; font-size: 12px; color: var(--danger-color);"></div>
-                <button id="retryFailedBtn" style="display: none; margin-top: 10px; background: var(--warning-color); color: #000;">Retry Failed</button>
+                <button id="retryFailedBtn" class="btn btn-warning" style="display: none; margin-top: 10px;">Retry Failed</button>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="cancel-btn" id="cancelBtn">Close</button>
-                <button id="clearUploadBtn" style="display: none;">Clear & Upload More</button>
+                <button class="btn btn-secondary" id="cancelBtn">Close</button>
+                <button id="clearUploadBtn" class="btn btn-outline" style="display: none;">Clear & Upload More</button>
             </div>
         </div>
     </div>

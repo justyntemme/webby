@@ -103,6 +103,18 @@
     --space-10: 40px;
     --space-12: 48px;
 
+    /* Typography scale */
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 22px;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
     /* Transitions */
     --transition: all 0.2s ease;
     --transition-fast: all 0.15s ease;

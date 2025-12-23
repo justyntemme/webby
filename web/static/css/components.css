@@ -1,6 +1,197 @@
 /* Webby Library - Component Styles */
 /* Book Cards, Tags, Badges, Buttons, and Form Elements */
 
+/* ==================== UNIFIED BUTTON SYSTEM ==================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    background: var(--surface-1);
+    color: var(--text-color);
+}
+
+/* Primary button - solid accent color */
+.btn-primary {
+    background-color: var(--accent-color);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+}
+
+/* Gradient button - for prominent actions */
+.btn-gradient {
+    background: var(--gradient-accent);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow);
+}
+
+.btn-gradient:hover {
+    opacity: 0.95;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+/* Secondary button - subtle styling */
+.btn-secondary {
+    background-color: var(--surface-2);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--surface-3);
+    color: var(--text-color);
+}
+
+/* Danger button - destructive actions */
+.btn-danger {
+    background-color: var(--danger-color);
+    color: var(--text-inverse);
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+/* Success button */
+.btn-success {
+    background-color: var(--success-color);
+    color: var(--text-inverse);
+}
+
+.btn-success:hover {
+    background-color: var(--success-dark);
+}
+
+/* Warning button */
+.btn-warning {
+    background-color: var(--warning-color);
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: var(--warning-dark);
+}
+
+/* Info button */
+.btn-info {
+    background-color: var(--info-color);
+    color: var(--text-inverse);
+}
+
+.btn-info:hover {
+    opacity: 0.9;
+}
+
+/* Outline variants */
+.btn-outline {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-outline:hover {
+    background-color: var(--surface-2);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--accent-light);
+}
+
+.btn-outline-danger {
+    background: transparent;
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--danger-light);
+}
+
+/* Size variants */
+.btn-sm {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--font-size-lg);
+}
+
+/* States */
+.btn:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn.disabled {
+    opacity: var(--disabled-opacity);
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Icon button (square) */
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: var(--font-size-lg);
+}
+
+.btn-icon.btn-sm {
+    width: 32px;
+    height: 32px;
+    font-size: var(--font-size-base);
+}
+
 /* ==================== USER SECTION ==================== */
 .user-section {
     display: flex;
@@ -12,28 +203,35 @@
     color: var(--text-color);
 }
 
+/* Auth button - extends base button */
 .auth-btn {
-    background: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
     border: 1px solid var(--border-color);
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 14px;
+    border-radius: var(--radius);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
     color: var(--text-color);
+    background: transparent;
+    transition: var(--transition);
 }
 
 .auth-btn:hover {
-    background: var(--bg-color);
+    background: var(--surface-2);
 }
 
 .auth-btn.primary {
     background: var(--accent-color);
-    color: white;
+    color: var(--text-inverse);
     border-color: var(--accent-color);
 }
 
 .auth-btn.primary:hover {
-    opacity: 0.9;
+    background: var(--accent-hover);
 }
 
 /* ==================== GROUP HEADERS ==================== */
