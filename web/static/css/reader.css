@@ -186,6 +186,11 @@ body {
     width: 50%;
 }
 
+/* Allow text selection through touch zones when dragging */
+.touch-zone.is-selecting {
+    pointer-events: none;
+}
+
 /* ==================== MODALS ==================== */
 .modal {
     display: none;

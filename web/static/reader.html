@@ -1142,14 +1142,62 @@
             document.getElementById('prevBtn').addEventListener('click', prevPage);
             document.getElementById('nextBtn').addEventListener('click', nextPage);
 
-            // Touch zones - now page-based (only active in paginated mode)
-            document.getElementById('touchLeft').addEventListener('click', () => {
-                if (readingMode === 'paginated') prevPage();
+            // Touch zones - handles both tap-to-navigate and drag-to-select
+            const zones = document.querySelectorAll('.touch-zone');
+            let isMouseDrag = false;
+
+            zones.forEach(zone => {
+                let startX, startY;
+                const dragThreshold = 5; // pixels
+
+                zone.addEventListener('mousedown', e => {
+                    // Only for left mouse button
+                    if (e.button !== 0) return;
+
+                    isMouseDrag = false;
+                    startX = e.clientX;
+                    startY = e.clientY;
+
+                    const onMouseMove = (moveEvent) => {
+                        if (Math.abs(moveEvent.clientX - startX) > dragThreshold || Math.abs(moveEvent.clientY - startY) > dragThreshold) {
+                            isMouseDrag = true;
+                            // It's a drag for selection - disable pointer events on zones
+                            zones.forEach(z => z.classList.add('is-selecting'));
+                            document.removeEventListener('mousemove', onMouseMove);
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        // Re-enable zones after a short delay to allow selection to complete
+                        setTimeout(() => {
+                            zones.forEach(z => z.classList.remove('is-selecting'));
+                        }, 100);
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                zone.addEventListener('click', e => {
+                    // If a drag just happened, don't trigger navigation
+                    if (isMouseDrag) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // It's a valid tap or click - perform navigation
+                    if (zone.id === 'touchLeft') {
+                        if (readingMode === 'paginated') prevPage();
+                    } else if (zone.id === 'touchRight') {
+                        if (readingMode === 'paginated') nextPage();
+                    } else if (zone.id === 'touchCenter') {
+                        toggleUI();
+                    }
+                });
             });
-            document.getElementById('touchRight').addEventListener('click', () => {
-                if (readingMode === 'paginated') nextPage();
-            });
-            document.getElementById('touchCenter').addEventListener('click', toggleUI);
 
             // Recalculate pages on window resize
             window.addEventListener('resize', () => {
