@@ -2866,19 +2866,20 @@
         function renderSeriesCard(seriesName, seriesBooks) {
             const firstBook = seriesBooks[0];
             const coverUrl = `${API_BASE}/books/${firstBook.id}/cover`;
-            const escapedTitle = firstBook.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const bookCount = seriesBooks.length;
             const author = firstBook.author || 'Unknown Author';
+            const coverIcon = firstBook.content_type === 'comic' ? '📚' : '📖';
 
             return `
-                <div class="book-card series-card" data-series-name="${seriesName}" onclick="toggleSeriesExpand('${seriesName.replace(/'/g, "\\'")}')">
-                    <div class="series-cover-stack">
-                        <img src="${coverUrl}" alt="${seriesName}" onerror="this.outerHTML='<div class=\\'series-placeholder\\'>${escapedTitle}</div>'">
+                <div class="book-card" data-series-name="${seriesName}" onclick="toggleSeriesExpand('${seriesName.replace(/'/g, "\\'")}')">
+                    <div class="book-cover">
+                        <span class="content-type-badge series-badge">${bookCount} items</span>
+                        <img src="${coverUrl}" alt="${seriesName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="no-cover" style="display:none">${coverIcon}</div>
                     </div>
-                    <div class="series-info">
-                        <div class="series-title">${seriesName}</div>
-                        <span class="series-count">${bookCount} book${bookCount > 1 ? 's' : ''}</span>
-                        <div class="series-author">${author}</div>
+                    <div class="book-info">
+                        <div class="book-title">${seriesName}</div>
+                        <div class="book-author">${author}</div>
                     </div>
                 </div>
             `;
