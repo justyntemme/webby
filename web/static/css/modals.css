@@ -1,0 +1,574 @@
+/* Webby Library - Modal Styles */
+/* All modal and overlay components */
+
+/* ==================== BASE MODAL ==================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-content h2 {
+    margin-bottom: 24px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+/* ==================== UPLOAD MODAL ==================== */
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    background: var(--bg-color);
+}
+
+.drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.drop-zone p {
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-progress {
+    margin-top: 20px;
+    display: none;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-color) 0%, var(--accent-secondary) 100%);
+    width: 0;
+    transition: width 0.3s;
+}
+
+.cancel-btn {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-top: 16px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.cancel-btn:hover {
+    background: var(--border-color);
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--text-secondary);
+}
+
+.empty-state h2 {
+    margin-bottom: 12px;
+    color: var(--text-color);
+}
+
+/* ==================== BOOK DETAIL MODAL ==================== */
+.book-detail-modal .modal-content {
+    max-width: 640px;
+    text-align: left;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+}
+
+.book-detail-header {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.book-detail-cover {
+    width: 160px;
+    flex-shrink: 0;
+}
+
+.book-detail-cover img {
+    width: 100%;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+}
+
+.book-detail-cover .no-cover {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--gradient-purple);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 48px;
+}
+
+.book-cover .no-cover {
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 32px;
+}
+
+.book-detail-main h2 {
+    margin-bottom: 5px;
+    font-size: 22px;
+}
+
+.book-detail-author {
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.book-detail-series {
+    color: var(--accent-color);
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.book-detail-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.book-detail-actions button {
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.book-detail-actions button:hover:not(:disabled) {
+    background: var(--bg-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.book-detail-actions .primary-btn {
+    background: var(--gradient-accent);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.book-detail-actions .primary-btn:hover:not(:disabled) {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.book-detail-actions .danger-btn {
+    color: var(--danger-dark);
+    border-color: var(--danger-border);
+}
+
+.book-detail-actions .danger-btn:hover:not(:disabled) {
+    background: var(--danger-light);
+    border-color: var(--danger-dark);
+}
+
+.book-detail-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.book-detail-actions button.loading {
+    position: relative;
+    color: transparent;
+}
+
+.book-detail-actions button.loading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ==================== EDIT MODAL ==================== */
+.edit-modal .modal-content {
+    max-width: 500px;
+    text-align: left;
+}
+
+.edit-modal h2 {
+    text-align: center;
+}
+
+.edit-form .form-group {
+    margin-bottom: 16px;
+}
+
+.edit-form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.edit-form input,
+.edit-form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 15px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.edit-form textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.edit-form .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.edit-form .form-actions button {
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.edit-form .form-actions .save-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+}
+
+.edit-form .form-actions .save-btn:hover {
+    background: var(--accent-hover);
+}
+
+/* ==================== SEARCH METADATA MODAL ==================== */
+.search-modal .modal-content {
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.search-form input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 15px;
+}
+
+.search-form input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.search-form button {
+    padding: 12px 24px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.search-results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.search-result-item:hover {
+    border-color: var(--accent-color);
+    background: var(--hover-bg);
+}
+
+.search-result-item.selected {
+    border-color: var(--accent-color);
+    background: var(--active-bg);
+}
+
+.result-cover {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.result-cover img {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-title {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.result-author {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.result-description {
+    font-size: 13px;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.no-results {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px;
+}
+
+.search-loading {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.search-error {
+    background: var(--danger-light);
+    color: var(--danger-dark);
+    padding: 12px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+/* ==================== SIMILAR BOOKS SECTION ==================== */
+.similar-books-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.similar-books-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-color);
+}
+
+.similar-books-grid {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+}
+
+.similar-book-card {
+    flex: 0 0 100px;
+    scroll-snap-align: start;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.similar-book-card:hover {
+    transform: translateY(-4px);
+}
+
+.similar-book-cover {
+    width: 100px;
+    height: 150px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.similar-book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.similar-book-cover .no-cover {
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+
+.similar-book-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.similar-books-empty {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* ==================== MOBILE MODAL OVERRIDES ==================== */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+        padding: 20px;
+    }
+
+    .book-detail-modal .modal-content {
+        padding: 20px;
+    }
+
+    .book-detail-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .book-detail-cover {
+        width: 140px;
+    }
+
+    .book-detail-actions {
+        justify-content: center;
+    }
+
+    /* Mobile close button */
+    .modal-content::before {
+        content: '';
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: var(--border-color);
+        border-radius: 2px;
+    }
+
+    .edit-form input,
+    .edit-form textarea {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+}
