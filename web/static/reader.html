@@ -311,6 +311,130 @@
             padding: 20px;
         }
 
+        /* Reading Mode Toggle */
+        .reading-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .mode-btn {
+            padding: 4px 10px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        /* Continuous Scroll Mode */
+        .content.continuous-mode {
+            padding-bottom: 200px;
+        }
+
+        .chapter-container {
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .chapter-separator {
+            text-align: center;
+            padding: 40px 20px;
+            margin: 40px 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--header-bg);
+            opacity: 0.7;
+        }
+
+        .chapter-separator-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .chapter-separator-number {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+
+        .chapter-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+
+        /* Chapter Indicator Overlay */
+        .chapter-indicator {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 150;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            pointer-events: none;
+        }
+
+        .chapter-indicator.visible {
+            opacity: 1;
+        }
+
+        /* Hide footer in continuous mode */
+        body.continuous-scroll-active .footer {
+            display: none;
+        }
+
+        body.continuous-scroll-active .content {
+            padding-bottom: 60px;
+        }
+
+        /* Scroll to top button in continuous mode */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .scroll-top-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         /* Highlight colors */
         .highlight-yellow { background-color: rgba(255, 255, 0, 0.4); }
         .highlight-green { background-color: rgba(0, 255, 0, 0.3); }
@@ -587,9 +711,19 @@
         <button class="nav-btn" id="prevBtn">&larr; Prev</button>
         <div class="progress">
             <div id="chapterProgress">Chapter 1 of 1</div>
+            <div class="reading-mode-toggle" id="readingModeToggle">
+                <button class="mode-btn active" id="paginatedModeBtn" title="Paginated">Page</button>
+                <button class="mode-btn" id="scrollModeBtn" title="Continuous Scroll">Scroll</button>
+            </div>
         </div>
         <button class="nav-btn" id="nextBtn">Next &rarr;</button>
     </footer>
+
+    <!-- Chapter Indicator (for continuous scroll mode) -->
+    <div class="chapter-indicator" id="chapterIndicator"></div>
+
+    <!-- Scroll to Top Button (for continuous scroll mode) -->
+    <button class="scroll-top-btn" id="scrollTopBtn" title="Back to top">&#8593;</button>
 
     <!-- TOC Modal -->
     <div class="modal" id="tocModal">
@@ -704,6 +838,13 @@
         let totalPages = 1;
         let pageHeight = 0; // Viewport height minus header/footer
 
+        // Continuous scroll mode
+        let readingMode = localStorage.getItem('webby_reading_mode') || 'paginated'; // 'paginated' or 'continuous'
+        let loadedChapters = new Set(); // Track which chapters are loaded in continuous mode
+        let loadingChapters = new Set(); // Track chapters currently being loaded
+        let chapterObserver = null; // Intersection Observer for lazy loading
+        let chapterIndicatorTimeout = null;
+
         // Get auth token from localStorage
         function getAuthToken() {
             return localStorage.getItem('webby-token');
@@ -747,6 +888,302 @@
             }
         }
 
+        // ==================== Continuous Scroll Mode Functions ====================
+
+        function setReadingMode(mode) {
+            readingMode = mode;
+            localStorage.setItem('webby_reading_mode', mode);
+
+            // Update UI buttons
+            document.getElementById('paginatedModeBtn').classList.toggle('active', mode === 'paginated');
+            document.getElementById('scrollModeBtn').classList.toggle('active', mode === 'continuous');
+
+            // Toggle body class
+            document.body.classList.toggle('continuous-scroll-active', mode === 'continuous');
+
+            if (mode === 'continuous') {
+                enterContinuousMode();
+            } else {
+                exitContinuousMode();
+            }
+        }
+
+        async function enterContinuousMode() {
+            const content = document.getElementById('content');
+            content.classList.add('continuous-mode');
+            content.innerHTML = '<div class="loading">Loading continuous view...</div>';
+
+            // Reset loaded chapters
+            loadedChapters.clear();
+            loadingChapters.clear();
+
+            // Load current chapter and adjacent ones
+            await loadChapterForContinuous(currentChapter);
+
+            // Setup Intersection Observer for lazy loading
+            setupChapterObserver();
+
+            // Setup scroll listener for chapter indicator
+            setupContinuousScrollListener();
+        }
+
+        function exitContinuousMode() {
+            const content = document.getElementById('content');
+            content.classList.remove('continuous-mode');
+
+            // Clean up observers
+            if (chapterObserver) {
+                chapterObserver.disconnect();
+                chapterObserver = null;
+            }
+
+            // Reload current chapter in paginated mode
+            loadedChapters.clear();
+            loadingChapters.clear();
+            loadChapter(currentChapter);
+        }
+
+        async function loadChapterForContinuous(index) {
+            if (index < 0 || index >= chapters.length) return;
+            if (loadedChapters.has(index) || loadingChapters.has(index)) return;
+
+            loadingChapters.add(index);
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/content/${index}`);
+                if (!res.ok) throw new Error('Failed to load chapter');
+                const html = await res.text();
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const chapterContent = doc.body.innerHTML;
+
+                // Create chapter container
+                const chapterContainer = document.createElement('div');
+                chapterContainer.className = 'chapter-container';
+                chapterContainer.dataset.chapter = index;
+                chapterContainer.id = `chapter-${index}`;
+
+                // Add separator for all except first chapter
+                if (index > 0) {
+                    const separator = document.createElement('div');
+                    separator.className = 'chapter-separator';
+                    separator.innerHTML = `
+                        <div class="chapter-separator-number">Chapter ${index + 1}</div>
+                        <div class="chapter-separator-title">${chapters[index]?.label || ''}</div>
+                    `;
+                    chapterContainer.appendChild(separator);
+                }
+
+                // Add chapter content
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'chapter-content';
+                contentDiv.innerHTML = chapterContent;
+                chapterContainer.appendChild(contentDiv);
+
+                // Add loading sentinel for next chapter
+                if (index < chapters.length - 1) {
+                    const sentinel = document.createElement('div');
+                    sentinel.className = 'chapter-loading-sentinel';
+                    sentinel.dataset.nextChapter = index + 1;
+                    chapterContainer.appendChild(sentinel);
+                }
+
+                // Insert in correct position
+                insertChapterInOrder(chapterContainer, index);
+
+                loadedChapters.add(index);
+                loadingChapters.delete(index);
+
+                // Observe the sentinel for lazy loading
+                if (chapterObserver) {
+                    const sentinel = chapterContainer.querySelector('.chapter-loading-sentinel');
+                    if (sentinel) {
+                        chapterObserver.observe(sentinel);
+                    }
+                }
+
+                // Load annotations for this chapter
+                await loadAnnotationsForChapterIndex(index);
+
+            } catch (err) {
+                console.error(`Failed to load chapter ${index}:`, err);
+                loadingChapters.delete(index);
+            }
+        }
+
+        function insertChapterInOrder(chapterContainer, index) {
+            const content = document.getElementById('content');
+
+            // Remove loading indicator if this is the first chapter being added
+            const loading = content.querySelector('.loading');
+            if (loading) loading.remove();
+
+            // Find the right position to insert
+            const existingChapters = content.querySelectorAll('.chapter-container');
+            let inserted = false;
+
+            for (const existing of existingChapters) {
+                const existingIndex = parseInt(existing.dataset.chapter);
+                if (index < existingIndex) {
+                    content.insertBefore(chapterContainer, existing);
+                    inserted = true;
+                    break;
+                }
+            }
+
+            if (!inserted) {
+                content.appendChild(chapterContainer);
+            }
+        }
+
+        async function loadAnnotationsForChapterIndex(chapterIndex) {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations/chapter/${chapterIndex}`, {
+                    headers: getHeaders()
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const chapterAnnotations = data.annotations || [];
+
+                // Apply highlights to this specific chapter container
+                const container = document.getElementById(`chapter-${chapterIndex}`);
+                if (container) {
+                    chapterAnnotations.forEach(annotation => {
+                        highlightTextInContainer(container, annotation);
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to load annotations for chapter', chapterIndex, err);
+            }
+        }
+
+        function highlightTextInContainer(container, annotation) {
+            const text = annotation.selected_text;
+            if (!text) return;
+
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            while (node = walker.nextNode()) {
+                const idx = node.textContent.indexOf(text);
+                if (idx !== -1) {
+                    const range = document.createRange();
+                    range.setStart(node, idx);
+                    range.setEnd(node, idx + text.length);
+
+                    const span = document.createElement('span');
+                    span.className = `highlight-mark highlight-${annotation.color}`;
+                    span.dataset.annotationId = annotation.id;
+
+                    try {
+                        range.surroundContents(span);
+                    } catch (e) {
+                        // Handle cross-boundary selections gracefully
+                    }
+                    break;
+                }
+            }
+        }
+
+        function setupChapterObserver() {
+            if (chapterObserver) {
+                chapterObserver.disconnect();
+            }
+
+            chapterObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const nextChapter = parseInt(entry.target.dataset.nextChapter);
+                        if (!isNaN(nextChapter)) {
+                            loadChapterForContinuous(nextChapter);
+                        }
+                    }
+                });
+            }, {
+                rootMargin: '200px 0px', // Start loading when 200px away
+                threshold: 0
+            });
+        }
+
+        function setupContinuousScrollListener() {
+            let scrollTimeout;
+            const indicator = document.getElementById('chapterIndicator');
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+            window.addEventListener('scroll', () => {
+                // Show/hide scroll to top button
+                scrollTopBtn.classList.toggle('visible', window.scrollY > 500);
+
+                // Update chapter indicator
+                if (readingMode === 'continuous') {
+                    updateChapterIndicator();
+                }
+
+                // Save position periodically
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    if (readingMode === 'continuous') {
+                        saveContinuousPosition();
+                    }
+                }, 500);
+            }, { passive: true });
+
+            // Scroll to top button click
+            scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        function updateChapterIndicator() {
+            const containers = document.querySelectorAll('.chapter-container');
+            const indicator = document.getElementById('chapterIndicator');
+            const viewportMiddle = window.scrollY + window.innerHeight / 2;
+
+            let currentVisibleChapter = 0;
+
+            containers.forEach(container => {
+                const rect = container.getBoundingClientRect();
+                const containerTop = window.scrollY + rect.top;
+                const containerBottom = containerTop + rect.height;
+
+                if (viewportMiddle >= containerTop && viewportMiddle <= containerBottom) {
+                    currentVisibleChapter = parseInt(container.dataset.chapter);
+                }
+            });
+
+            // Update current chapter
+            currentChapter = currentVisibleChapter;
+
+            // Show indicator
+            const chapterLabel = chapters[currentChapter]?.label || `Chapter ${currentChapter + 1}`;
+            indicator.textContent = chapterLabel;
+            indicator.classList.add('visible');
+
+            // Hide after delay
+            clearTimeout(chapterIndicatorTimeout);
+            chapterIndicatorTimeout = setTimeout(() => {
+                indicator.classList.remove('visible');
+            }, 2000);
+        }
+
+        function saveContinuousPosition() {
+            const scrollRatio = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+            const position = {
+                chapter: currentChapter,
+                scroll: scrollRatio,
+                mode: 'continuous'
+            };
+
+            fetch(`${API_BASE}/books/${bookId}/position`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({
+                    chapter: String(currentChapter),
+                    position: scrollRatio
+                })
+            }).catch(err => console.error('Failed to save position', err));
+        }
+
         // Initialize
         async function init() {
             const isAuthenticated = await checkAuth();
@@ -756,7 +1193,19 @@
             await loadBook();
             await loadTOC();
             await loadSavedPosition();
-            await loadChapter(currentChapter, true); // Restore scroll position on initial load
+
+            // Apply saved reading mode
+            const savedMode = localStorage.getItem('webby_reading_mode') || 'paginated';
+            document.getElementById('paginatedModeBtn').classList.toggle('active', savedMode === 'paginated');
+            document.getElementById('scrollModeBtn').classList.toggle('active', savedMode === 'continuous');
+
+            if (savedMode === 'continuous') {
+                document.body.classList.add('continuous-scroll-active');
+                await enterContinuousMode();
+            } else {
+                await loadChapter(currentChapter, true); // Restore scroll position on initial load
+            }
+
             setupEventListeners();
             setupAnnotationListeners();
         }
@@ -1340,13 +1789,21 @@
         }
 
         function setupEventListeners() {
-            // Navigation - now page-based
+            // Reading mode toggle
+            document.getElementById('paginatedModeBtn').addEventListener('click', () => setReadingMode('paginated'));
+            document.getElementById('scrollModeBtn').addEventListener('click', () => setReadingMode('continuous'));
+
+            // Navigation - now page-based (only active in paginated mode)
             document.getElementById('prevBtn').addEventListener('click', prevPage);
             document.getElementById('nextBtn').addEventListener('click', nextPage);
 
-            // Touch zones - now page-based
-            document.getElementById('touchLeft').addEventListener('click', prevPage);
-            document.getElementById('touchRight').addEventListener('click', nextPage);
+            // Touch zones - now page-based (only active in paginated mode)
+            document.getElementById('touchLeft').addEventListener('click', () => {
+                if (readingMode === 'paginated') prevPage();
+            });
+            document.getElementById('touchRight').addEventListener('click', () => {
+                if (readingMode === 'paginated') nextPage();
+            });
             document.getElementById('touchCenter').addEventListener('click', toggleUI);
 
             // Recalculate pages on window resize
@@ -1368,11 +1825,27 @@
             document.getElementById('tocClose').addEventListener('click', () => {
                 document.getElementById('tocModal').classList.remove('active');
             });
-            document.getElementById('tocList').addEventListener('click', (e) => {
+            document.getElementById('tocList').addEventListener('click', async (e) => {
                 if (e.target.classList.contains('toc-item')) {
                     const index = parseInt(e.target.dataset.index);
-                    loadChapter(index);
                     document.getElementById('tocModal').classList.remove('active');
+
+                    if (readingMode === 'continuous') {
+                        // In continuous mode, scroll to chapter or load it
+                        const chapterEl = document.getElementById(`chapter-${index}`);
+                        if (chapterEl) {
+                            chapterEl.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                            // Load the chapter first
+                            await loadChapterForContinuous(index);
+                            requestAnimationFrame(() => {
+                                const el = document.getElementById(`chapter-${index}`);
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            });
+                        }
+                    } else {
+                        loadChapter(index);
+                    }
                 }
             });
 
