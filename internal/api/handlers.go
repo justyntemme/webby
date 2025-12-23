@@ -449,6 +449,32 @@ func (h *Handler) GetBooksBySeries(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"series": grouped})
 }
 
+// GetSimilarBooks returns books similar to the given book
+func (h *Handler) GetSimilarBooks(c *gin.Context) {
+	id := c.Param("id")
+	userID := auth.GetUserID(c)
+
+	// Default limit of 10 similar books
+	limit := 10
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 50 {
+			limit = l
+		}
+	}
+
+	similarBooks, err := h.db.GetSimilarBooks(id, userID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch similar books"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"book_id": id,
+		"similar": similarBooks,
+		"count":   len(similarBooks),
+	})
+}
+
 // GetBookCover serves the book's cover image
 func (h *Handler) GetBookCover(c *gin.Context) {
 	id := c.Param("id")

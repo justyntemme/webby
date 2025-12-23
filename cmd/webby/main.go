@@ -147,6 +147,9 @@ func main() {
 			booksGroup.GET("/books/by-author", handler.GetBooksByAuthor)
 			booksGroup.GET("/books/by-series", handler.GetBooksBySeries)
 
+			// Similar books recommendations
+			booksGroup.GET("/books/:id/similar", handler.GetSimilarBooks)
+
 			// Reading
 			booksGroup.GET("/books/:id/cover", handler.GetBookCover)
 			booksGroup.GET("/books/:id/file", handler.GetBookFile)
