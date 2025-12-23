@@ -63,6 +63,7 @@
     .books-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 24px;
+        align-items: start; /* Prevent row stretching on desktop */
     }
 }
 
