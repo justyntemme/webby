@@ -1796,14 +1796,72 @@
                 font-size: 16px;
             }
 
-            /* Mobile form improvements */
+            /* Mobile form improvements - full screen modals */
+            .modal-content {
+                width: 100%;
+                max-width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+
+            .book-detail-modal .modal-content,
             .edit-modal .modal-content,
             .search-modal .modal-content {
-                max-height: 100vh;
                 height: 100vh;
+                max-height: 100vh;
                 border-radius: 0;
-                padding: 20px;
-                padding-bottom: env(safe-area-inset-bottom, 20px);
+                padding: 16px;
+                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            }
+
+            /* Add close button for mobile modals */
+            .modal-content {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 0;
+                margin-bottom: 12px;
+                border-bottom: 1px solid var(--border-color);
+                flex-shrink: 0;
+            }
+
+            .modal-mobile-header h2,
+            .modal-mobile-header h3 {
+                margin: 0;
+                font-size: 18px;
+            }
+
+            .modal-close-btn {
+                width: 44px;
+                height: 44px;
+                border: none;
+                background: var(--bg-secondary);
+                border-radius: var(--radius-md);
+                font-size: 24px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-secondary);
+            }
+
+            .modal-close-btn:hover {
+                background: var(--danger-color);
+                color: white;
+            }
+
+            .modal-body {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .form-group input,
@@ -1928,6 +1986,40 @@
         .book-card.pressing {
             transform: scale(0.95);
             opacity: 0.8;
+        }
+
+        /* Swipe gesture feedback */
+        @media (max-width: 768px) {
+            .book-card {
+                position: relative;
+                overflow: visible;
+            }
+
+            .book-card::before,
+            .book-card::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 24px;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                pointer-events: none;
+            }
+
+            .book-card.swiping-right::before {
+                content: '+';
+                left: -30px;
+                color: #2ecc71;
+                opacity: 1;
+            }
+
+            .book-card.swiping-left::after {
+                content: '...';
+                right: -30px;
+                color: #e74c3c;
+                opacity: 1;
+            }
         }
 
         /* Series Card Styles */
@@ -3175,6 +3267,48 @@
             } catch (err) {
                 console.error('Failed to toggle reading list:', err);
                 alert('Failed to update reading list');
+            }
+        }
+
+        // Quick toggle reading list for swipe actions
+        async function quickToggleReadingList(bookId, listType) {
+            if (!isAuthenticated()) {
+                showToast('Please log in to use reading lists', 'error');
+                return;
+            }
+
+            // Ensure reading lists are loaded
+            if (!userReadingLists) {
+                await loadReadingLists();
+            }
+
+            const list = userReadingLists?.find(l => l.list_type === listType);
+            if (!list) {
+                showToast('Reading list not found', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/reading-lists/${list.id}/books/${bookId}/toggle`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders()
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const book = books.find(b => b.id === bookId);
+                    const title = book?.title || 'Book';
+                    if (data.in_list) {
+                        showToast(`Added "${title}" to Want to Read`, 'success');
+                    } else {
+                        showToast(`Removed "${title}" from Want to Read`, 'info');
+                    }
+                } else {
+                    showToast('Failed to update reading list', 'error');
+                }
+            } catch (err) {
+                console.error('Failed to toggle reading list:', err);
+                showToast('Failed to update reading list', 'error');
             }
         }
 
@@ -4860,6 +4994,198 @@
             lastScrollY = currentScrollY;
         }
 
+        // Swipe gesture handling
+        function setupSwipeGestures() {
+            // Filter drawer swipe to close
+            const drawer = document.getElementById('filterDrawer');
+            const overlay = document.getElementById('filterOverlay');
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchMoveX = 0;
+            let drawerTranslate = 0;
+            let isDragging = false;
+
+            drawer.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                isDragging = false;
+                drawerTranslate = 0;
+                drawer.style.transition = 'none';
+            }, { passive: true });
+
+            drawer.addEventListener('touchmove', (e) => {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                const diffX = touchStartX - touchX;
+                const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+
+                // Only handle horizontal swipes (swipe left to close)
+                if (diffX > 10 && diffY < 50) {
+                    isDragging = true;
+                    drawerTranslate = Math.min(0, -diffX);
+                    drawer.style.transform = `translateX(${drawerTranslate}px)`;
+                    overlay.style.opacity = Math.max(0, 1 + (drawerTranslate / 280));
+                }
+            }, { passive: true });
+
+            drawer.addEventListener('touchend', () => {
+                drawer.style.transition = 'transform 0.3s ease';
+                if (isDragging && drawerTranslate < -80) {
+                    closeFilterDrawer();
+                } else {
+                    drawer.style.transform = '';
+                    overlay.style.opacity = '';
+                }
+                isDragging = false;
+            });
+
+            // Modal swipe-to-dismiss (swipe down)
+            document.querySelectorAll('.modal').forEach(modal => {
+                const content = modal.querySelector('.modal-content');
+                if (!content) return;
+
+                let modalTouchStartY = 0;
+                let modalTranslateY = 0;
+                let modalIsDragging = false;
+
+                content.addEventListener('touchstart', (e) => {
+                    // Only allow drag from top area of modal
+                    const rect = content.getBoundingClientRect();
+                    if (e.touches[0].clientY - rect.top > 60) return;
+
+                    modalTouchStartY = e.touches[0].clientY;
+                    modalIsDragging = false;
+                    modalTranslateY = 0;
+                    content.style.transition = 'none';
+                }, { passive: true });
+
+                content.addEventListener('touchmove', (e) => {
+                    if (modalTouchStartY === 0) return;
+
+                    const touchY = e.touches[0].clientY;
+                    const diffY = touchY - modalTouchStartY;
+
+                    // Only allow downward swipe
+                    if (diffY > 10) {
+                        modalIsDragging = true;
+                        modalTranslateY = diffY;
+                        content.style.transform = `translateY(${modalTranslateY}px)`;
+                        modal.style.background = `rgba(0,0,0,${Math.max(0, 0.6 - (diffY / 500))})`;
+                    }
+                }, { passive: true });
+
+                content.addEventListener('touchend', () => {
+                    content.style.transition = 'transform 0.3s ease';
+                    if (modalIsDragging && modalTranslateY > 100) {
+                        modal.classList.remove('active');
+                    }
+                    content.style.transform = '';
+                    modal.style.background = '';
+                    modalTouchStartY = 0;
+                    modalIsDragging = false;
+                });
+            });
+
+            // Book card swipe actions
+            setupBookCardSwipe();
+        }
+
+        function setupBookCardSwipe() {
+            let swipeTarget = null;
+            let swipeStartX = 0;
+            let swipeStartY = 0;
+            let swipeOffsetX = 0;
+            let isSwipe = false;
+
+            document.addEventListener('touchstart', (e) => {
+                const card = e.target.closest('.book-card');
+                if (!card || window.innerWidth > 768) return;
+
+                swipeTarget = card;
+                swipeStartX = e.touches[0].clientX;
+                swipeStartY = e.touches[0].clientY;
+                swipeOffsetX = 0;
+                isSwipe = false;
+                card.style.transition = 'none';
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!swipeTarget) return;
+
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                const diffX = touchX - swipeStartX;
+                const diffY = Math.abs(touchY - swipeStartY);
+
+                // Horizontal swipe detection
+                if (Math.abs(diffX) > 15 && diffY < 30) {
+                    isSwipe = true;
+                    swipeOffsetX = diffX;
+                    // Limit swipe distance
+                    const maxSwipe = 80;
+                    const limitedX = Math.max(-maxSwipe, Math.min(maxSwipe, diffX));
+                    swipeTarget.style.transform = `translateX(${limitedX}px)`;
+
+                    // Show action hints with visual feedback
+                    swipeTarget.classList.remove('swiping-right', 'swiping-left');
+                    if (diffX > 40) {
+                        swipeTarget.style.background = 'linear-gradient(90deg, rgba(46, 204, 113, 0.2) 0%, transparent 50%)';
+                        swipeTarget.classList.add('swiping-right');
+                    } else if (diffX < -40) {
+                        swipeTarget.style.background = 'linear-gradient(270deg, rgba(231, 76, 60, 0.2) 0%, transparent 50%)';
+                        swipeTarget.classList.add('swiping-left');
+                    } else {
+                        swipeTarget.style.background = '';
+                    }
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => {
+                if (!swipeTarget) return;
+
+                swipeTarget.style.transition = 'transform 0.3s ease, background 0.3s ease';
+
+                if (isSwipe) {
+                    const bookId = swipeTarget.dataset.id;
+                    if (swipeOffsetX > 60) {
+                        // Swipe right - toggle reading list (want to read)
+                        quickToggleReadingList(bookId, 'want_to_read');
+                    } else if (swipeOffsetX < -60) {
+                        // Swipe left - show quick actions
+                        showMobileActionMenu(bookId);
+                    }
+                }
+
+                swipeTarget.style.transform = '';
+                swipeTarget.style.background = '';
+                swipeTarget.classList.remove('swiping-right', 'swiping-left');
+                swipeTarget = null;
+                isSwipe = false;
+            });
+        }
+
+        function showMobileActionMenu(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+
+            // Set book data for action handlers
+            mobileActionBookId = bookId;
+            mobileActionBookData = book;
+
+            const menu = document.getElementById('mobileActionMenu');
+            document.getElementById('mobileActionTitle').textContent = book.title;
+            document.getElementById('mobileActionAuthor').textContent = `by ${book.author || 'Unknown'}`;
+
+            menu.classList.add('active');
+
+            // Close on backdrop click
+            menu.onclick = (e) => {
+                if (e.target === menu) {
+                    closeMobileActionMenu();
+                }
+            };
+        }
+
         // Setup mobile UI event listeners
         function setupMobileUI() {
             // Menu button
@@ -4941,6 +5267,11 @@
 
             // Update drawer user info
             updateDrawerUserInfo();
+
+            // Setup swipe gestures for mobile
+            if (window.innerWidth < 768) {
+                setupSwipeGestures();
+            }
         }
 
         function setActiveNav(activeId) {
