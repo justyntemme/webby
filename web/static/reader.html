@@ -17,10 +17,6 @@
         <button class="header-btn" id="settingsBtn" title="Settings">&#9881;</button>
     </header>
 
-    <div class="touch-zone left" id="touchLeft"></div>
-    <div class="touch-zone center" id="touchCenter"></div>
-    <div class="touch-zone right" id="touchRight"></div>
-
     <main class="content" id="content">
         <div class="loading">Loading book...</div>
     </main>
@@ -122,6 +118,49 @@
         <div class="annotations-list" id="annotationsList">
             <div class="no-annotations">No annotations yet. Select text to highlight.</div>
         </div>
+    </div>
+
+    <!-- Settings Popover (replaces modal for real-time preview) -->
+    <div class="settings-popover" id="settingsPopover">
+        <div class="settings-option">
+            <span>Theme</span>
+            <div class="theme-selector" style="display: flex; gap: 6px;">
+                <button id="popoverThemeDay" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333; font-size: 12px;">Day</button>
+                <button id="popoverThemeNight" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0; font-size: 12px;">Night</button>
+                <button id="popoverThemeSepia" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636; font-size: 12px;">Sepia</button>
+            </div>
+        </div>
+        <div class="settings-option">
+            <span>Font Size</span>
+            <div class="font-size-control">
+                <button id="popoverFontDecrease" style="width: 32px; height: 32px;">-</button>
+                <span id="popoverFontSize">18</span>
+                <button id="popoverFontIncrease" style="width: 32px; height: 32px;">+</button>
+            </div>
+        </div>
+        <div class="settings-option">
+            <span>Line Height</span>
+            <div class="font-size-control">
+                <button id="popoverLineDecrease" style="width: 32px; height: 32px;">-</button>
+                <span id="popoverLineSpacing">1.8</span>
+                <button id="popoverLineIncrease" style="width: 32px; height: 32px;">+</button>
+            </div>
+        </div>
+        <div class="settings-option">
+            <span>Font</span>
+            <select id="popoverFontFamily" style="padding: 6px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 12px;">
+                <option value="Georgia">Georgia</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Palatino Linotype">Palatino</option>
+                <option value="OpenDyslexic">OpenDyslexic</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Reading Progress Bar -->
+    <div class="reading-progress-bar" id="progressBar">
+        <div class="reading-progress-fill" id="progressFill"></div>
     </div>
 
     <!-- Note Editor Modal -->
@@ -601,11 +640,66 @@
             }
         }
 
+        // Highlight a Range directly (for newly created highlights)
+        // More robust than highlightTextInContent as it uses the actual selection Range
+        function highlightRange(range, annotation) {
+            if (!range || range.collapsed) return;
+
+            const mark = document.createElement('mark');
+            mark.className = `highlight-mark highlight-${annotation.color}`;
+            mark.dataset.annotationId = annotation.id;
+            if (annotation.note) {
+                mark.title = annotation.note;
+            }
+
+            const rangeClone = range.cloneRange();
+
+            // Split text nodes at boundaries (handle end first to preserve start offsets)
+            if (rangeClone.endContainer.nodeType === Node.TEXT_NODE && rangeClone.endOffset < rangeClone.endContainer.length) {
+                rangeClone.endContainer.splitText(rangeClone.endOffset);
+            }
+
+            if (rangeClone.startContainer.nodeType === Node.TEXT_NODE && rangeClone.startOffset > 0) {
+                const createdNode = rangeClone.startContainer.splitText(rangeClone.startOffset);
+                rangeClone.setStart(createdNode, 0);
+            }
+
+            // Collect all text nodes within the range
+            const nodesToWrap = [];
+            const walker = document.createTreeWalker(
+                rangeClone.commonAncestorContainer,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: (node) => {
+                        if (node.textContent.trim() === '') return NodeFilter.FILTER_REJECT;
+                        return rangeClone.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                },
+                false
+            );
+
+            while (walker.nextNode()) {
+                nodesToWrap.push(walker.currentNode);
+            }
+
+            // Wrap each text node in a mark element
+            nodesToWrap.forEach(node => {
+                if (node.parentNode && node.parentNode.nodeName.toLowerCase() === 'mark') return;
+
+                const markWrapper = mark.cloneNode(false);
+                node.parentNode.insertBefore(markWrapper, node);
+                markWrapper.appendChild(node);
+            });
+        }
+
         async function createHighlight(color, note = '') {
             if (!currentSelection) return;
 
             const selectedText = currentSelection.toString().trim();
             if (!selectedText) return;
+
+            // Save the range before async operation
+            const rangeToHighlight = currentSelection.cloneRange();
 
             try {
                 const res = await fetch(`${API_BASE}/books/${bookId}/annotations`, {
@@ -624,8 +718,8 @@
                 const data = await res.json();
                 annotations.push(data.annotation);
 
-                // Apply highlight visually
-                highlightTextInContent(data.annotation);
+                // Apply highlight visually using the saved Range (more robust)
+                highlightRange(rangeToHighlight, data.annotation);
 
                 // Clear selection
                 window.getSelection().removeAllRanges();
@@ -1113,6 +1207,25 @@
             const chapterInfo = `Chapter ${currentChapter + 1} of ${chapters.length}`;
             const pageInfo = totalPages > 1 ? ` • Page ${currentPage + 1} of ${totalPages}` : '';
             document.getElementById('chapterProgress').textContent = chapterInfo + pageInfo;
+            updateProgressBar();
+        }
+
+        // Update reading progress bar
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            if (!progressBar || !progressFill) return;
+
+            // Calculate overall progress
+            let overallProgress = 0;
+            if (chapters.length > 0) {
+                const chapterProgress = currentChapter / chapters.length;
+                const pageProgress = totalPages > 1 ? (currentPage / totalPages) / chapters.length : 0;
+                overallProgress = (chapterProgress + pageProgress) * 100;
+            }
+
+            progressFill.style.width = overallProgress + '%';
+            progressBar.classList.add('visible');
         }
 
         function updateNavButtons() {
@@ -1142,61 +1255,47 @@
             document.getElementById('prevBtn').addEventListener('click', prevPage);
             document.getElementById('nextBtn').addEventListener('click', nextPage);
 
-            // Touch zones - handles both tap-to-navigate and drag-to-select
-            const zones = document.querySelectorAll('.touch-zone');
-            let isMouseDrag = false;
+            // Content-based tap navigation (replaces touch zones)
+            // This allows native text selection while still supporting tap-to-navigate
+            const content = document.getElementById('content');
+            let tapStartX, tapStartY, tapStartTime;
+            const TAP_THRESHOLD = 10; // pixels - movement less than this is a tap
+            const TAP_MAX_DURATION = 300; // ms - tap must be shorter than this
 
-            zones.forEach(zone => {
-                let startX, startY;
-                const dragThreshold = 5; // pixels
+            content.addEventListener('mousedown', e => {
+                tapStartX = e.clientX;
+                tapStartY = e.clientY;
+                tapStartTime = Date.now();
+            });
 
-                zone.addEventListener('mousedown', e => {
-                    // Only for left mouse button
-                    if (e.button !== 0) return;
+            content.addEventListener('mouseup', e => {
+                // Ignore if there's a text selection
+                const selection = window.getSelection();
+                if (selection && selection.toString().trim().length > 0) {
+                    return;
+                }
 
-                    isMouseDrag = false;
-                    startX = e.clientX;
-                    startY = e.clientY;
+                const deltaX = Math.abs(e.clientX - tapStartX);
+                const deltaY = Math.abs(e.clientY - tapStartY);
+                const duration = Date.now() - tapStartTime;
 
-                    const onMouseMove = (moveEvent) => {
-                        if (Math.abs(moveEvent.clientX - startX) > dragThreshold || Math.abs(moveEvent.clientY - startY) > dragThreshold) {
-                            isMouseDrag = true;
-                            // It's a drag for selection - disable pointer events on zones
-                            zones.forEach(z => z.classList.add('is-selecting'));
-                            document.removeEventListener('mousemove', onMouseMove);
-                        }
-                    };
+                // Only treat as tap if minimal movement and short duration
+                if (deltaX < TAP_THRESHOLD && deltaY < TAP_THRESHOLD && duration < TAP_MAX_DURATION) {
+                    const screenWidth = window.innerWidth;
+                    const clickX = e.clientX;
 
-                    const onMouseUp = () => {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUp);
-                        // Re-enable zones after a short delay to allow selection to complete
-                        setTimeout(() => {
-                            zones.forEach(z => z.classList.remove('is-selecting'));
-                        }, 100);
-                    };
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                });
-
-                zone.addEventListener('click', e => {
-                    // If a drag just happened, don't trigger navigation
-                    if (isMouseDrag) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        return;
-                    }
-
-                    // It's a valid tap or click - perform navigation
-                    if (zone.id === 'touchLeft') {
+                    // Determine which region was tapped
+                    if (clickX < screenWidth * 0.25) {
+                        // Left 25% - previous page
                         if (readingMode === 'paginated') prevPage();
-                    } else if (zone.id === 'touchRight') {
+                    } else if (clickX > screenWidth * 0.75) {
+                        // Right 25% - next page
                         if (readingMode === 'paginated') nextPage();
-                    } else if (zone.id === 'touchCenter') {
+                    } else {
+                        // Center 50% - toggle UI
                         toggleUI();
                     }
-                });
+                }
             });
 
             // Recalculate pages on window resize
@@ -1242,10 +1341,78 @@
                 }
             });
 
-            // Settings Modal
-            document.getElementById('settingsBtn').addEventListener('click', () => {
-                document.getElementById('settingsModal').classList.add('active');
+            // Settings Popover (toggle instead of modal)
+            document.getElementById('settingsBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const popover = document.getElementById('settingsPopover');
+                popover.classList.toggle('active');
+                updatePopoverValues();
             });
+
+            // Close popover when clicking outside
+            document.addEventListener('click', (e) => {
+                const popover = document.getElementById('settingsPopover');
+                if (!popover.contains(e.target) && e.target.id !== 'settingsBtn') {
+                    popover.classList.remove('active');
+                }
+            });
+
+            // Update popover display values
+            function updatePopoverValues() {
+                document.getElementById('popoverFontSize').textContent = fontSize;
+                document.getElementById('popoverLineSpacing').textContent = lineSpacing;
+                document.getElementById('popoverFontFamily').value = fontFamily;
+            }
+
+            // Popover theme buttons
+            document.getElementById('popoverThemeDay').addEventListener('click', () => setTheme('day'));
+            document.getElementById('popoverThemeNight').addEventListener('click', () => setTheme('night'));
+            document.getElementById('popoverThemeSepia').addEventListener('click', () => setTheme('sepia'));
+
+            // Popover font size controls
+            document.getElementById('popoverFontDecrease').addEventListener('click', () => {
+                if (fontSize > 12) {
+                    fontSize -= 2;
+                    applySettings();
+                    saveSettings();
+                    updatePopoverValues();
+                }
+            });
+            document.getElementById('popoverFontIncrease').addEventListener('click', () => {
+                if (fontSize < 32) {
+                    fontSize += 2;
+                    applySettings();
+                    saveSettings();
+                    updatePopoverValues();
+                }
+            });
+
+            // Popover line spacing controls
+            document.getElementById('popoverLineDecrease').addEventListener('click', () => {
+                if (lineSpacing > 1.2) {
+                    lineSpacing = Math.round((lineSpacing - 0.2) * 10) / 10;
+                    applySettings();
+                    saveSettings();
+                    updatePopoverValues();
+                }
+            });
+            document.getElementById('popoverLineIncrease').addEventListener('click', () => {
+                if (lineSpacing < 3.0) {
+                    lineSpacing = Math.round((lineSpacing + 0.2) * 10) / 10;
+                    applySettings();
+                    saveSettings();
+                    updatePopoverValues();
+                }
+            });
+
+            // Popover font family selector
+            document.getElementById('popoverFontFamily').addEventListener('change', (e) => {
+                fontFamily = e.target.value;
+                applySettings();
+                saveSettings();
+            });
+
+            // Legacy modal handlers (keep for fallback)
             document.getElementById('settingsClose').addEventListener('click', () => {
                 document.getElementById('settingsModal').classList.remove('active');
             });
@@ -1291,6 +1458,9 @@
             document.getElementById('themeDayBtn').addEventListener('click', () => setTheme('day'));
             document.getElementById('themeNightBtn').addEventListener('click', () => setTheme('night'));
             document.getElementById('themeSepiaBtn').addEventListener('click', () => setTheme('sepia'));
+
+            // Initialize progress bar
+            updateProgressBar();
 
             // Close modals on background click
             document.querySelectorAll('.modal').forEach(modal => {

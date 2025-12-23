@@ -100,6 +100,23 @@
 </head>
 <body>
 
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Confirm Dialog -->
+    <div class="dialog-overlay" id="confirmDialog">
+        <div class="dialog">
+            <div class="dialog-body">
+                <div class="dialog-title" id="confirmDialogTitle">Confirm</div>
+                <div class="dialog-message" id="confirmDialogMessage">Are you sure?</div>
+            </div>
+            <div class="dialog-actions">
+                <button class="dialog-btn secondary" id="confirmDialogCancel">Cancel</button>
+                <button class="dialog-btn danger" id="confirmDialogConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Mobile-First Header -->
     <header class="header" id="mainHeader">
         <div class="header-left">
@@ -242,7 +259,14 @@
     <button class="fab" id="fabUpload" aria-label="Upload books">+</button>
 
     <main class="library" id="library">
-        <div class="loading">Loading library...</div>
+        <div class="books-grid" id="skeletonLoader">
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+            <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+        </div>
     </main>
 
     <!-- Book Detail Modal -->
@@ -634,7 +658,8 @@
 
     <!-- Mobile Action Menu (Bottom Sheet) -->
     <div class="mobile-action-overlay" id="mobileActionMenu">
-        <div class="mobile-action-sheet">
+        <div class="mobile-action-sheet" id="mobileActionSheet">
+            <div class="sheet-grabber"></div>
             <div class="mobile-action-header">
                 <h3 id="mobileActionTitle">Book Title</h3>
                 <p id="mobileActionAuthor">by Author</p>
@@ -668,6 +693,86 @@
         let currentUser = null;
         let groupSeries = false; // Series grouping mode
         let expandedSeries = null; // Currently expanded series name
+
+        // Generate skeleton loader cards for loading states
+        function generateSkeletonCards(count = 6) {
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `<div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>`;
+            }
+            return html;
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || icons.info}</span>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 200);
+            }, duration);
+
+            return toast;
+        }
+
+        // Custom confirm dialog
+        let confirmResolve = null;
+
+        function showConfirm(title, message, confirmText = 'Confirm', isDanger = true) {
+            return new Promise((resolve) => {
+                confirmResolve = resolve;
+
+                const overlay = document.getElementById('confirmDialog');
+                document.getElementById('confirmDialogTitle').textContent = title;
+                document.getElementById('confirmDialogMessage').textContent = message;
+
+                const confirmBtn = document.getElementById('confirmDialogConfirm');
+                confirmBtn.textContent = confirmText;
+                confirmBtn.className = isDanger ? 'dialog-btn danger' : 'dialog-btn primary';
+
+                overlay.classList.add('active');
+            });
+        }
+
+        // Set up confirm dialog event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('confirmDialogCancel').addEventListener('click', () => {
+                document.getElementById('confirmDialog').classList.remove('active');
+                if (confirmResolve) confirmResolve(false);
+            });
+
+            document.getElementById('confirmDialogConfirm').addEventListener('click', () => {
+                document.getElementById('confirmDialog').classList.remove('active');
+                if (confirmResolve) confirmResolve(true);
+            });
+
+            // Close on overlay click
+            document.getElementById('confirmDialog').addEventListener('click', (e) => {
+                if (e.target.id === 'confirmDialog') {
+                    document.getElementById('confirmDialog').classList.remove('active');
+                    if (confirmResolve) confirmResolve(false);
+                }
+            });
+        });
 
         // Mobile action menu state
         let mobileActionBookId = null;
@@ -789,7 +894,16 @@
                 books = fetchedBooks;
                 renderBooks();
             } catch (err) {
-                library.innerHTML = '<div class="empty-state"><h2>Failed to load library</h2></div>';
+                library.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-title">Failed to load library</div>
+                        <div class="empty-state-description">There was a problem connecting to the server. Please try again.</div>
+                        <button class="empty-state-action" onclick="loadBooks()">
+                            <span>↻</span> Retry
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -802,7 +916,16 @@
                 const groups = data[type === 'author' ? 'authors' : 'series'] || {};
                 renderGrouped(groups);
             } catch (err) {
-                library.innerHTML = '<div class="empty-state"><h2>Failed to load library</h2></div>';
+                library.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-title">Failed to load library</div>
+                        <div class="empty-state-description">There was a problem connecting to the server. Please try again.</div>
+                        <button class="empty-state-action" onclick="loadBooks()">
+                            <span>↻</span> Retry
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -812,8 +935,12 @@
             if (books.length === 0) {
                 library.innerHTML = `
                     <div class="empty-state">
-                        <h2>No books yet</h2>
-                        <p>Upload your first EPUB to get started</p>
+                        <div class="empty-state-icon">📚</div>
+                        <div class="empty-state-title">No books yet</div>
+                        <div class="empty-state-description">Upload your first EPUB or comic book to start building your library</div>
+                        <button class="empty-state-action" onclick="document.getElementById('fabUpload').click()">
+                            <span>+</span> Add Book
+                        </button>
                     </div>
                 `;
                 return;
@@ -855,7 +982,9 @@
             if (Object.keys(groups).length === 0) {
                 library.innerHTML = `
                     <div class="empty-state">
-                        <h2>No books found</h2>
+                        <div class="empty-state-icon">📚</div>
+                        <div class="empty-state-title">No books found</div>
+                        <div class="empty-state-description">Try adjusting your filters or add some books</div>
                     </div>
                 `;
                 return;
@@ -1223,7 +1352,7 @@
         // Toggle a book in a reading list
         async function toggleReadingList(listType) {
             if (!currentBookId || !isAuthenticated()) {
-                alert('Please log in to use reading lists');
+                showToast('Please log in to use reading lists', 'warning');
                 return;
             }
 
@@ -1256,11 +1385,11 @@
                     }
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to update reading list');
+                    showToast(data.error || 'Failed to update reading list', 'error');
                 }
             } catch (err) {
                 console.error('Failed to toggle reading list:', err);
-                alert('Failed to update reading list');
+                showToast('Failed to update reading list', 'error');
             }
         }
 
@@ -1384,11 +1513,11 @@
                     loadBooks();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to save rating');
+                    showToast(data.error || 'Failed to save rating', 'error');
                 }
             } catch (err) {
                 console.error('Failed to save rating:', err);
-                alert('Failed to save rating');
+                showToast('Failed to save rating', 'error');
             }
         }
 
@@ -1561,13 +1690,14 @@
                 if (res.ok) {
                     await loadBookTags();
                     document.getElementById('tagDropdown').classList.remove('show');
+                    showToast('Tag added', 'success');
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to add tag');
+                    showToast(data.error || 'Failed to add tag', 'error');
                 }
             } catch (err) {
                 console.error('Failed to add tag:', err);
-                alert('Failed to add tag');
+                showToast('Failed to add tag', 'error');
             }
         }
 
@@ -1583,13 +1713,14 @@
 
                 if (res.ok) {
                     await loadBookTags();
+                    showToast('Tag removed', 'success');
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to remove tag');
+                    showToast(data.error || 'Failed to remove tag', 'error');
                 }
             } catch (err) {
                 console.error('Failed to remove tag:', err);
-                alert('Failed to remove tag');
+                showToast('Failed to remove tag', 'error');
             }
         }
 
@@ -1627,12 +1758,12 @@
                     if (data.tag) {
                         await addTagToBook(data.tag.id);
                     } else {
-                        alert(data.error || 'Failed to create tag');
+                        showToast(data.error || 'Failed to create tag', 'error');
                     }
                 }
             } catch (err) {
                 console.error('Failed to create tag:', err);
-                alert('Failed to create tag');
+                showToast('Failed to create tag', 'error');
             }
         }
 
@@ -1746,8 +1877,9 @@
                         Metadata saved successfully!
                     </div>
                 `;
+                showToast('Changes saved successfully', 'success');
             } catch (err) {
-                alert(err.message);
+                showToast(err.message || 'Failed to save changes', 'error');
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save Changes';
@@ -1889,7 +2021,7 @@
             const seriesNum = document.getElementById('searchSeriesNum').value.trim();
 
             if (!title && !author && !isbn) {
-                alert('Please enter at least a title, author, or ISBN to search');
+                showToast('Please enter at least a title, author, or ISBN to search', 'warning');
                 return;
             }
 
@@ -2079,8 +2211,9 @@
                         Metadata applied successfully from ${meta.source || 'search'}!
                     </div>
                 `;
+                showToast('Metadata applied successfully', 'success');
             } catch (err) {
-                alert(err.message);
+                showToast(err.message || 'Failed to apply metadata', 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Apply to Book';
@@ -2302,15 +2435,16 @@
                     }
                     // Refresh library to show updated status
                     loadBooks();
+                    showToast('Status updated', 'success');
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to update status');
+                    showToast(data.error || 'Failed to update status', 'error');
                     // Revert select to previous value
                     e.target.value = currentBookData?.read_status || 'unread';
                 }
             } catch (err) {
                 console.error(err);
-                alert('Failed to update status');
+                showToast('Failed to update status', 'error');
                 e.target.value = currentBookData?.read_status || 'unread';
             }
         });
@@ -2394,7 +2528,7 @@
             document.getElementById('viewCollectionModal').classList.add('active');
 
             const booksContainer = document.getElementById('viewCollectionBooks');
-            booksContainer.innerHTML = '<div class="loading">Loading...</div>';
+            booksContainer.innerHTML = generateSkeletonCards(4);
 
             try {
                 const res = await fetch(`${API_BASE}/collections/${collectionId}`, { headers: getAuthHeaders() });
@@ -2416,7 +2550,13 @@
                 }
 
                 if (!data.books || data.books.length === 0) {
-                    booksContainer.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1;">No books match this collection.</p>';
+                    booksContainer.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <div class="empty-state-icon">📂</div>
+                            <div class="empty-state-title">No books in collection</div>
+                            <div class="empty-state-description">Add books to this collection or adjust the smart rules</div>
+                        </div>
+                    `;
                     return;
                 }
 
@@ -2440,7 +2580,12 @@
         }
 
         async function deleteCollection(collectionId) {
-            if (!confirm('Are you sure you want to delete this collection?')) return;
+            const confirmed = await showConfirm(
+                'Delete Collection',
+                'Are you sure you want to delete this collection? This action cannot be undone.',
+                'Delete'
+            );
+            if (!confirmed) return;
 
             try {
                 const res = await fetch(`${API_BASE}/collections/${collectionId}`, {
@@ -2451,12 +2596,13 @@
                 if (res.ok) {
                     document.getElementById('viewCollectionModal').classList.remove('active');
                     loadCollections();
+                    showToast('Collection deleted', 'success');
                 } else {
-                    alert('Failed to delete collection');
+                    showToast('Failed to delete collection', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Failed to delete collection');
+                showToast('Failed to delete collection', 'error');
             }
         }
 
@@ -2497,12 +2643,13 @@
                     document.getElementById('smartCollectionRules').style.display = 'none';
                     document.getElementById('collectionsModal').classList.add('active');
                     loadCollections();
+                    showToast('Collection created', 'success');
                 } else {
-                    alert('Failed to create collection');
+                    showToast('Failed to create collection', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Failed to create collection');
+                showToast('Failed to create collection', 'error');
             }
         }
 
@@ -3081,8 +3228,65 @@
                 });
             });
 
+            // Mobile action sheet pull-to-dismiss
+            setupActionSheetSwipe();
+
             // Book card swipe actions
             setupBookCardSwipe();
+        }
+
+        function setupActionSheetSwipe() {
+            const overlay = document.getElementById('mobileActionMenu');
+            const sheet = document.getElementById('mobileActionSheet');
+            if (!sheet) return;
+
+            let sheetTouchStartY = 0;
+            let sheetTranslateY = 0;
+            let sheetIsDragging = false;
+
+            sheet.addEventListener('touchstart', (e) => {
+                // Only start drag from grabber area (top 40px)
+                const rect = sheet.getBoundingClientRect();
+                if (e.touches[0].clientY - rect.top > 50) return;
+
+                sheetTouchStartY = e.touches[0].clientY;
+                sheetTranslateY = 0;
+                sheetIsDragging = false;
+                sheet.style.transition = 'none';
+            }, { passive: true });
+
+            sheet.addEventListener('touchmove', (e) => {
+                if (sheetTouchStartY === 0) return;
+
+                const touchY = e.touches[0].clientY;
+                const diffY = touchY - sheetTouchStartY;
+
+                // Only allow downward swipe
+                if (diffY > 10) {
+                    sheetIsDragging = true;
+                    sheetTranslateY = diffY;
+                    sheet.style.transform = `translateY(${diffY}px)`;
+                    // Fade overlay as sheet is pulled down
+                    overlay.style.background = `rgba(0,0,0,${Math.max(0, 0.5 - (diffY / 400))})`;
+                }
+            }, { passive: true });
+
+            sheet.addEventListener('touchend', () => {
+                sheet.style.transition = 'transform 0.3s ease';
+                overlay.style.transition = 'background 0.3s ease';
+
+                if (sheetIsDragging && sheetTranslateY > 100) {
+                    // Dismiss the sheet
+                    closeMobileActionMenu();
+                } else {
+                    // Snap back
+                    sheet.style.transform = '';
+                    overlay.style.background = '';
+                }
+
+                sheetTouchStartY = 0;
+                sheetIsDragging = false;
+            });
         }
 
         function setupBookCardSwipe() {
@@ -3141,11 +3345,12 @@
                 swipeTarget.style.transition = 'transform 0.3s ease, background 0.3s ease';
 
                 if (isSwipe) {
-                    const bookId = swipeTarget.dataset.id;
-                    if (swipeOffsetX > 60) {
+                    const bookId = swipeTarget.dataset.bookId;
+                    if (swipeOffsetX > 60 && bookId) {
                         // Swipe right - toggle reading list (want to read)
                         quickToggleReadingList(bookId, 'want_to_read');
-                    } else if (swipeOffsetX < -60) {
+                        showToast('Added to Want to Read', 'success');
+                    } else if (swipeOffsetX < -60 && bookId) {
                         // Swipe left - show quick actions
                         showMobileActionMenu(bookId);
                     }
@@ -3368,7 +3573,13 @@
         async function mobileActionDelete() {
             if (!mobileActionBookId || !mobileActionBookData) return;
 
-            if (confirm(`Are you sure you want to delete "${mobileActionBookData.title}"?`)) {
+            const confirmed = await showConfirm(
+                'Delete Book',
+                `Are you sure you want to delete "${mobileActionBookData.title}"? This action cannot be undone.`,
+                'Delete'
+            );
+
+            if (confirmed) {
                 try {
                     const res = await fetch(`${API_BASE}/books/${mobileActionBookId}`, {
                         method: 'DELETE',
@@ -3377,11 +3588,12 @@
                     if (res.ok) {
                         closeMobileActionMenu();
                         loadBooks();
+                        showToast('Book deleted', 'success');
                     } else {
-                        alert('Failed to delete book');
+                        showToast('Failed to delete book', 'error');
                     }
                 } catch (err) {
-                    alert('Failed to delete book');
+                    showToast('Failed to delete book', 'error');
                 }
             }
             closeMobileActionMenu();

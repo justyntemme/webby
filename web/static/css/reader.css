@@ -163,33 +163,6 @@ body {
     opacity: 0.7;
 }
 
-/* ==================== TOUCH ZONES ==================== */
-.touch-zone {
-    position: fixed;
-    top: 50px;
-    bottom: 60px;
-    width: 25%;
-    z-index: 50;
-    cursor: pointer;
-}
-
-.touch-zone.left {
-    left: 0;
-}
-
-.touch-zone.right {
-    right: 0;
-}
-
-.touch-zone.center {
-    left: 25%;
-    width: 50%;
-}
-
-/* Allow text selection through touch zones when dragging */
-.touch-zone.is-selecting {
-    pointer-events: none;
-}
 
 /* ==================== MODALS ==================== */
 .modal {
@@ -795,15 +768,6 @@ body.continuous-scroll-active .exit-scroll-btn {
         max-width: 40%;
     }
 
-    /* Touch zones wider on mobile */
-    .touch-zone {
-        width: 33%;
-    }
-
-    .touch-zone.center {
-        width: 34%;
-    }
-
     /* Exit scroll button mobile positioning */
     .exit-scroll-btn {
         bottom: 15px;
@@ -831,4 +795,156 @@ body.continuous-scroll-active .exit-scroll-btn {
 
 .mode-btn:not(.active):hover {
     background: var(--border-color);
+}
+
+/* ==================== SETTINGS POPOVER ==================== */
+.settings-popover {
+    position: fixed;
+    top: 55px;
+    right: 10px;
+    background: var(--bg-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    z-index: 150;
+    width: 280px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+}
+
+.settings-popover.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.settings-popover::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid var(--bg-color);
+}
+
+.settings-popover .settings-option {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-popover .settings-option:last-child {
+    border-bottom: none;
+}
+
+.settings-popover .settings-option span {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ==================== PAGE TRANSITIONS ==================== */
+.content.page-transition-next {
+    animation: slideOutLeft 0.25s ease-out forwards;
+}
+
+.content.page-transition-prev {
+    animation: slideOutRight 0.25s ease-out forwards;
+}
+
+.content.page-enter-next {
+    animation: slideInRight 0.25s ease-out forwards;
+}
+
+.content.page-enter-prev {
+    animation: slideInLeft 0.25s ease-out forwards;
+}
+
+@keyframes slideOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes slideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(30px); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ==================== READING PROGRESS BAR ==================== */
+.reading-progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--border-color);
+    z-index: 101;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.reading-progress-bar.visible {
+    opacity: 1;
+}
+
+.reading-progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    width: 0%;
+    transition: width 0.3s ease-out;
+}
+
+/* Show progress bar above footer in paginated mode */
+.footer ~ .reading-progress-bar {
+    bottom: 60px;
+}
+
+/* In scroll mode, show at very bottom */
+body.scroll-mode .reading-progress-bar {
+    bottom: 0;
+}
+
+/* ==================== ENHANCED CHAPTER INDICATOR ==================== */
+.chapter-indicator {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--header-bg);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    box-shadow: var(--shadow);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+    max-width: 80%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 90;
+}
+
+.chapter-indicator.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Full chapter title display */
+.chapter-indicator.full-title {
+    white-space: normal;
+    max-width: 300px;
+    text-align: center;
 }
