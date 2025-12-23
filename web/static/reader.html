@@ -43,6 +43,9 @@
     <!-- Scroll to Top Button (for continuous scroll mode) -->
     <button class="scroll-top-btn" id="scrollTopBtn" title="Back to top">&#8593;</button>
 
+    <!-- Exit Scroll Mode Button (for continuous scroll mode) -->
+    <button class="exit-scroll-btn" id="exitScrollBtn" title="Exit scroll mode">&#128196; Page</button>
+
     <!-- TOC Modal -->
     <div class="modal" id="tocModal">
         <div class="modal-content">
@@ -1133,6 +1136,7 @@
             // Reading mode toggle
             document.getElementById('paginatedModeBtn').addEventListener('click', () => setReadingMode('paginated'));
             document.getElementById('scrollModeBtn').addEventListener('click', () => setReadingMode('continuous'));
+            document.getElementById('exitScrollBtn').addEventListener('click', () => setReadingMode('paginated'));
 
             // Navigation - now page-based (only active in paginated mode)
             document.getElementById('prevBtn').addEventListener('click', prevPage);
