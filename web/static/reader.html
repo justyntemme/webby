@@ -310,6 +310,260 @@
             text-align: center;
             padding: 20px;
         }
+
+        /* Highlight colors */
+        .highlight-yellow { background-color: rgba(255, 255, 0, 0.4); }
+        .highlight-green { background-color: rgba(0, 255, 0, 0.3); }
+        .highlight-blue { background-color: rgba(0, 150, 255, 0.3); }
+        .highlight-pink { background-color: rgba(255, 105, 180, 0.3); }
+        .highlight-orange { background-color: rgba(255, 165, 0, 0.4); }
+
+        .highlight-mark {
+            cursor: pointer;
+            border-radius: 2px;
+            transition: filter 0.2s;
+        }
+        .highlight-mark:hover {
+            filter: brightness(0.9);
+        }
+
+        /* Highlight toolbar popup */
+        .highlight-toolbar {
+            position: fixed;
+            background: var(--header-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+            z-index: 300;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            flex-direction: row;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .highlight-toolbar.active {
+            display: flex;
+        }
+
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.1s;
+        }
+        .color-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--text-color);
+        }
+        .color-btn.yellow { background: #ffff00; }
+        .color-btn.green { background: #00ff00; }
+        .color-btn.blue { background: #0096ff; }
+        .color-btn.pink { background: #ff69b4; }
+        .color-btn.orange { background: #ffa500; }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+        }
+
+        .toolbar-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            color: var(--text-color);
+            border-radius: 4px;
+        }
+        .toolbar-btn:hover {
+            background: var(--border-color);
+        }
+
+        /* Annotations sidebar */
+        .annotations-panel {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 350px;
+            height: 100%;
+            background: var(--bg-color);
+            border-left: 1px solid var(--border-color);
+            z-index: 250;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .annotations-panel.open {
+            right: 0;
+        }
+
+        .annotations-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .annotations-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .annotation-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-left: 4px solid;
+            transition: background 0.2s;
+        }
+
+        .annotation-item:hover {
+            background: var(--header-bg);
+        }
+
+        .annotation-item.yellow { border-left-color: #ffff00; background: rgba(255, 255, 0, 0.1); }
+        .annotation-item.green { border-left-color: #00ff00; background: rgba(0, 255, 0, 0.1); }
+        .annotation-item.blue { border-left-color: #0096ff; background: rgba(0, 150, 255, 0.1); }
+        .annotation-item.pink { border-left-color: #ff69b4; background: rgba(255, 105, 180, 0.1); }
+        .annotation-item.orange { border-left-color: #ffa500; background: rgba(255, 165, 0, 0.1); }
+
+        .annotation-text {
+            font-style: italic;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .annotation-note {
+            font-size: 13px;
+            color: var(--text-color);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .annotation-meta {
+            font-size: 11px;
+            color: var(--text-color);
+            opacity: 0.6;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .annotation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .annotation-actions button {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .annotation-actions button:hover {
+            background: var(--header-bg);
+        }
+
+        .no-annotations {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-color);
+            opacity: 0.6;
+        }
+
+        /* Note editor modal */
+        .note-editor-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            z-index: 400;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .note-editor-modal.active {
+            display: block;
+        }
+
+        .note-editor-modal h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+
+        .note-editor-modal textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .note-editor-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .note-editor-buttons button {
+            padding: 8px 16px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .note-save-btn {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .note-cancel-btn {
+            background: var(--border-color);
+            color: var(--text-color);
+        }
+
+        /* Overlay for modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 350;
+            display: none;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -317,6 +571,7 @@
         <button class="header-btn" id="backBtn" title="Back to Library">&#8592;</button>
         <button class="header-btn" id="tocBtn" title="Table of Contents">&#9776;</button>
         <div class="header-title" id="bookTitle">Loading...</div>
+        <button class="header-btn" id="annotationsBtn" title="Annotations">&#128278;</button>
         <button class="header-btn" id="settingsBtn" title="Settings">&#9881;</button>
     </header>
 
@@ -392,6 +647,40 @@
         </div>
     </div>
 
+    <!-- Highlight Toolbar (appears on text selection) -->
+    <div class="highlight-toolbar" id="highlightToolbar">
+        <button class="color-btn yellow" data-color="yellow" title="Yellow"></button>
+        <button class="color-btn green" data-color="green" title="Green"></button>
+        <button class="color-btn blue" data-color="blue" title="Blue"></button>
+        <button class="color-btn pink" data-color="pink" title="Pink"></button>
+        <button class="color-btn orange" data-color="orange" title="Orange"></button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" id="addNoteBtn" title="Add Note">&#128221;</button>
+    </div>
+
+    <!-- Annotations Sidebar Panel -->
+    <div class="annotations-panel" id="annotationsPanel">
+        <div class="annotations-header">
+            <h3>Annotations</h3>
+            <button class="modal-close" id="annotationsClose">&times;</button>
+        </div>
+        <div class="annotations-list" id="annotationsList">
+            <div class="no-annotations">No annotations yet. Select text to highlight.</div>
+        </div>
+    </div>
+
+    <!-- Note Editor Modal -->
+    <div class="modal-overlay" id="noteOverlay"></div>
+    <div class="note-editor-modal" id="noteEditorModal">
+        <h3>Add Note</h3>
+        <div class="annotation-text" id="notePreviewText"></div>
+        <textarea id="noteTextarea" placeholder="Add your note here..."></textarea>
+        <div class="note-editor-buttons">
+            <button class="note-cancel-btn" id="noteCancelBtn">Cancel</button>
+            <button class="note-save-btn" id="noteSaveBtn">Save</button>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '/api';
         let bookId = null;
@@ -403,6 +692,12 @@
         let theme = 'day'; // day, night, sepia
         let uiVisible = true;
         let savedScrollPosition = 0;
+
+        // Annotations state
+        let annotations = [];
+        let currentSelection = null;
+        let pendingHighlightColor = 'yellow';
+        let editingAnnotationId = null;
 
         // Page-based navigation
         let currentPage = 0;
@@ -463,6 +758,341 @@
             await loadSavedPosition();
             await loadChapter(currentChapter, true); // Restore scroll position on initial load
             setupEventListeners();
+            setupAnnotationListeners();
+        }
+
+        // ==================== Annotations Functions ====================
+
+        async function loadAnnotationsForChapter() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations/chapter/${currentChapter}`, {
+                    headers: getHeaders()
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                annotations = data.annotations || [];
+                applyHighlightsToContent();
+            } catch (err) {
+                console.error('Failed to load annotations', err);
+            }
+        }
+
+        async function loadAllAnnotations() {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations`, {
+                    headers: getHeaders()
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                annotations = data.annotations || [];
+                renderAnnotationsList();
+            } catch (err) {
+                console.error('Failed to load all annotations', err);
+            }
+        }
+
+        function applyHighlightsToContent() {
+            const content = document.getElementById('content');
+            const chapterAnnotations = annotations.filter(a => String(a.chapter) === String(currentChapter));
+
+            chapterAnnotations.forEach(annotation => {
+                highlightTextInContent(annotation);
+            });
+        }
+
+        function highlightTextInContent(annotation) {
+            const content = document.getElementById('content');
+            const text = annotation.selected_text;
+            if (!text) return;
+
+            const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+
+            while (node = walker.nextNode()) {
+                const idx = node.textContent.indexOf(text);
+                if (idx !== -1) {
+                    const range = document.createRange();
+                    range.setStart(node, idx);
+                    range.setEnd(node, idx + text.length);
+
+                    const mark = document.createElement('mark');
+                    mark.className = `highlight-mark highlight-${annotation.color}`;
+                    mark.dataset.annotationId = annotation.id;
+                    mark.title = annotation.note || 'Click to view';
+
+                    try {
+                        range.surroundContents(mark);
+                    } catch (e) {
+                        // Handle complex ranges that cross element boundaries
+                        console.log('Could not apply highlight for:', text.substring(0, 30));
+                    }
+                    break;
+                }
+            }
+        }
+
+        async function createHighlight(color, note = '') {
+            if (!currentSelection) return;
+
+            const selectedText = currentSelection.toString().trim();
+            if (!selectedText) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations`, {
+                    method: 'POST',
+                    headers: getHeaders(true),
+                    body: JSON.stringify({
+                        chapter: String(currentChapter),
+                        selected_text: selectedText,
+                        color: color,
+                        note: note
+                    })
+                });
+
+                if (!res.ok) throw new Error('Failed to create annotation');
+
+                const data = await res.json();
+                annotations.push(data.annotation);
+
+                // Apply highlight visually
+                highlightTextInContent(data.annotation);
+
+                // Clear selection
+                window.getSelection().removeAllRanges();
+                currentSelection = null;
+                hideHighlightToolbar();
+
+            } catch (err) {
+                console.error('Failed to create highlight', err);
+            }
+        }
+
+        async function updateAnnotation(annotationId, note) {
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations/${annotationId}`, {
+                    method: 'PUT',
+                    headers: getHeaders(true),
+                    body: JSON.stringify({ note: note })
+                });
+
+                if (!res.ok) throw new Error('Failed to update annotation');
+
+                // Update local state
+                const idx = annotations.findIndex(a => a.id === annotationId);
+                if (idx !== -1) {
+                    annotations[idx].note = note;
+                }
+
+                renderAnnotationsList();
+            } catch (err) {
+                console.error('Failed to update annotation', err);
+            }
+        }
+
+        async function deleteAnnotation(annotationId) {
+            if (!confirm('Delete this highlight?')) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/books/${bookId}/annotations/${annotationId}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (!res.ok) throw new Error('Failed to delete annotation');
+
+                // Remove from local state
+                annotations = annotations.filter(a => a.id !== annotationId);
+
+                // Remove highlight from content
+                const mark = document.querySelector(`mark[data-annotation-id="${annotationId}"]`);
+                if (mark) {
+                    const text = mark.textContent;
+                    mark.replaceWith(text);
+                }
+
+                renderAnnotationsList();
+            } catch (err) {
+                console.error('Failed to delete annotation', err);
+            }
+        }
+
+        function renderAnnotationsList() {
+            const list = document.getElementById('annotationsList');
+
+            if (annotations.length === 0) {
+                list.innerHTML = '<div class="no-annotations">No annotations yet. Select text to highlight.</div>';
+                return;
+            }
+
+            // Sort by chapter and creation date
+            const sorted = [...annotations].sort((a, b) => {
+                if (a.chapter !== b.chapter) return parseInt(a.chapter) - parseInt(b.chapter);
+                return new Date(a.created_at) - new Date(b.created_at);
+            });
+
+            list.innerHTML = sorted.map(a => {
+                const truncatedText = a.selected_text.length > 100
+                    ? a.selected_text.substring(0, 100) + '...'
+                    : a.selected_text;
+                const chapterName = chapters[parseInt(a.chapter)]?.title || `Chapter ${parseInt(a.chapter) + 1}`;
+                const date = new Date(a.created_at).toLocaleDateString();
+
+                return `
+                    <div class="annotation-item ${a.color}" data-annotation-id="${a.id}" data-chapter="${a.chapter}">
+                        <div class="annotation-text">"${truncatedText}"</div>
+                        ${a.note ? `<div class="annotation-note">${a.note}</div>` : ''}
+                        <div class="annotation-meta">
+                            <span>${chapterName}</span>
+                            <span>${date}</span>
+                        </div>
+                        <div class="annotation-actions">
+                            <button onclick="event.stopPropagation(); openNoteEditor('${a.id}')">Edit Note</button>
+                            <button onclick="event.stopPropagation(); deleteAnnotation('${a.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showHighlightToolbar(x, y) {
+            const toolbar = document.getElementById('highlightToolbar');
+            toolbar.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+            toolbar.style.top = Math.max(60, y - 50) + 'px';
+            toolbar.classList.add('active');
+        }
+
+        function hideHighlightToolbar() {
+            document.getElementById('highlightToolbar').classList.remove('active');
+        }
+
+        function openAnnotationsPanel() {
+            loadAllAnnotations();
+            document.getElementById('annotationsPanel').classList.add('open');
+        }
+
+        function closeAnnotationsPanel() {
+            document.getElementById('annotationsPanel').classList.remove('open');
+        }
+
+        function openNoteEditor(annotationId = null) {
+            editingAnnotationId = annotationId;
+            const modal = document.getElementById('noteEditorModal');
+            const overlay = document.getElementById('noteOverlay');
+            const textarea = document.getElementById('noteTextarea');
+            const previewText = document.getElementById('notePreviewText');
+
+            if (annotationId) {
+                // Editing existing annotation
+                const annotation = annotations.find(a => a.id === annotationId);
+                if (annotation) {
+                    previewText.textContent = '"' + annotation.selected_text.substring(0, 150) + (annotation.selected_text.length > 150 ? '...' : '') + '"';
+                    textarea.value = annotation.note || '';
+                }
+            } else {
+                // New annotation with note
+                previewText.textContent = '"' + currentSelection.toString().substring(0, 150) + '"';
+                textarea.value = '';
+            }
+
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            textarea.focus();
+        }
+
+        function closeNoteEditor() {
+            document.getElementById('noteEditorModal').classList.remove('active');
+            document.getElementById('noteOverlay').classList.remove('active');
+            editingAnnotationId = null;
+        }
+
+        async function saveNote() {
+            const note = document.getElementById('noteTextarea').value.trim();
+
+            if (editingAnnotationId) {
+                // Update existing annotation
+                await updateAnnotation(editingAnnotationId, note);
+            } else {
+                // Create new annotation with note
+                await createHighlight(pendingHighlightColor, note);
+            }
+
+            closeNoteEditor();
+        }
+
+        function setupAnnotationListeners() {
+            // Text selection handling
+            document.getElementById('content').addEventListener('mouseup', handleTextSelection);
+            document.getElementById('content').addEventListener('touchend', handleTextSelection);
+
+            // Color buttons
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const color = e.target.dataset.color;
+                    createHighlight(color);
+                });
+            });
+
+            // Add note button (on toolbar)
+            document.getElementById('addNoteBtn').addEventListener('click', () => {
+                openNoteEditor();
+            });
+
+            // Annotations panel
+            document.getElementById('annotationsBtn').addEventListener('click', openAnnotationsPanel);
+            document.getElementById('annotationsClose').addEventListener('click', closeAnnotationsPanel);
+
+            // Click on annotation in list to navigate
+            document.getElementById('annotationsList').addEventListener('click', (e) => {
+                const item = e.target.closest('.annotation-item');
+                if (item && !e.target.closest('button')) {
+                    const chapter = parseInt(item.dataset.chapter);
+                    if (chapter !== currentChapter) {
+                        loadChapter(chapter);
+                    }
+                    closeAnnotationsPanel();
+                }
+            });
+
+            // Click on highlight in content
+            document.getElementById('content').addEventListener('click', (e) => {
+                if (e.target.classList.contains('highlight-mark')) {
+                    const annotationId = e.target.dataset.annotationId;
+                    const annotation = annotations.find(a => a.id === annotationId);
+                    if (annotation && annotation.note) {
+                        alert(annotation.note);
+                    }
+                }
+            });
+
+            // Note editor
+            document.getElementById('noteSaveBtn').addEventListener('click', saveNote);
+            document.getElementById('noteCancelBtn').addEventListener('click', closeNoteEditor);
+            document.getElementById('noteOverlay').addEventListener('click', closeNoteEditor);
+
+            // Hide toolbar on click outside
+            document.addEventListener('mousedown', (e) => {
+                if (!e.target.closest('.highlight-toolbar') && !e.target.closest('#content')) {
+                    hideHighlightToolbar();
+                }
+            });
+        }
+
+        function handleTextSelection(e) {
+            // Small delay to ensure selection is complete
+            setTimeout(() => {
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+
+                if (selectedText.length > 0 && selectedText.length < 1000) {
+                    currentSelection = selection.getRangeAt(0).cloneRange();
+
+                    const rect = selection.getRangeAt(0).getBoundingClientRect();
+                    showHighlightToolbar(rect.left + rect.width / 2 - 100, rect.top + window.scrollY);
+                } else {
+                    hideHighlightToolbar();
+                    currentSelection = null;
+                }
+            }, 10);
         }
 
         function loadSettings() {
@@ -676,6 +1306,9 @@
 
                 renderTOC();
                 savePosition();
+
+                // Load and apply annotations for this chapter
+                await loadAnnotationsForChapter();
             } catch (err) {
                 showError('Failed to load chapter');
             }
