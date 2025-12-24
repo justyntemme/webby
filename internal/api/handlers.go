@@ -840,6 +840,8 @@ func (h *Handler) CreateCollection(c *gin.Context) {
 
 // ListCollections returns all collections
 func (h *Handler) ListCollections(c *gin.Context) {
+	userID := auth.GetUserID(c)
+
 	collections, err := h.db.ListCollections()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch collections"})
@@ -848,6 +850,24 @@ func (h *Handler) ListCollections(c *gin.Context) {
 
 	if collections == nil {
 		collections = []models.Collection{}
+	}
+
+	// Calculate accurate book counts for each collection
+	for i := range collections {
+		var books []models.Book
+		var countErr error
+
+		if collections[i].IsSmart {
+			// For smart collections, get books matching the rules
+			books, countErr = h.db.GetSmartCollectionBooks(collections[i].ID, userID)
+		} else {
+			// For static collections, get the manually added books
+			books, countErr = h.db.GetBooksInCollection(collections[i].ID)
+		}
+
+		if countErr == nil {
+			collections[i].BookCount = len(books)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"collections": collections, "count": len(collections)})

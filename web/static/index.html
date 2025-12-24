@@ -790,6 +790,7 @@
         let currentUser = null;
         let groupSeries = false; // Series grouping mode
         let expandedSeries = null; // Currently expanded series name
+        let cachedCollections = []; // Cached collections for filter dropdown
 
         // Generate skeleton loader cards for loading states
         function generateSkeletonCards(count = 6) {
@@ -958,8 +959,26 @@
             try {
                 let fetchedBooks;
 
+                // Check if filtering by collection
+                if (contentType && contentType.startsWith('collection-')) {
+                    const collectionId = contentType.replace('collection-', '');
+                    const collRes = await fetch(`${API_BASE}/collections/${collectionId}`, { headers: getAuthHeaders() });
+                    const collData = await collRes.json();
+                    fetchedBooks = collData.books || [];
+
+                    // Apply additional filters client-side
+                    if (search) {
+                        const searchLower = search.toLowerCase();
+                        fetchedBooks = fetchedBooks.filter(b =>
+                            b.title.toLowerCase().includes(searchLower) ||
+                            b.author.toLowerCase().includes(searchLower)
+                        );
+                    }
+                    if (readStatus) {
+                        fetchedBooks = fetchedBooks.filter(b => b.read_status === readStatus);
+                    }
                 // If tag is selected, fetch books by tag first then apply other filters
-                if (selectedTag) {
+                } else if (selectedTag) {
                     const tagRes = await fetch(`${API_BASE}/tags/${selectedTag}/books`, { headers: getAuthHeaders() });
                     const tagData = await tagRes.json();
                     fetchedBooks = tagData.books || [];
@@ -2694,6 +2713,7 @@
                 if (res.ok) {
                     document.getElementById('viewCollectionModal').classList.remove('active');
                     loadCollections();
+                    populateCollectionFilters(); // Refresh filter dropdown
                     showToast('Collection deleted', 'success');
                 } else {
                     showToast('Failed to delete collection', 'error');
@@ -2741,6 +2761,7 @@
                     document.getElementById('smartCollectionRules').style.display = 'none';
                     document.getElementById('collectionsModal').classList.add('active');
                     loadCollections();
+                    populateCollectionFilters(); // Refresh filter dropdown
                     showToast('Collection created', 'success');
                 } else {
                     showToast('Failed to create collection', 'error');
@@ -3153,6 +3174,24 @@
                 expandedSeries = seriesName;
             }
             renderBooks();
+
+            // Auto-scroll to expanded series after DOM updates
+            if (expandedSeries) {
+                requestAnimationFrame(() => {
+                    const expandedElement = document.querySelector(`[data-expanded-series="${expandedSeries}"]`);
+                    if (expandedElement) {
+                        // Get header height for offset
+                        const header = document.getElementById('mainHeader');
+                        const headerHeight = header ? header.offsetHeight : 0;
+                        const elementTop = expandedElement.getBoundingClientRect().top + window.scrollY;
+
+                        window.scrollTo({
+                            top: elementTop - headerHeight - 16, // 16px extra padding
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            }
         }
 
         // Collapse expanded series view
@@ -3772,6 +3811,39 @@
         }
 
         // Load saved content type filter preference
+        // Populate collection filter options in type select dropdowns
+        async function populateCollectionFilters() {
+            try {
+                const res = await fetch(`${API_BASE}/collections`, { headers: getAuthHeaders() });
+                const data = await res.json();
+                cachedCollections = data.collections || [];
+
+                if (cachedCollections.length === 0) return;
+
+                // Build the collection options HTML
+                const collectionOptions = cachedCollections.map(c => {
+                    const icon = c.is_smart ? '✨' : '📁';
+                    return `<option value="collection-${c.id}">${icon} ${c.name} (${c.book_count})</option>`;
+                }).join('');
+
+                const optgroupHTML = `<optgroup label="Collections">${collectionOptions}</optgroup>`;
+
+                // Update both desktop and mobile type selects
+                const typeSelect = document.getElementById('typeSelect');
+                const drawerTypeSelect = document.getElementById('drawerTypeSelect');
+
+                // Remove existing collection optgroups if any
+                typeSelect.querySelectorAll('optgroup').forEach(og => og.remove());
+                drawerTypeSelect.querySelectorAll('optgroup').forEach(og => og.remove());
+
+                // Add the new optgroup
+                typeSelect.insertAdjacentHTML('beforeend', optgroupHTML);
+                drawerTypeSelect.insertAdjacentHTML('beforeend', optgroupHTML);
+            } catch (err) {
+                console.error('Failed to load collection filters:', err);
+            }
+        }
+
         function loadContentTypePreference() {
             const saved = localStorage.getItem('webby-content-type');
             if (saved !== null) {
@@ -3792,6 +3864,8 @@
             const isLoggedIn = await checkAuth();
             if (isLoggedIn) {
                 loadGroupingPreference();
+                // Populate collection filters before restoring saved preference
+                await populateCollectionFilters();
                 loadContentTypePreference();
                 loadStatusPreference();
                 loadBooks();
