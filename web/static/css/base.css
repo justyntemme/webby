@@ -25,10 +25,10 @@
     --bg-secondary: var(--surface-2);
     --card-bg: var(--surface-1);
 
-    /* Text hierarchy */
-    --text-color: #1a1a2e;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
+    /* Text hierarchy - WCAG AA compliant (4.5:1 minimum on white) */
+    --text-color: #1a1a2e;      /* 16.1:1 contrast - AAA */
+    --text-secondary: #64748b;  /* 4.54:1 contrast - AA */
+    --text-muted: #64748b;      /* Fixed: was #94a3b8 (2.45:1 FAIL) now 4.54:1 - AA */
     --text-inverse: #ffffff;
 
     /* Accent colors */
@@ -146,15 +146,35 @@
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
 
-    /* Transitions */
+    /* ==================== MOTION PHILOSOPHY: "Confident and Quiet" ==================== */
+    /* Purposeful, swift, understated. Not playful. Not clinical. Not bouncy. */
+
+    /* Easing Curves - from design system research */
+    --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+    --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --ease-standard-decelerate: cubic-bezier(0, 0, 0.2, 1);   /* Modal open - lands solidly */
+    --ease-standard-accelerate: cubic-bezier(0.4, 0, 1, 1);   /* Modal close - gets out of the way */
+
+    /* Duration Tokens */
+    --duration-instant: 100ms;  /* Button press, micro-feedback */
+    --duration-fast: 150ms;     /* Hover feedback, card lift */
+    --duration-normal: 250ms;   /* Modal open, standard transitions */
+    --duration-slow: 350ms;     /* Page transitions, complex animations */
+
+    /* Legacy transition shortcuts (for compatibility) */
     --transition: all 0.2s ease;
-    --transition-fast: all 0.15s ease;
-    --transition-slow: all 0.3s ease;
+    --transition-fast: all var(--duration-fast) var(--ease-out-quad);
+    --transition-slow: all var(--duration-slow) var(--ease-out-quad);
 
     /* Layout */
     --header-height: 56px;
     --bottom-nav-height: 56px;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* Grid system - fixed columns for spatial memory */
+    --grid-gap-mobile: 1rem;    /* 16px */
+    --grid-gap-desktop: 1.5rem; /* 24px */
 }
 
 /* Dark mode - controlled via data-theme attribute set by JavaScript */
@@ -164,9 +184,10 @@ html[data-theme="dark"] {
     --surface-2: #334155;
     --surface-3: #475569;
 
-    --text-color: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    /* Text hierarchy - WCAG AA compliant on dark surfaces */
+    --text-color: #f1f5f9;      /* 15.2:1 contrast - AAA */
+    --text-secondary: #cbd5e1;  /* 10.4:1 contrast - AAA */
+    --text-muted: #94a3b8;      /* 7.0:1 contrast - AAA */
 
     --border-color: #334155;
     --border-light: #1e293b;
@@ -248,6 +269,61 @@ body {
     min-height: 100vh;
 }
 
+/* ==================== GLOBAL FOCUS STATES ==================== */
+/* Default focus-visible style for all interactive elements */
+/* Using :focus-visible to only show focus ring on keyboard navigation, not mouse clicks */
+:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Links get focus styling */
+a:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Buttons already have focus-visible in components.css, but ensure fallback */
+button:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Form inputs: border-color change is the focus indicator, not outline */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* ==================== SKIP LINK ==================== */
+/* Skip link for keyboard navigation (WCAG 2.4.1) */
+/* Visually hidden until focused, then appears at top of page */
+.skip-link {
+    position: fixed;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    padding: var(--space-3) var(--space-6);
+    background: var(--accent-color);
+    color: var(--text-inverse);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    text-decoration: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: var(--shadow-md);
+    transition: top var(--duration-fast) var(--ease-out-quad);
+}
+
+.skip-link:focus {
+    top: 0;
+    outline: none;
+}
+
 /* Common utility classes */
 .loading {
     display: flex;
@@ -284,4 +360,17 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
+}
+
+/* ==================== REDUCED MOTION ==================== */
+/* Respect user preferences for reduced motion (vestibular disorders, etc.) */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

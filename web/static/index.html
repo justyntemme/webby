@@ -99,6 +99,8 @@
     </style>
 </head>
 <body>
+    <!-- Skip Link for Keyboard Navigation (WCAG 2.4.1) -->
+    <a href="#library" class="skip-link">Skip to main content</a>
 
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
@@ -783,6 +785,58 @@
         // Initialize theme immediately
         ThemeManager.init();
 
+        // ==================== HAPTIC FEEDBACK SYSTEM ====================
+        // Provides tactile feedback on mobile devices using the Vibration API
+        // Patterns based on iOS/Android haptic feedback research
+        const HapticFeedback = {
+            // Check if vibration is supported
+            isSupported() {
+                return 'vibrate' in navigator;
+            },
+
+            // Light haptic - quick acknowledgment (button press, toggle)
+            light() {
+                if (this.isSupported()) {
+                    navigator.vibrate(10);
+                }
+            },
+
+            // Medium haptic - selection confirmation (menu selection, successful action)
+            medium() {
+                if (this.isSupported()) {
+                    navigator.vibrate(20);
+                }
+            },
+
+            // Heavy haptic - warning or important action (delete, error)
+            heavy() {
+                if (this.isSupported()) {
+                    navigator.vibrate([30, 50, 30]);
+                }
+            },
+
+            // Success pattern - completion of significant action
+            success() {
+                if (this.isSupported()) {
+                    navigator.vibrate([10, 50, 10]);
+                }
+            },
+
+            // Error pattern - action failed
+            error() {
+                if (this.isSupported()) {
+                    navigator.vibrate([50, 100, 50, 100, 50]);
+                }
+            },
+
+            // Selection pattern - for drag/swipe gestures
+            selection() {
+                if (this.isSupported()) {
+                    navigator.vibrate(8);
+                }
+            }
+        };
+
         const API_BASE = '/api';
         let books = [];
         let viewMode = 'grid';
@@ -810,6 +864,12 @@
                 warning: '⚠',
                 info: 'ℹ'
             };
+
+            // Haptic feedback based on toast type
+            if (type === 'success') HapticFeedback.success();
+            else if (type === 'error') HapticFeedback.error();
+            else if (type === 'warning') HapticFeedback.heavy();
+            else HapticFeedback.light();
 
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -1164,7 +1224,59 @@
         }
 
         function openReader(bookId) {
+            // Save scroll position before navigating to reader
+            saveScrollPosition();
             window.location.href = `/reader/${bookId}`;
+        }
+
+        // ==================== SCROLL POSITION RESTORATION ====================
+        // Saves and restores scroll position for seamless navigation back from reader
+        const SCROLL_POSITION_KEY = 'webby-scroll-position';
+        const SCROLL_TIMESTAMP_KEY = 'webby-scroll-timestamp';
+        const SCROLL_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+
+        function saveScrollPosition() {
+            const scrollY = window.scrollY || window.pageYOffset;
+            sessionStorage.setItem(SCROLL_POSITION_KEY, scrollY.toString());
+            sessionStorage.setItem(SCROLL_TIMESTAMP_KEY, Date.now().toString());
+        }
+
+        function getScrollPosition() {
+            const position = sessionStorage.getItem(SCROLL_POSITION_KEY);
+            const timestamp = sessionStorage.getItem(SCROLL_TIMESTAMP_KEY);
+
+            if (!position || !timestamp) return null;
+
+            // Check if position has expired (older than 30 minutes)
+            const elapsed = Date.now() - parseInt(timestamp, 10);
+            if (elapsed > SCROLL_EXPIRY_MS) {
+                clearScrollPosition();
+                return null;
+            }
+
+            return parseInt(position, 10);
+        }
+
+        function clearScrollPosition() {
+            sessionStorage.removeItem(SCROLL_POSITION_KEY);
+            sessionStorage.removeItem(SCROLL_TIMESTAMP_KEY);
+        }
+
+        function restoreScrollPosition() {
+            const position = getScrollPosition();
+            if (position !== null && position > 0) {
+                // Use requestAnimationFrame to ensure DOM is rendered
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: position,
+                        behavior: 'instant'  // Instant to avoid jarring animation
+                    });
+                    // Clear after restoring
+                    clearScrollPosition();
+                });
+                return true;
+            }
+            return false;
         }
 
         let currentBookId = null;
@@ -3027,6 +3139,8 @@
 
         document.getElementById('sortSelect').addEventListener('change', (e) => {
             const val = e.target.value;
+            // Clear scroll position on filter/sort change - context has changed
+            clearScrollPosition();
             if (val === 'author') {
                 groupBy = 'author';
                 loadGrouped('author');
@@ -3041,23 +3155,31 @@
 
         document.getElementById('typeSelect').addEventListener('change', () => {
             groupBy = null;
+            // Clear scroll position on filter change - context has changed
+            clearScrollPosition();
             localStorage.setItem('webby-content-type', document.getElementById('typeSelect').value);
             loadBooks();
         });
 
         document.getElementById('statusSelect').addEventListener('change', () => {
             groupBy = null;
+            // Clear scroll position on filter change - context has changed
+            clearScrollPosition();
             localStorage.setItem('webby-read-status', document.getElementById('statusSelect').value);
             loadBooks();
         });
 
         document.getElementById('tagSelect').addEventListener('change', () => {
             groupBy = null;
+            // Clear scroll position on filter change - context has changed
+            clearScrollPosition();
             loadBooks();
         });
 
         document.getElementById('searchBox').addEventListener('input', debounce(() => {
             groupBy = null;
+            // Clear scroll position on search - context has changed
+            clearScrollPosition();
             loadBooks();
         }, 300));
 
@@ -3102,6 +3224,14 @@
                 timeout = setTimeout(() => fn.apply(this, args), delay);
             };
         }
+
+        // Debounced filter function for mobile/drawer inputs
+        // Clears scroll position since filter context is changing
+        const filterBooks = debounce(() => {
+            groupBy = null;
+            clearScrollPosition();
+            loadBooks();
+        }, 300);
 
         // Group books by series for collapsed view
         function groupBooksBySeries(bookList) {
@@ -3636,6 +3766,9 @@
             const book = books.find(b => b.id === bookId);
             if (!book) return;
 
+            // Haptic feedback for menu open (medium intensity)
+            HapticFeedback.medium();
+
             mobileActionBookId = bookId;
             mobileActionBookData = book;
 
@@ -3645,6 +3778,8 @@
         }
 
         function closeMobileActionMenu() {
+            // Light haptic feedback on close
+            HapticFeedback.light();
             document.getElementById('mobileActionMenu').classList.remove('active');
             mobileActionBookId = null;
             mobileActionBookData = null;
@@ -3867,7 +4002,9 @@
                 await populateCollectionFilters();
                 loadContentTypePreference();
                 loadStatusPreference();
-                loadBooks();
+                await loadBooks();
+                // Restore scroll position after books are loaded (returning from reader)
+                restoreScrollPosition();
                 setupBookCardInteractions();
                 setupMobileUI();
                 // Pre-load reading lists for authenticated users

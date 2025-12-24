@@ -30,12 +30,15 @@
     gap: 12px;
 }
 
+/* Menu button - 48x48px touch target (MIT Touch Lab) */
 .menu-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     border: none;
     background: none;
     cursor: pointer;
@@ -65,12 +68,15 @@
     gap: 8px;
 }
 
+/* Header icon buttons - 48x48px touch target (MIT Touch Lab) */
 .header-icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     border: none;
     background: none;
     cursor: pointer;
@@ -178,15 +184,21 @@
     margin: 0;
 }
 
+/* Filter drawer close - 48x48px touch target (MIT Touch Lab) */
 .filter-drawer-close {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     border: none;
     background: none;
     font-size: 24px;
     cursor: pointer;
     color: var(--text-secondary);
     border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .filter-drawer-close:hover {
@@ -329,12 +341,14 @@ html[data-theme="dark"] .filter-toggle-group button.active {
     box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
 }
 
+/* Bottom nav items - 48px min-height touch target (MIT Touch Lab) */
 .bottom-nav-item {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    min-height: 48px;
     padding: 8px 0;
     border: none;
     background: none;
