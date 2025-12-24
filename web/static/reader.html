@@ -223,6 +223,62 @@
             return headers;
         }
 
+        // Rewrite EPUB resource URLs to point to our API endpoint
+        // EPUB files contain relative paths like "../images/cover.png" or "images/fig1.jpg"
+        // We need to convert these to "/api/books/{id}/resource/{path}"
+        function rewriteResourceUrls(doc, currentBookId) {
+            // Rewrite img src attributes
+            doc.querySelectorAll('img').forEach(img => {
+                const src = img.getAttribute('src');
+                if (src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('/api/')) {
+                    // Normalize the path - remove leading ../ or ./ and clean up
+                    let cleanPath = src.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+                    img.setAttribute('src', `${API_BASE}/books/${currentBookId}/resource/${cleanPath}`);
+                }
+            });
+
+            // Rewrite SVG image xlink:href attributes
+            doc.querySelectorAll('image').forEach(img => {
+                const href = img.getAttribute('xlink:href') || img.getAttribute('href');
+                if (href && !href.startsWith('http') && !href.startsWith('data:') && !href.startsWith('/api/')) {
+                    let cleanPath = href.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+                    const newHref = `${API_BASE}/books/${currentBookId}/resource/${cleanPath}`;
+                    if (img.hasAttribute('xlink:href')) {
+                        img.setAttribute('xlink:href', newHref);
+                    }
+                    if (img.hasAttribute('href')) {
+                        img.setAttribute('href', newHref);
+                    }
+                }
+            });
+
+            // Rewrite CSS link href attributes (for embedded stylesheets)
+            doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('http') && !href.startsWith('/api/')) {
+                    let cleanPath = href.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+                    link.setAttribute('href', `${API_BASE}/books/${currentBookId}/resource/${cleanPath}`);
+                }
+            });
+
+            // Rewrite background-image in inline styles
+            doc.querySelectorAll('[style*="background"]').forEach(el => {
+                const style = el.getAttribute('style');
+                if (style) {
+                    const newStyle = style.replace(/url\(['"]?([^'")\s]+)['"]?\)/gi, (match, url) => {
+                        if (url && !url.startsWith('http') && !url.startsWith('data:') && !url.startsWith('/api/')) {
+                            let cleanPath = url.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+                            return `url('${API_BASE}/books/${currentBookId}/resource/${cleanPath}')`;
+                        }
+                        return match;
+                    });
+                    el.setAttribute('style', newStyle);
+                }
+            });
+
+            return doc;
+        }
+
         // Get book ID from URL
         const pathParts = window.location.pathname.split('/');
         bookId = pathParts[pathParts.length - 1];
@@ -316,6 +372,10 @@
 
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
+
+                // Rewrite resource URLs (images, CSS) to point to our API
+                rewriteResourceUrls(doc.body, bookId);
+
                 const chapterContent = doc.body.innerHTML;
 
                 // Create chapter container
@@ -1172,6 +1232,10 @@
                 // Extract body content and sanitize for XSS protection
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
+
+                // Rewrite resource URLs (images, CSS) to point to our API
+                rewriteResourceUrls(doc.body, bookId);
+
                 content.innerHTML = DOMPurify.sanitize(doc.body.innerHTML);
 
                 // Calculate pages after content loads

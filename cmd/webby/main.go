@@ -156,6 +156,7 @@ func main() {
 			booksGroup.GET("/books/:id/toc", handler.GetTableOfContents)
 			booksGroup.GET("/books/:id/content/:chapter", handler.GetChapterContent)
 			booksGroup.GET("/books/:id/text/:chapter", handler.GetChapterText)
+			booksGroup.GET("/books/:id/resource/*path", handler.GetBookResource)
 
 			// CBZ comic reading
 			booksGroup.GET("/books/:id/cbz/info", handler.GetCBZInfo)

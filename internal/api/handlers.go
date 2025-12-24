@@ -544,6 +544,30 @@ func (h *Handler) GetChapterContent(c *gin.Context) {
 	c.String(http.StatusOK, content)
 }
 
+// GetBookResource serves a resource file (image, CSS, etc.) from an EPUB
+func (h *Handler) GetBookResource(c *gin.Context) {
+	id := c.Param("id")
+	// The resource path is everything after /resource/
+	resourcePath := c.Param("path")
+
+	book, err := h.db.GetBook(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+
+	content, contentType, err := epub.GetResource(book.FilePath, resourcePath)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Resource not found"})
+		return
+	}
+
+	// Set caching headers for resources (1 hour cache)
+	c.Header("Cache-Control", "public, max-age=3600")
+	c.Header("Content-Type", contentType)
+	c.Data(http.StatusOK, contentType, content)
+}
+
 // GetReadingPosition returns the saved reading position for a book
 func (h *Handler) GetReadingPosition(c *gin.Context) {
 	id := c.Param("id")

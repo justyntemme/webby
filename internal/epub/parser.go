@@ -442,6 +442,83 @@ func GetChapterContent(filePath string, chapterIndex int) (string, error) {
 	return string(content), nil
 }
 
+// GetResource extracts a resource file (image, CSS, etc.) from an EPUB
+// The resourcePath is relative to the EPUB's OEBPS or content directory
+func GetResource(filePath string, resourcePath string) ([]byte, string, error) {
+	r, err := zip.OpenReader(filePath)
+	if err != nil {
+		return nil, "", err
+	}
+	defer r.Close()
+
+	// Clean the resource path - remove leading slashes and normalize
+	resourcePath = strings.TrimPrefix(resourcePath, "/")
+
+	// Try to find the file directly
+	file, err := findFile(&r.Reader, resourcePath)
+	if err != nil {
+		// Try common EPUB directory structures
+		prefixes := []string{"OEBPS/", "OPS/", "EPUB/", ""}
+		for _, prefix := range prefixes {
+			testPath := prefix + resourcePath
+			file, err = findFile(&r.Reader, testPath)
+			if err == nil {
+				break
+			}
+		}
+	}
+
+	if file == nil {
+		return nil, "", os.ErrNotExist
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Determine content type based on extension
+	contentType := getMimeType(resourcePath)
+
+	return content, contentType, nil
+}
+
+// getMimeType returns the MIME type based on file extension
+func getMimeType(filePath string) string {
+	ext := strings.ToLower(path.Ext(filePath))
+	switch ext {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".gif":
+		return "image/gif"
+	case ".svg":
+		return "image/svg+xml"
+	case ".webp":
+		return "image/webp"
+	case ".css":
+		return "text/css"
+	case ".js":
+		return "application/javascript"
+	case ".woff":
+		return "font/woff"
+	case ".woff2":
+		return "font/woff2"
+	case ".ttf":
+		return "font/ttf"
+	case ".otf":
+		return "font/otf"
+	case ".xhtml", ".html", ".htm":
+		return "text/html"
+	case ".xml":
+		return "application/xml"
+	default:
+		return "application/octet-stream"
+	}
+}
+
 func findFile(r *zip.Reader, name string) (io.ReadCloser, error) {
 	for _, f := range r.File {
 		if f.Name == name || strings.EqualFold(f.Name, name) {
