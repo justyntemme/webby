@@ -61,23 +61,20 @@
                 <button class="modal-close" id="settingsClose">&times;</button>
             </div>
             <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                <span>Theme</span>
-                <div class="theme-selector" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <button id="themeDayBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333;">Day</button>
-                    <button id="themeNightBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0;">Night</button>
-                    <button id="themeSepiaBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636;">Sepia</button>
-                    <button id="themeGruvboxBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #282828; color: #ebdbb2;">Gruvbox</button>
-                    <button id="themeSolarizedBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fdf6e3; color: #52676f;">Solarized</button>
-                    <button id="themeAyuBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #212733; color: #d9d7ce;">Ayu</button>
+                <span>Reading Mode</span>
+                <div class="theme-selector" style="display: flex; gap: 8px;">
+                    <button id="themeDayBtn" class="reading-mode-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333;">Day</button>
+                    <button id="themeNightBtn" class="reading-mode-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0;">Night</button>
+                    <button id="themeSepiaBtn" class="reading-mode-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636;">Sepia</button>
                 </div>
             </div>
             <div class="settings-option">
-                <span>Image Mode</span>
-                <select id="imageThemeSelectModal" style="padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
-                    <option value="container">White Background</option>
-                    <option value="dim">Dim</option>
-                    <option value="invert">Invert (B&W)</option>
-                    <option value="none">Original</option>
+                <span>UI Theme</span>
+                <select id="uiThemeSelect" style="padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                    <option value="default">Default</option>
+                    <option value="gruvbox">Gruvbox (Warm)</option>
+                    <option value="solarized">Solarized (Golden)</option>
+                    <option value="ayu">Ayu (Cool)</option>
                 </select>
             </div>
             <div class="settings-option">
@@ -135,23 +132,20 @@
     <!-- Settings Popover (replaces modal for real-time preview) -->
     <div class="settings-popover" id="settingsPopover">
         <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <span>Theme</span>
-            <div class="theme-selector" style="display: flex; flex-wrap: wrap; gap: 6px;">
-                <button id="popoverThemeDay" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333; font-size: 12px;">Day</button>
-                <button id="popoverThemeNight" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0; font-size: 12px;">Night</button>
-                <button id="popoverThemeSepia" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636; font-size: 12px;">Sepia</button>
-                <button id="popoverThemeGruvbox" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #282828; color: #ebdbb2; font-size: 12px;">Gruvbox</button>
-                <button id="popoverThemeSolarized" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fdf6e3; color: #52676f; font-size: 12px;">Solarized</button>
-                <button id="popoverThemeAyu" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #212733; color: #d9d7ce; font-size: 12px;">Ayu</button>
+            <span>Reading Mode</span>
+            <div class="theme-selector" style="display: flex; gap: 6px;">
+                <button id="popoverThemeDay" class="reading-mode-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333; font-size: 12px;">Day</button>
+                <button id="popoverThemeNight" class="reading-mode-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0; font-size: 12px;">Night</button>
+                <button id="popoverThemeSepia" class="reading-mode-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636; font-size: 12px;">Sepia</button>
             </div>
         </div>
         <div class="settings-option">
-            <span>Images</span>
-            <select id="imageThemeSelect" style="padding: 6px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 12px;">
-                <option value="container">White Background</option>
-                <option value="dim">Dim</option>
-                <option value="invert">Invert (B&W)</option>
-                <option value="none">Original</option>
+            <span>UI Theme</span>
+            <select id="popoverUiThemeSelect" style="padding: 6px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 12px;">
+                <option value="default">Default</option>
+                <option value="gruvbox">Gruvbox (Warm)</option>
+                <option value="solarized">Solarized (Golden)</option>
+                <option value="ayu">Ayu (Cool)</option>
             </select>
         </div>
         <div class="settings-option">
@@ -207,8 +201,8 @@
         let fontSize = 18;
         let lineSpacing = 1.8;
         let fontFamily = 'Georgia';
-        let theme = 'day'; // day, night, sepia, gruvbox, solarized, ayu
-        let imageTheme = 'container'; // container, dim, invert, none
+        let theme = 'day'; // day, night, sepia (reading mode only)
+        let uiTheme = 'default'; // default, gruvbox, solarized, ayu (UI chrome only)
         let uiVisible = true;
         let savedScrollPosition = 0;
 
@@ -302,6 +296,82 @@
             });
 
             return doc;
+        }
+
+        // Auto-detect image brightness and apply appropriate class
+        // Uses Canvas API to sample image and determine if it has light or dark background
+        function analyzeImageBrightness(img) {
+            // Skip already analyzed images or small icons
+            if (img.classList.contains('light-bg') || img.classList.contains('dark-bg')) return;
+            if (img.naturalWidth < 50 || img.naturalHeight < 50) return;
+
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Sample at a small size for performance
+                const sampleSize = 50;
+                canvas.width = sampleSize;
+                canvas.height = sampleSize;
+
+                ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+                const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+                const data = imageData.data;
+
+                // Calculate average brightness from edge pixels (better for detecting backgrounds)
+                let totalBrightness = 0;
+                let edgePixelCount = 0;
+
+                for (let y = 0; y < sampleSize; y++) {
+                    for (let x = 0; x < sampleSize; x++) {
+                        // Only sample edge pixels (top, bottom, left, right edges)
+                        if (x < 5 || x >= sampleSize - 5 || y < 5 || y >= sampleSize - 5) {
+                            const i = (y * sampleSize + x) * 4;
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            const a = data[i + 3];
+
+                            // Skip transparent pixels
+                            if (a < 128) continue;
+
+                            // Calculate perceived brightness (human eye is more sensitive to green)
+                            const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
+                            totalBrightness += brightness;
+                            edgePixelCount++;
+                        }
+                    }
+                }
+
+                if (edgePixelCount === 0) return;
+
+                const avgBrightness = totalBrightness / edgePixelCount;
+
+                // Classify as light or dark background
+                // Threshold of 200 means mostly white backgrounds get special treatment
+                if (avgBrightness > 200) {
+                    img.classList.add('light-bg');
+                } else if (avgBrightness < 50) {
+                    img.classList.add('dark-bg');
+                }
+                // Images with mid-range brightness don't need special handling
+            } catch (e) {
+                // Canvas operations can fail for cross-origin images
+                // In that case, just leave the image as-is
+                console.debug('Could not analyze image brightness:', e.message);
+            }
+        }
+
+        // Analyze all images in a container for brightness
+        function analyzeImagesInContainer(container) {
+            const images = container.querySelectorAll('img');
+            images.forEach(img => {
+                if (img.complete) {
+                    analyzeImageBrightness(img);
+                } else {
+                    img.addEventListener('load', () => analyzeImageBrightness(img), { once: true });
+                }
+            });
         }
 
         // Get book ID from URL
@@ -436,6 +506,9 @@
 
                 // Insert in correct position
                 insertChapterInOrder(chapterContainer, index);
+
+                // Auto-detect image brightness for smart theming
+                analyzeImagesInContainer(chapterContainer);
 
                 loadedChapters.add(index);
                 loadingChapters.delete(index);
@@ -1075,14 +1148,19 @@
                 lineSpacing = settings.lineSpacing || 1.8;
                 fontFamily = settings.fontFamily || 'Georgia';
                 theme = settings.theme || 'day';
-                imageTheme = settings.imageTheme || 'container';
+                uiTheme = settings.uiTheme || 'default';
+                // Migrate old theme values to reading mode
+                if (['gruvbox', 'solarized', 'ayu'].includes(theme)) {
+                    uiTheme = theme;
+                    theme = 'day';
+                }
             }
             applySettings();
         }
 
         function saveSettings() {
             localStorage.setItem('webby-reader-settings', JSON.stringify({
-                fontSize, lineSpacing, fontFamily, theme, imageTheme
+                fontSize, lineSpacing, fontFamily, theme, uiTheme
             }));
         }
 
@@ -1096,44 +1174,39 @@
             document.getElementById('lineSpacing').textContent = lineSpacing;
             document.getElementById('fontFamilySelect').value = fontFamily;
 
-            // Apply theme
-            document.body.classList.remove('dark-mode', 'sepia-mode', 'gruvbox-mode', 'solarized-mode', 'ayu-mode');
+            // Apply reading mode (affects content background)
+            document.body.classList.remove('dark-mode', 'sepia-mode');
             if (theme === 'night') {
                 document.body.classList.add('dark-mode');
             } else if (theme === 'sepia') {
                 document.body.classList.add('sepia-mode');
-            } else if (theme === 'gruvbox') {
-                document.body.classList.add('gruvbox-mode');
-            } else if (theme === 'solarized') {
-                document.body.classList.add('solarized-mode');
-            } else if (theme === 'ayu') {
-                document.body.classList.add('ayu-mode');
             }
 
-            // Apply image theme
-            document.body.classList.remove('img-theme-container', 'img-theme-dim', 'img-theme-invert', 'img-theme-none');
-            if (imageTheme !== 'container') {
-                document.body.classList.add(`img-theme-${imageTheme}`);
+            // Apply UI theme (affects chrome only - buttons, header, footer)
+            document.body.classList.remove('ui-theme-gruvbox', 'ui-theme-solarized', 'ui-theme-ayu');
+            if (uiTheme !== 'default') {
+                document.body.classList.add(`ui-theme-${uiTheme}`);
             }
 
-            // Update image theme selects
-            const imageThemeSelect = document.getElementById('imageThemeSelect');
-            const imageThemeSelectModal = document.getElementById('imageThemeSelectModal');
-            if (imageThemeSelect) imageThemeSelect.value = imageTheme;
-            if (imageThemeSelectModal) imageThemeSelectModal.value = imageTheme;
+            // Update UI theme selects
+            const uiThemeSelect = document.getElementById('uiThemeSelect');
+            const popoverUiThemeSelect = document.getElementById('popoverUiThemeSelect');
+            if (uiThemeSelect) uiThemeSelect.value = uiTheme;
+            if (popoverUiThemeSelect) popoverUiThemeSelect.value = uiTheme;
 
-            // Update theme button styles
-            document.querySelectorAll('.theme-btn').forEach(btn => {
+            // Update reading mode button styles (modal)
+            document.querySelectorAll('.reading-mode-btn').forEach(btn => {
                 btn.style.outline = 'none';
             });
-            const activeBtn = document.getElementById(`theme${theme.charAt(0).toUpperCase() + theme.slice(1)}Btn`);
-            if (activeBtn) {
-                activeBtn.style.outline = '2px solid var(--accent-color)';
+            const themeNames = { day: 'Day', night: 'Night', sepia: 'Sepia' };
+            const activeModalBtn = document.getElementById(`theme${themeNames[theme]}Btn`);
+            if (activeModalBtn) {
+                activeModalBtn.style.outline = '2px solid var(--reader-accent, var(--accent-color))';
             }
-            // Also update popover theme buttons
-            const popoverBtn = document.getElementById(`popoverTheme${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
-            if (popoverBtn) {
-                popoverBtn.style.outline = '2px solid var(--accent-color)';
+            // Also update popover reading mode buttons
+            const activePopoverBtn = document.getElementById(`popoverTheme${themeNames[theme]}`);
+            if (activePopoverBtn) {
+                activePopoverBtn.style.outline = '2px solid var(--reader-accent, var(--accent-color))';
             }
 
             // Recalculate pages when settings change
@@ -1286,6 +1359,9 @@
                 rewriteResourceUrls(doc.body, bookId);
 
                 content.innerHTML = DOMPurify.sanitize(doc.body.innerHTML);
+
+                // Auto-detect image brightness for smart theming
+                analyzeImagesInContainer(content);
 
                 // Calculate pages after content loads
                 requestAnimationFrame(() => {
@@ -1475,19 +1551,17 @@
                 document.getElementById('popoverFontSize').textContent = fontSize;
                 document.getElementById('popoverLineSpacing').textContent = lineSpacing;
                 document.getElementById('popoverFontFamily').value = fontFamily;
+                document.getElementById('popoverUiThemeSelect').value = uiTheme;
             }
 
-            // Popover theme buttons
+            // Popover reading mode buttons
             document.getElementById('popoverThemeDay').addEventListener('click', () => setTheme('day'));
             document.getElementById('popoverThemeNight').addEventListener('click', () => setTheme('night'));
             document.getElementById('popoverThemeSepia').addEventListener('click', () => setTheme('sepia'));
-            document.getElementById('popoverThemeGruvbox').addEventListener('click', () => setTheme('gruvbox'));
-            document.getElementById('popoverThemeSolarized').addEventListener('click', () => setTheme('solarized'));
-            document.getElementById('popoverThemeAyu').addEventListener('click', () => setTheme('ayu'));
 
-            // Image theme selector
-            document.getElementById('imageThemeSelect').addEventListener('change', (e) => {
-                imageTheme = e.target.value;
+            // Popover UI theme selector
+            document.getElementById('popoverUiThemeSelect').addEventListener('change', (e) => {
+                uiTheme = e.target.value;
                 applySettings();
                 saveSettings();
             });
@@ -1577,17 +1651,14 @@
                 saveSettings();
             });
 
-            // Theme buttons
+            // Reading mode buttons (modal)
             document.getElementById('themeDayBtn').addEventListener('click', () => setTheme('day'));
             document.getElementById('themeNightBtn').addEventListener('click', () => setTheme('night'));
             document.getElementById('themeSepiaBtn').addEventListener('click', () => setTheme('sepia'));
-            document.getElementById('themeGruvboxBtn').addEventListener('click', () => setTheme('gruvbox'));
-            document.getElementById('themeSolarizedBtn').addEventListener('click', () => setTheme('solarized'));
-            document.getElementById('themeAyuBtn').addEventListener('click', () => setTheme('ayu'));
 
-            // Image theme selector (modal)
-            document.getElementById('imageThemeSelectModal').addEventListener('change', (e) => {
-                imageTheme = e.target.value;
+            // UI theme selector (modal)
+            document.getElementById('uiThemeSelect').addEventListener('change', (e) => {
+                uiTheme = e.target.value;
                 applySettings();
                 saveSettings();
             });

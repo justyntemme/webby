@@ -66,52 +66,82 @@
     --reader-border: #c9b99a;
 }
 
-/* ==================== KITTY-THEMES COLOR SCHEMES ==================== */
+/* ==================== UI THEMES (Chrome/Buttons Only) ==================== */
+/* These themes only affect UI elements, not the reading content area */
 
-/* Gruvbox Dark - Warm dark theme for night reading */
-.gruvbox-mode {
-    --reader-bg: #282828;
-    --reader-text: #ebdbb2;
-    --reader-text-muted: #a89984;
+/* Gruvbox Theme - Warm accents */
+.ui-theme-gruvbox {
     --reader-accent: #fabd2f;
     --reader-header-bg: #3c3836;
     --reader-border: #504945;
-    --reader-link: #83a598;
-    --reader-selection-bg: #504945;
+}
+.ui-theme-gruvbox .header,
+.ui-theme-gruvbox .footer,
+.ui-theme-gruvbox .modal-content,
+.ui-theme-gruvbox .settings-popover {
+    background: #3c3836;
+    border-color: #504945;
+}
+.ui-theme-gruvbox .nav-btn,
+.ui-theme-gruvbox .mode-btn.active {
+    background: #fabd2f;
+    color: #282828;
+}
+.ui-theme-gruvbox .header-btn {
+    color: #ebdbb2;
 }
 
-/* Solarized Light - Scientific color scheme for daytime reading */
-.solarized-mode {
-    --reader-bg: #fdf6e3;
-    --reader-text: #52676f;
-    --reader-text-muted: #839496;
+/* Solarized Theme - Golden accents */
+.ui-theme-solarized {
     --reader-accent: #af8700;
     --reader-header-bg: #eee8d5;
     --reader-border: #e9e2cb;
-    --reader-link: #0087ff;
-    --reader-selection-bg: #e9e2cb;
+}
+.ui-theme-solarized .header,
+.ui-theme-solarized .footer,
+.ui-theme-solarized .modal-content,
+.ui-theme-solarized .settings-popover {
+    background: #eee8d5;
+    border-color: #e9e2cb;
+}
+.ui-theme-solarized .nav-btn,
+.ui-theme-solarized .mode-btn.active {
+    background: #af8700;
+    color: white;
+}
+.ui-theme-solarized .header-btn {
+    color: #52676f;
 }
 
-/* Ayu Mirage - Cool neutral theme for all-day use */
-.ayu-mode {
-    --reader-bg: #212733;
-    --reader-text: #d9d7ce;
-    --reader-text-muted: #8a9199;
+/* Ayu Theme - Cool cyan accents */
+.ui-theme-ayu {
     --reader-accent: #ffcc66;
     --reader-header-bg: #2d3440;
     --reader-border: #343f4c;
-    --reader-link: #73d0ff;
-    --reader-selection-bg: #343f4c;
+}
+.ui-theme-ayu .header,
+.ui-theme-ayu .footer,
+.ui-theme-ayu .modal-content,
+.ui-theme-ayu .settings-popover {
+    background: #2d3440;
+    border-color: #343f4c;
+}
+.ui-theme-ayu .nav-btn,
+.ui-theme-ayu .mode-btn.active {
+    background: #ffcc66;
+    color: #212733;
+}
+.ui-theme-ayu .header-btn {
+    color: #d9d7ce;
 }
 
-/* ==================== IMAGE THEMING FOR DARK MODES ==================== */
+/* ==================== AUTO-DETECT IMAGE THEMING ==================== */
+/* Images are automatically analyzed and classified as light or dark background */
 
-/* Default: Container-based solution for images in dark/sepia modes */
-.dark-mode .content img,
-.sepia-mode .content img,
-.gruvbox-mode .content img,
-.ayu-mode .content img {
-    padding: 16px;
+/* Light background images get container treatment in dark modes */
+.dark-mode .content img.light-bg,
+.sepia-mode .content img.light-bg {
+    padding: 12px;
     background: rgba(255, 255, 255, 0.95);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
@@ -119,54 +149,30 @@
     display: block;
 }
 
-.sepia-mode .content img {
+.sepia-mode .content img.light-bg {
     background: rgba(255, 252, 245, 0.95);
     box-shadow: 0 2px 8px rgba(91, 70, 54, 0.15);
 }
 
-/* Solarized Light is already light, minimal adjustments */
-.solarized-mode .content img {
+/* Dark background images just get slight dimming in dark modes */
+.dark-mode .content img.dark-bg,
+.sepia-mode .content img.dark-bg {
+    filter: brightness(0.9);
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Hover effect to expand image */
-.dark-mode .content img:hover,
-.sepia-mode .content img:hover,
-.gruvbox-mode .content img:hover,
-.ayu-mode .content img:hover {
-    background: white;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    transform: scale(1.02);
-    transition: all 0.2s ease;
+/* Fallback for images not yet analyzed - dim slightly */
+.dark-mode .content img:not(.light-bg):not(.dark-bg),
+.sepia-mode .content img:not(.light-bg):not(.dark-bg) {
+    filter: brightness(0.85);
+    border-radius: 8px;
 }
 
-/* Image Theme Mode: Invert (for diagrams) */
-.img-theme-invert .content img {
-    filter: invert(1) hue-rotate(180deg);
-    padding: 0;
-    background: none;
-    box-shadow: none;
-}
-
-/* Image Theme Mode: Dim (subtle darkening) */
-.img-theme-dim .content img {
-    filter: brightness(0.75) contrast(1.15);
-    padding: 0;
-    background: none;
-    box-shadow: none;
-}
-
-.img-theme-dim.sepia-mode .content img {
-    filter: brightness(0.85) contrast(1.05);
-}
-
-/* Image Theme Mode: None (original) */
-.img-theme-none .content img {
-    filter: none !important;
-    background: none !important;
-    padding: 0 !important;
-    box-shadow: none !important;
+/* Light modes - images unchanged */
+.content img {
+    max-width: 100%;
+    height: auto;
+    transition: filter 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 body {
