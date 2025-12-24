@@ -49,6 +49,38 @@
     color: var(--text-color);
 }
 
+/* ==================== SETTINGS MODAL ==================== */
+#settingsModal .modal-content {
+    text-align: left;
+}
+
+#settingsModal .settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#settingsModal .settings-option {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#settingsModal .settings-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+#settingsModal .theme-mode-btn {
+    transition: var(--transition);
+}
+
+#settingsModal .theme-mode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
 /* ==================== UPLOAD MODAL ==================== */
 .drop-zone {
     border: 2px dashed var(--border-color);
@@ -271,11 +303,20 @@
     text-align: center;
 }
 
-.edit-form .form-group {
+.edit-modal .form-group {
     margin-bottom: 16px;
 }
 
-.edit-form label {
+.edit-modal .form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.edit-modal .form-row .form-group {
+    flex: 1;
+}
+
+.edit-modal label {
     display: block;
     font-size: 13px;
     font-weight: 600;
@@ -283,8 +324,9 @@
     margin-bottom: 6px;
 }
 
-.edit-form input,
-.edit-form textarea {
+.edit-modal input,
+.edit-modal textarea,
+.edit-modal select {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid var(--border-color);
@@ -295,41 +337,33 @@
     transition: var(--transition);
 }
 
-.edit-form input:focus,
-.edit-form textarea:focus {
+.edit-modal input:focus,
+.edit-modal textarea:focus,
+.edit-modal select:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.edit-form textarea {
+.edit-modal textarea {
     resize: vertical;
     min-height: 100px;
 }
 
-.edit-form .form-actions {
+.edit-modal .form-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
-.edit-form .form-actions button {
+.edit-modal .form-actions button {
     padding: 12px 24px;
     border-radius: var(--radius);
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
-}
-
-.edit-form .form-actions .save-btn {
-    background: var(--accent-color);
-    color: var(--text-inverse);
-    border: none;
-}
-
-.edit-form .form-actions .save-btn:hover {
-    background: var(--accent-hover);
 }
 
 /* ==================== SEARCH METADATA MODAL ==================== */
@@ -338,6 +372,46 @@
     max-height: 85vh;
     overflow-y: auto;
     text-align: left;
+}
+
+.search-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.search-modal .form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.search-modal .form-row .form-group {
+    flex: 1;
+}
+
+.search-modal label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.search-modal input,
+.search-modal select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 15px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+.search-modal input:focus,
+.search-modal select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .search-form {

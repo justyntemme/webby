@@ -89,6 +89,11 @@
     background: var(--bg-color);
 }
 
+/* Settings button - slightly larger cog */
+.header-icon-btn.settings-btn {
+    font-size: 22px;
+}
+
 /* Mobile search bar (expandable) */
 .mobile-search-container {
     position: absolute;

@@ -81,6 +81,12 @@
 .ui-theme-gruvbox .settings-popover {
     background: #3c3836;
     border-color: #504945;
+    color: #ebdbb2;
+}
+.ui-theme-gruvbox .modal-content h2,
+.ui-theme-gruvbox .settings-popover span,
+.ui-theme-gruvbox .settings-option span {
+    color: #ebdbb2;
 }
 .ui-theme-gruvbox .nav-btn,
 .ui-theme-gruvbox .mode-btn.active {
@@ -89,6 +95,12 @@
 }
 .ui-theme-gruvbox .header-btn {
     color: #ebdbb2;
+}
+.ui-theme-gruvbox select,
+.ui-theme-gruvbox .font-size-control button {
+    background: #504945;
+    color: #ebdbb2;
+    border-color: #665c54;
 }
 
 /* Solarized Theme - Golden accents */
@@ -125,6 +137,12 @@
 .ui-theme-ayu .settings-popover {
     background: #2d3440;
     border-color: #343f4c;
+    color: #d9d7ce;
+}
+.ui-theme-ayu .modal-content h2,
+.ui-theme-ayu .settings-popover span,
+.ui-theme-ayu .settings-option span {
+    color: #d9d7ce;
 }
 .ui-theme-ayu .nav-btn,
 .ui-theme-ayu .mode-btn.active {
@@ -133,6 +151,12 @@
 }
 .ui-theme-ayu .header-btn {
     color: #d9d7ce;
+}
+.ui-theme-ayu select,
+.ui-theme-ayu .font-size-control button {
+    background: #343f4c;
+    color: #d9d7ce;
+    border-color: #3e4a59;
 }
 
 /* ==================== AUTO-DETECT IMAGE THEMING ==================== */
