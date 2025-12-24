@@ -66,6 +66,109 @@
     --reader-border: #c9b99a;
 }
 
+/* ==================== KITTY-THEMES COLOR SCHEMES ==================== */
+
+/* Gruvbox Dark - Warm dark theme for night reading */
+.gruvbox-mode {
+    --reader-bg: #282828;
+    --reader-text: #ebdbb2;
+    --reader-text-muted: #a89984;
+    --reader-accent: #fabd2f;
+    --reader-header-bg: #3c3836;
+    --reader-border: #504945;
+    --reader-link: #83a598;
+    --reader-selection-bg: #504945;
+}
+
+/* Solarized Light - Scientific color scheme for daytime reading */
+.solarized-mode {
+    --reader-bg: #fdf6e3;
+    --reader-text: #52676f;
+    --reader-text-muted: #839496;
+    --reader-accent: #af8700;
+    --reader-header-bg: #eee8d5;
+    --reader-border: #e9e2cb;
+    --reader-link: #0087ff;
+    --reader-selection-bg: #e9e2cb;
+}
+
+/* Ayu Mirage - Cool neutral theme for all-day use */
+.ayu-mode {
+    --reader-bg: #212733;
+    --reader-text: #d9d7ce;
+    --reader-text-muted: #8a9199;
+    --reader-accent: #ffcc66;
+    --reader-header-bg: #2d3440;
+    --reader-border: #343f4c;
+    --reader-link: #73d0ff;
+    --reader-selection-bg: #343f4c;
+}
+
+/* ==================== IMAGE THEMING FOR DARK MODES ==================== */
+
+/* Default: Container-based solution for images in dark/sepia modes */
+.dark-mode .content img,
+.sepia-mode .content img,
+.gruvbox-mode .content img,
+.ayu-mode .content img {
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    margin: 16px auto;
+    display: block;
+}
+
+.sepia-mode .content img {
+    background: rgba(255, 252, 245, 0.95);
+    box-shadow: 0 2px 8px rgba(91, 70, 54, 0.15);
+}
+
+/* Solarized Light is already light, minimal adjustments */
+.solarized-mode .content img {
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover effect to expand image */
+.dark-mode .content img:hover,
+.sepia-mode .content img:hover,
+.gruvbox-mode .content img:hover,
+.ayu-mode .content img:hover {
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+}
+
+/* Image Theme Mode: Invert (for diagrams) */
+.img-theme-invert .content img {
+    filter: invert(1) hue-rotate(180deg);
+    padding: 0;
+    background: none;
+    box-shadow: none;
+}
+
+/* Image Theme Mode: Dim (subtle darkening) */
+.img-theme-dim .content img {
+    filter: brightness(0.75) contrast(1.15);
+    padding: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.img-theme-dim.sepia-mode .content img {
+    filter: brightness(0.85) contrast(1.05);
+}
+
+/* Image Theme Mode: None (original) */
+.img-theme-none .content img {
+    filter: none !important;
+    background: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
 body {
     font-family: var(--font-family, Georgia), 'Times New Roman', serif;
     background-color: var(--reader-bg);

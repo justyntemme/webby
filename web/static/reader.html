@@ -60,13 +60,25 @@
                 <h2>Reading Settings</h2>
                 <button class="modal-close" id="settingsClose">&times;</button>
             </div>
-            <div class="settings-option">
+            <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <span>Theme</span>
-                <div class="theme-selector" style="display: flex; gap: 8px;">
+                <div class="theme-selector" style="display: flex; flex-wrap: wrap; gap: 8px;">
                     <button id="themeDayBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333;">Day</button>
                     <button id="themeNightBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0;">Night</button>
                     <button id="themeSepiaBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636;">Sepia</button>
+                    <button id="themeGruvboxBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #282828; color: #ebdbb2;">Gruvbox</button>
+                    <button id="themeSolarizedBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fdf6e3; color: #52676f;">Solarized</button>
+                    <button id="themeAyuBtn" class="theme-btn" style="padding: 8px 12px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #212733; color: #d9d7ce;">Ayu</button>
                 </div>
+            </div>
+            <div class="settings-option">
+                <span>Image Mode</span>
+                <select id="imageThemeSelectModal" style="padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                    <option value="container">White Background</option>
+                    <option value="dim">Dim</option>
+                    <option value="invert">Invert (B&W)</option>
+                    <option value="none">Original</option>
+                </select>
             </div>
             <div class="settings-option">
                 <span>Font Size</span>
@@ -122,13 +134,25 @@
 
     <!-- Settings Popover (replaces modal for real-time preview) -->
     <div class="settings-popover" id="settingsPopover">
-        <div class="settings-option">
+        <div class="settings-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
             <span>Theme</span>
-            <div class="theme-selector" style="display: flex; gap: 6px;">
+            <div class="theme-selector" style="display: flex; flex-wrap: wrap; gap: 6px;">
                 <button id="popoverThemeDay" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fefefe; color: #333; font-size: 12px;">Day</button>
                 <button id="popoverThemeNight" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #1a1a1a; color: #e0e0e0; font-size: 12px;">Night</button>
                 <button id="popoverThemeSepia" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #f4ecd8; color: #5b4636; font-size: 12px;">Sepia</button>
+                <button id="popoverThemeGruvbox" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #282828; color: #ebdbb2; font-size: 12px;">Gruvbox</button>
+                <button id="popoverThemeSolarized" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #fdf6e3; color: #52676f; font-size: 12px;">Solarized</button>
+                <button id="popoverThemeAyu" class="theme-btn" style="padding: 6px 10px; border-radius: 5px; border: 2px solid var(--border-color); cursor: pointer; background: #212733; color: #d9d7ce; font-size: 12px;">Ayu</button>
             </div>
+        </div>
+        <div class="settings-option">
+            <span>Images</span>
+            <select id="imageThemeSelect" style="padding: 6px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); font-size: 12px;">
+                <option value="container">White Background</option>
+                <option value="dim">Dim</option>
+                <option value="invert">Invert (B&W)</option>
+                <option value="none">Original</option>
+            </select>
         </div>
         <div class="settings-option">
             <span>Font Size</span>
@@ -183,7 +207,8 @@
         let fontSize = 18;
         let lineSpacing = 1.8;
         let fontFamily = 'Georgia';
-        let theme = 'day'; // day, night, sepia
+        let theme = 'day'; // day, night, sepia, gruvbox, solarized, ayu
+        let imageTheme = 'container'; // container, dim, invert, none
         let uiVisible = true;
         let savedScrollPosition = 0;
 
@@ -1050,13 +1075,14 @@
                 lineSpacing = settings.lineSpacing || 1.8;
                 fontFamily = settings.fontFamily || 'Georgia';
                 theme = settings.theme || 'day';
+                imageTheme = settings.imageTheme || 'container';
             }
             applySettings();
         }
 
         function saveSettings() {
             localStorage.setItem('webby-reader-settings', JSON.stringify({
-                fontSize, lineSpacing, fontFamily, theme
+                fontSize, lineSpacing, fontFamily, theme, imageTheme
             }));
         }
 
@@ -1071,12 +1097,30 @@
             document.getElementById('fontFamilySelect').value = fontFamily;
 
             // Apply theme
-            document.body.classList.remove('dark-mode', 'sepia-mode');
+            document.body.classList.remove('dark-mode', 'sepia-mode', 'gruvbox-mode', 'solarized-mode', 'ayu-mode');
             if (theme === 'night') {
                 document.body.classList.add('dark-mode');
             } else if (theme === 'sepia') {
                 document.body.classList.add('sepia-mode');
+            } else if (theme === 'gruvbox') {
+                document.body.classList.add('gruvbox-mode');
+            } else if (theme === 'solarized') {
+                document.body.classList.add('solarized-mode');
+            } else if (theme === 'ayu') {
+                document.body.classList.add('ayu-mode');
             }
+
+            // Apply image theme
+            document.body.classList.remove('img-theme-container', 'img-theme-dim', 'img-theme-invert', 'img-theme-none');
+            if (imageTheme !== 'container') {
+                document.body.classList.add(`img-theme-${imageTheme}`);
+            }
+
+            // Update image theme selects
+            const imageThemeSelect = document.getElementById('imageThemeSelect');
+            const imageThemeSelectModal = document.getElementById('imageThemeSelectModal');
+            if (imageThemeSelect) imageThemeSelect.value = imageTheme;
+            if (imageThemeSelectModal) imageThemeSelectModal.value = imageTheme;
 
             // Update theme button styles
             document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -1085,6 +1129,11 @@
             const activeBtn = document.getElementById(`theme${theme.charAt(0).toUpperCase() + theme.slice(1)}Btn`);
             if (activeBtn) {
                 activeBtn.style.outline = '2px solid var(--accent-color)';
+            }
+            // Also update popover theme buttons
+            const popoverBtn = document.getElementById(`popoverTheme${theme.charAt(0).toUpperCase() + theme.slice(1)}`);
+            if (popoverBtn) {
+                popoverBtn.style.outline = '2px solid var(--accent-color)';
             }
 
             // Recalculate pages when settings change
@@ -1432,6 +1481,16 @@
             document.getElementById('popoverThemeDay').addEventListener('click', () => setTheme('day'));
             document.getElementById('popoverThemeNight').addEventListener('click', () => setTheme('night'));
             document.getElementById('popoverThemeSepia').addEventListener('click', () => setTheme('sepia'));
+            document.getElementById('popoverThemeGruvbox').addEventListener('click', () => setTheme('gruvbox'));
+            document.getElementById('popoverThemeSolarized').addEventListener('click', () => setTheme('solarized'));
+            document.getElementById('popoverThemeAyu').addEventListener('click', () => setTheme('ayu'));
+
+            // Image theme selector
+            document.getElementById('imageThemeSelect').addEventListener('change', (e) => {
+                imageTheme = e.target.value;
+                applySettings();
+                saveSettings();
+            });
 
             // Popover font size controls
             document.getElementById('popoverFontDecrease').addEventListener('click', () => {
@@ -1522,6 +1581,16 @@
             document.getElementById('themeDayBtn').addEventListener('click', () => setTheme('day'));
             document.getElementById('themeNightBtn').addEventListener('click', () => setTheme('night'));
             document.getElementById('themeSepiaBtn').addEventListener('click', () => setTheme('sepia'));
+            document.getElementById('themeGruvboxBtn').addEventListener('click', () => setTheme('gruvbox'));
+            document.getElementById('themeSolarizedBtn').addEventListener('click', () => setTheme('solarized'));
+            document.getElementById('themeAyuBtn').addEventListener('click', () => setTheme('ayu'));
+
+            // Image theme selector (modal)
+            document.getElementById('imageThemeSelectModal').addEventListener('change', (e) => {
+                imageTheme = e.target.value;
+                applySettings();
+                saveSettings();
+            });
 
             // Initialize progress bar
             updateProgressBar();
