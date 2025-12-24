@@ -231,6 +231,14 @@ html[data-theme="dark"] {
     --glow-sm: 0 0 15px hsl(var(--c-primary-h) 60% 60% / 0.35);
     --glow-md: 0 0 25px hsl(var(--c-primary-h) 60% 60% / 0.4);
     --glow-lg: 0 0 50px hsl(var(--c-primary-h) 60% 60% / 0.45);
+
+    /* Dark mode text consistency - ALL text should be light */
+    --text-inverse: #ffffff;
+
+    /* Button colors adjusted for white text in dark mode */
+    /* Use darker/saturated backgrounds that contrast well with white text */
+    --btn-active-bg: hsl(217, 70%, 45%);
+    --btn-active-hover: hsl(217, 70%, 40%);
 }
 
 body {

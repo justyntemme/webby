@@ -3,8 +3,10 @@
 
 /* ==================== MOBILE-FIRST HEADER ==================== */
 .header {
-    background: var(--card-bg);
-    border-bottom: 1px solid var(--border-color);
+    background: var(--glass-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--glass-border);
     padding: 0 16px;
     height: var(--header-height);
     position: sticky;
@@ -15,7 +17,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease;
 }
 
 .header.hidden {
@@ -274,6 +276,11 @@
     color: var(--text-inverse);
 }
 
+/* Ensure active buttons have proper contrast in dark mode */
+html[data-theme="dark"] .filter-toggle-group button.active {
+    background: var(--btn-active-bg, var(--accent-color));
+}
+
 .filter-drawer-footer {
     padding: 16px;
     border-top: 1px solid var(--border-color);
@@ -478,6 +485,11 @@
 .view-toggle button.active {
     background: var(--accent-color);
     color: var(--text-inverse);
+}
+
+/* Ensure active buttons have proper contrast in dark mode */
+html[data-theme="dark"] .view-toggle button.active {
+    background: var(--btn-active-bg, var(--accent-color));
 }
 
 .upload-btn {

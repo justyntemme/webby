@@ -124,7 +124,15 @@
             <h1>Webby</h1>
         </div>
         <div class="header-right">
-            <button class="header-icon-btn" id="headerThemeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">🌙</button>
+            <label class="header-theme-switch" title="Toggle dark/light mode">
+                <input type="checkbox" id="headerThemeToggle">
+                <span class="switch-track">
+                    <span class="switch-thumb">
+                        <span class="icon-sun">☀️</span>
+                        <span class="icon-moon">🌙</span>
+                    </span>
+                </span>
+            </label>
             <button class="header-icon-btn mobile-only" id="searchToggleBtn" aria-label="Search">&#128269;</button>
             <div class="user-section" id="userSection"></div>
         </div>
@@ -181,10 +189,15 @@
             <!-- Theme Toggle -->
             <div class="theme-toggle">
                 <span class="theme-toggle-label">Theme</span>
-                <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle theme">
-                    <span class="icon" id="themeIcon">🌙</span>
-                    <span id="themeLabel">Dark</span>
-                </button>
+                <label class="theme-switch" id="themeToggleBtn">
+                    <input type="checkbox" id="drawerThemeToggle">
+                    <span class="theme-switch-track">
+                        <span class="theme-switch-thumb">
+                            <span class="sun-icon">☀️</span>
+                            <span class="moon-icon">🌙</span>
+                        </span>
+                    </span>
+                </label>
             </div>
 
             <div class="filter-group">
@@ -703,16 +716,20 @@
                 const theme = this.getInitialTheme();
                 this.applyTheme(theme);
 
-                // Set up drawer toggle button
-                const toggleBtn = document.getElementById('themeToggleBtn');
-                if (toggleBtn) {
-                    toggleBtn.addEventListener('click', () => this.toggle());
+                // Set up drawer toggle (checkbox)
+                const drawerToggle = document.getElementById('drawerThemeToggle');
+                if (drawerToggle) {
+                    drawerToggle.addEventListener('change', (e) => {
+                        this.setTheme(e.target.checked ? 'dark' : 'light');
+                    });
                 }
 
-                // Set up header toggle button (desktop)
+                // Set up header toggle (checkbox)
                 const headerToggle = document.getElementById('headerThemeToggle');
                 if (headerToggle) {
-                    headerToggle.addEventListener('click', () => this.toggle());
+                    headerToggle.addEventListener('change', (e) => {
+                        this.setTheme(e.target.checked ? 'dark' : 'light');
+                    });
                 }
 
                 // Listen for system theme changes
@@ -730,37 +747,36 @@
                 return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             },
 
-            applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                this.updateUI(theme);
+            setTheme(theme) {
+                localStorage.setItem('theme', theme);
+                this.applyTheme(theme);
             },
 
-            updateUI(theme) {
-                // Update drawer toggle
-                const icon = document.getElementById('themeIcon');
-                const label = document.getElementById('themeLabel');
-                if (icon && label) {
-                    if (theme === 'dark') {
-                        icon.textContent = '☀️';
-                        label.textContent = 'Light';
-                    } else {
-                        icon.textContent = '🌙';
-                        label.textContent = 'Dark';
-                    }
-                }
-                // Update header toggle
+            applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                this.syncToggles(theme);
+            },
+
+            syncToggles(theme) {
+                const isDark = theme === 'dark';
+
+                // Sync header toggle
                 const headerToggle = document.getElementById('headerThemeToggle');
                 if (headerToggle) {
-                    headerToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
-                    headerToggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+                    headerToggle.checked = isDark;
+                }
+
+                // Sync drawer toggle
+                const drawerToggle = document.getElementById('drawerThemeToggle');
+                if (drawerToggle) {
+                    drawerToggle.checked = isDark;
                 }
             },
 
             toggle() {
                 const current = document.documentElement.getAttribute('data-theme') || this.getInitialTheme();
                 const newTheme = current === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                this.applyTheme(newTheme);
+                this.setTheme(newTheme);
             }
         };
 
