@@ -454,16 +454,51 @@ func GetResource(filePath string, resourcePath string) ([]byte, string, error) {
 	// Clean the resource path - remove leading slashes and normalize
 	resourcePath = strings.TrimPrefix(resourcePath, "/")
 
-	// Try to find the file directly
-	file, err := findFile(&r.Reader, resourcePath)
+	// Try to find the file with various strategies
+	var file io.ReadCloser
+
+	// Strategy 1: Try the exact path
+	file, err = findFile(&r.Reader, resourcePath)
+
+	// Strategy 2: Try common EPUB directory prefixes
 	if err != nil {
-		// Try common EPUB directory structures
-		prefixes := []string{"OEBPS/", "OPS/", "EPUB/", ""}
+		prefixes := []string{"OEBPS/", "OPS/", "EPUB/", "Content/", "content/"}
 		for _, prefix := range prefixes {
 			testPath := prefix + resourcePath
 			file, err = findFile(&r.Reader, testPath)
 			if err == nil {
 				break
+			}
+		}
+	}
+
+	// Strategy 3: Search for any file ending with the resource path (handles nested structures)
+	if err != nil {
+		normalizedPath := strings.ToLower(resourcePath)
+		// Also try with leading slash for proper path matching
+		normalizedPathWithSlash := "/" + normalizedPath
+		for _, f := range r.File {
+			lowerName := strings.ToLower(f.Name)
+			// Check if the file path ends with our resource path (case-insensitive)
+			// Match both "graphics/fm02.jpg" and "/graphics/fm02.jpg" patterns
+			if strings.HasSuffix(lowerName, normalizedPath) || strings.HasSuffix(lowerName, normalizedPathWithSlash) {
+				file, err = f.Open()
+				if err == nil {
+					break
+				}
+			}
+		}
+	}
+
+	// Strategy 4: Try matching just the filename (last component of path)
+	if err != nil || file == nil {
+		baseName := strings.ToLower(path.Base(resourcePath))
+		for _, f := range r.File {
+			if strings.ToLower(path.Base(f.Name)) == baseName {
+				file, err = f.Open()
+				if err == nil {
+					break
+				}
 			}
 		}
 	}

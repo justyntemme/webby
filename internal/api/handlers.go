@@ -548,7 +548,13 @@ func (h *Handler) GetChapterContent(c *gin.Context) {
 func (h *Handler) GetBookResource(c *gin.Context) {
 	id := c.Param("id")
 	// The resource path is everything after /resource/
-	resourcePath := c.Param("path")
+	// Gin's wildcard includes leading slash, so we trim it
+	resourcePath := strings.TrimPrefix(c.Param("path"), "/")
+
+	if resourcePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Resource path required"})
+		return
+	}
 
 	book, err := h.db.GetBook(id)
 	if err != nil {
@@ -558,7 +564,9 @@ func (h *Handler) GetBookResource(c *gin.Context) {
 
 	content, contentType, err := epub.GetResource(book.FilePath, resourcePath)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Resource not found"})
+		// Log for debugging
+		log.Printf("Resource not found in EPUB: %s, path: %s, error: %v", book.FilePath, resourcePath, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Resource not found", "path": resourcePath})
 		return
 	}
 
