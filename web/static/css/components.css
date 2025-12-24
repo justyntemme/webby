@@ -1299,6 +1299,146 @@ html[data-theme="dark"] .book-card:hover {
     animation-delay: 0.5s;
 }
 
+/* Book Detail Modal Skeleton */
+.skeleton-detail-cover {
+    width: 180px;
+    height: 270px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-detail-title {
+    height: 32px;
+    width: 70%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    animation-delay: 0.1s;
+}
+
+.skeleton-detail-author {
+    height: 20px;
+    width: 40%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    animation-delay: 0.2s;
+    margin-top: 8px;
+}
+
+.skeleton-detail-series {
+    height: 16px;
+    width: 50%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    animation-delay: 0.3s;
+    margin-top: 8px;
+}
+
+.skeleton-metadata-row {
+    height: 16px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    margin-bottom: 8px;
+}
+
+.skeleton-metadata-row:nth-child(2) { animation-delay: 0.1s; width: 85%; }
+.skeleton-metadata-row:nth-child(3) { animation-delay: 0.2s; width: 75%; }
+.skeleton-metadata-row:nth-child(4) { animation-delay: 0.3s; width: 90%; }
+
+/* Collections/Stats skeleton */
+.skeleton-list-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    margin-bottom: 8px;
+}
+
+.skeleton-list-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    margin-right: 12px;
+}
+
+.skeleton-list-text {
+    flex: 1;
+}
+
+.skeleton-list-title {
+    height: 16px;
+    width: 60%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    margin-bottom: 6px;
+}
+
+.skeleton-list-subtitle {
+    height: 12px;
+    width: 40%;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+        90deg,
+        var(--surface-2) 25%,
+        var(--surface-3) 50%,
+        var(--surface-2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    animation-delay: 0.1s;
+}
+
 /* ==================== EMPTY STATES ==================== */
 .empty-state {
     display: flex;

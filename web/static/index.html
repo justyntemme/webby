@@ -102,11 +102,11 @@
     <!-- Skip Link for Keyboard Navigation (WCAG 2.4.1) -->
     <a href="#library" class="skip-link">Skip to main content</a>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- Toast Notification Container (Live Region for Screen Readers) -->
+    <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <!-- Confirm Dialog -->
-    <div class="dialog-overlay" id="confirmDialog">
+    <div class="dialog-overlay" id="confirmDialog" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-describedby="confirmDialogMessage">
         <div class="dialog">
             <div class="dialog-body">
                 <div class="dialog-title" id="confirmDialogTitle">Confirm</div>
@@ -127,11 +127,11 @@
         </div>
         <div class="header-right">
             <label class="header-theme-switch" title="Toggle dark/light mode">
-                <input type="checkbox" id="headerThemeToggle">
+                <input type="checkbox" id="headerThemeToggle" aria-label="Toggle dark mode">
                 <span class="switch-track">
                     <span class="switch-thumb">
-                        <span class="icon-sun">☀️</span>
-                        <span class="icon-moon">🌙</span>
+                        <span class="icon-sun" aria-hidden="true">☀️</span>
+                        <span class="icon-moon" aria-hidden="true">🌙</span>
                     </span>
                 </span>
             </label>
@@ -139,44 +139,44 @@
             <div class="user-section" id="userSection"></div>
         </div>
         <!-- Mobile Search (expandable) -->
-        <div class="mobile-search-container" id="mobileSearchContainer">
-            <input type="text" id="mobileSearchInput" placeholder="Search books...">
-            <button class="header-icon-btn" id="closeSearchBtn">&times;</button>
+        <div class="mobile-search-container" id="mobileSearchContainer" role="search">
+            <input type="text" id="mobileSearchInput" placeholder="Search books..." aria-label="Search books">
+            <button class="header-icon-btn" id="closeSearchBtn" aria-label="Close search">&times;</button>
         </div>
         <!-- Desktop Controls -->
-        <div class="controls">
-            <input type="text" class="search-box" id="searchBox" placeholder="Search books...">
-            <select class="type-select" id="typeSelect">
+        <div class="controls" role="search">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search books..." aria-label="Search books">
+            <select class="type-select" id="typeSelect" aria-label="Filter by content type">
                 <option value="">All Items</option>
                 <option value="book">Books Only</option>
                 <option value="comic">Comics Only</option>
             </select>
-            <select class="type-select" id="statusSelect">
+            <select class="type-select" id="statusSelect" aria-label="Filter by reading status">
                 <option value="">All Status</option>
                 <option value="unread">Unread</option>
                 <option value="reading">Reading</option>
                 <option value="completed">Completed</option>
             </select>
-            <select class="type-select" id="tagSelect">
+            <select class="type-select" id="tagSelect" aria-label="Filter by tag">
                 <option value="">All Tags</option>
             </select>
-            <select class="sort-select" id="sortSelect">
+            <select class="sort-select" id="sortSelect" aria-label="Sort books by">
                 <option value="title">Sort by Title</option>
                 <option value="author">Sort by Author</option>
                 <option value="series">Sort by Series</option>
                 <option value="date">Sort by Date Added</option>
             </select>
-            <div class="view-toggle">
-                <button id="gridViewBtn" class="active">Grid</button>
-                <button id="listViewBtn">List</button>
+            <div class="view-toggle" role="group" aria-label="View mode">
+                <button id="gridViewBtn" class="active" aria-label="Grid view" aria-pressed="true">Grid</button>
+                <button id="listViewBtn" aria-label="List view" aria-pressed="false">List</button>
             </div>
-            <div class="view-toggle">
-                <button id="groupOffBtn" class="active">All</button>
-                <button id="groupSeriesBtn">Group Series</button>
+            <div class="view-toggle" role="group" aria-label="Series grouping">
+                <button id="groupOffBtn" class="active" aria-label="Show all books" aria-pressed="true">All</button>
+                <button id="groupSeriesBtn" aria-label="Group books by series" aria-pressed="false">Group Series</button>
             </div>
-            <button class="btn btn-info btn-lg" id="statsBtn">Stats</button>
-            <button class="btn btn-info btn-lg" id="collectionsBtn">Collections</button>
-            <button class="btn btn-gradient btn-lg" id="uploadBtn">+ Upload</button>
+            <button class="btn btn-info btn-lg" id="statsBtn" aria-label="View reading statistics">Stats</button>
+            <button class="btn btn-info btn-lg" id="collectionsBtn" aria-label="View collections">Collections</button>
+            <button class="btn btn-gradient btn-lg" id="uploadBtn" aria-label="Upload new books">+ Upload</button>
         </div>
     </header>
 
@@ -295,7 +295,7 @@
     </main>
 
     <!-- Book Detail Modal -->
-    <div class="modal book-detail-modal" id="bookDetailModal">
+    <div class="modal book-detail-modal" id="bookDetailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
         <div class="modal-content">
             <div class="book-detail-header">
                 <div class="book-detail-cover" id="detailCover"></div>
@@ -376,7 +376,7 @@
     </div>
 
     <!-- Edit Metadata Modal -->
-    <div class="modal edit-modal" id="editMetadataModal">
+    <div class="modal edit-modal" id="editMetadataModal" role="dialog" aria-modal="true" aria-label="Edit book metadata">
         <div class="modal-content">
             <h2>Edit Book Metadata</h2>
             <form id="editMetadataForm">
@@ -436,7 +436,7 @@
     </div>
 
     <!-- Search Metadata Modal -->
-    <div class="modal search-modal" id="searchMetadataModal">
+    <div class="modal search-modal" id="searchMetadataModal" role="dialog" aria-modal="true" aria-label="Search for book metadata">
         <div class="modal-content">
             <h2>Search for Metadata</h2>
             <div class="search-form-section">
@@ -485,7 +485,7 @@
     </div>
 
     <!-- Collections Modal -->
-    <div class="modal" id="collectionsModal">
+    <div class="modal" id="collectionsModal" role="dialog" aria-modal="true" aria-label="Your collections">
         <div class="modal-content" style="max-width: 800px;">
             <h2>Collections</h2>
             <div style="display: flex; gap: 20px;">
@@ -496,7 +496,9 @@
                         <button id="newCollectionBtn" class="btn btn-primary">+ New Collection</button>
                     </div>
                     <div id="collectionsList" style="display: flex; flex-direction: column; gap: 10px;">
-                        <div class="loading">Loading collections...</div>
+                        <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                        <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                        <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
                     </div>
                 </div>
             </div>
@@ -507,7 +509,7 @@
     </div>
 
     <!-- New Collection Modal -->
-    <div class="modal" id="newCollectionModal">
+    <div class="modal" id="newCollectionModal" role="dialog" aria-modal="true" aria-label="Create new collection">
         <div class="modal-content" style="max-width: 600px;">
             <h2>Create Collection</h2>
             <form id="newCollectionForm">
@@ -566,7 +568,7 @@
     </div>
 
     <!-- View Collection Modal -->
-    <div class="modal" id="viewCollectionModal">
+    <div class="modal" id="viewCollectionModal" role="dialog" aria-modal="true" aria-labelledby="viewCollectionName">
         <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 id="viewCollectionName">Collection</h2>
@@ -576,7 +578,10 @@
                 <strong>Rules:</strong> <span id="viewCollectionRulesText"></span>
             </div>
             <div id="viewCollectionBooks" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; align-items: start;">
-                <div class="loading">Loading books...</div>
+                <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+                <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+                <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
+                <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>
             </div>
             <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="deleteCollectionBtn" class="btn btn-danger">Delete Collection</button>
@@ -586,7 +591,7 @@
     </div>
 
     <!-- Statistics Modal -->
-    <div class="modal" id="statsModal">
+    <div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-label="Reading statistics">
         <div class="modal-content" style="max-width: 900px; max-height: 85vh; overflow-y: auto;">
             <h2>Reading Statistics</h2>
 
@@ -618,7 +623,15 @@
             <div style="margin-bottom: 25px;">
                 <h3 style="margin-bottom: 15px;">Reading Activity (Last 30 Days)</h3>
                 <div id="dailyChart" style="height: 200px; background: var(--header-bg); border-radius: 8px; padding: 15px; display: flex; align-items: flex-end; gap: 3px; overflow-x: auto;">
-                    <div class="loading">Loading chart...</div>
+                    <div style="display: flex; gap: 4px; align-items: flex-end; width: 100%; height: 100%;">
+                        <div class="skeleton" style="width: 20px; height: 30%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 50%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 70%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 40%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 60%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 80%; border-radius: 4px;"></div>
+                        <div class="skeleton" style="width: 20px; height: 45%; border-radius: 4px;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -626,7 +639,9 @@
             <div style="margin-bottom: 20px;">
                 <h3 style="margin-bottom: 15px;">Recent Reading Sessions</h3>
                 <div id="recentSessions" style="max-height: 250px; overflow-y: auto;">
-                    <div class="loading">Loading sessions...</div>
+                    <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                    <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                    <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
                 </div>
             </div>
 
@@ -637,7 +652,7 @@
     </div>
 
     <!-- Upload Modal -->
-    <div class="modal" id="uploadModal">
+    <div class="modal" id="uploadModal" role="dialog" aria-modal="true" aria-label="Upload books">
         <div class="modal-content" style="max-width: 600px;">
             <h2>Upload Books</h2>
             <div class="drop-zone" id="dropZone">
@@ -837,6 +852,101 @@
             }
         };
 
+        // ==================== FOCUS TRAP FOR MODALS ====================
+        // Traps keyboard focus within modal dialogs for accessibility (WCAG 2.4.3)
+        // When a modal is open, Tab/Shift+Tab cycles through focusable elements
+        const FocusTrap = {
+            activeTraps: new Map(), // modal element -> { firstFocusable, lastFocusable, previousFocus }
+
+            // Focusable element selector
+            FOCUSABLE_SELECTOR: 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+
+            // Activate focus trap on a modal
+            activate(modal) {
+                if (!modal || this.activeTraps.has(modal)) return;
+
+                // Store the element that had focus before opening
+                const previousFocus = document.activeElement;
+
+                // Find all focusable elements within the modal
+                const focusableElements = modal.querySelectorAll(this.FOCUSABLE_SELECTOR);
+                const firstFocusable = focusableElements[0];
+                const lastFocusable = focusableElements[focusableElements.length - 1];
+
+                // Store trap data
+                this.activeTraps.set(modal, { firstFocusable, lastFocusable, previousFocus });
+
+                // Focus the first focusable element (or the modal itself)
+                if (firstFocusable) {
+                    setTimeout(() => firstFocusable.focus(), 50);
+                } else {
+                    modal.setAttribute('tabindex', '-1');
+                    modal.focus();
+                }
+
+                // Add keyboard event listener
+                modal._focusTrapHandler = (e) => this._handleKeydown(e, modal);
+                modal.addEventListener('keydown', modal._focusTrapHandler);
+            },
+
+            // Deactivate focus trap
+            deactivate(modal) {
+                if (!modal || !this.activeTraps.has(modal)) return;
+
+                const trapData = this.activeTraps.get(modal);
+
+                // Remove keyboard event listener
+                if (modal._focusTrapHandler) {
+                    modal.removeEventListener('keydown', modal._focusTrapHandler);
+                    delete modal._focusTrapHandler;
+                }
+
+                // Restore focus to previous element
+                if (trapData.previousFocus && trapData.previousFocus.focus) {
+                    trapData.previousFocus.focus();
+                }
+
+                this.activeTraps.delete(modal);
+            },
+
+            // Handle Tab key to trap focus
+            _handleKeydown(e, modal) {
+                const trapData = this.activeTraps.get(modal);
+                if (!trapData) return;
+
+                // Handle Escape key to close modal
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    // Find and click the close button, or remove active class
+                    const closeBtn = modal.querySelector('.close-btn, .modal-close, [data-close]');
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else {
+                        modal.classList.remove('active');
+                        this.deactivate(modal);
+                    }
+                    return;
+                }
+
+                // Only trap Tab key
+                if (e.key !== 'Tab') return;
+
+                const { firstFocusable, lastFocusable } = trapData;
+                if (!firstFocusable || !lastFocusable) return;
+
+                // Shift+Tab on first element -> go to last
+                if (e.shiftKey && document.activeElement === firstFocusable) {
+                    e.preventDefault();
+                    lastFocusable.focus();
+                }
+                // Tab on last element -> go to first
+                else if (!e.shiftKey && document.activeElement === lastFocusable) {
+                    e.preventDefault();
+                    firstFocusable.focus();
+                }
+            }
+        };
+
         const API_BASE = '/api';
         let books = [];
         let viewMode = 'grid';
@@ -851,6 +961,21 @@
             let html = '';
             for (let i = 0; i < count; i++) {
                 html += `<div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-info"><div class="skeleton-title"></div><div class="skeleton-author"></div></div></div>`;
+            }
+            return html;
+        }
+
+        // Generate skeleton list items for list loading states
+        function generateSkeletonListItems(count = 3) {
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `<div class="skeleton-list-item">
+                    <div class="skeleton-list-icon"></div>
+                    <div class="skeleton-list-text">
+                        <div class="skeleton-list-title"></div>
+                        <div class="skeleton-list-subtitle"></div>
+                    </div>
+                </div>`;
             }
             return html;
         }
@@ -908,26 +1033,31 @@
                 confirmBtn.className = isDanger ? 'dialog-btn danger' : 'dialog-btn primary';
 
                 overlay.classList.add('active');
+                FocusTrap.activate(overlay);
             });
+        }
+
+        function closeConfirmDialog(result) {
+            const overlay = document.getElementById('confirmDialog');
+            FocusTrap.deactivate(overlay);
+            overlay.classList.remove('active');
+            if (confirmResolve) confirmResolve(result);
         }
 
         // Set up confirm dialog event listeners
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('confirmDialogCancel').addEventListener('click', () => {
-                document.getElementById('confirmDialog').classList.remove('active');
-                if (confirmResolve) confirmResolve(false);
+                closeConfirmDialog(false);
             });
 
             document.getElementById('confirmDialogConfirm').addEventListener('click', () => {
-                document.getElementById('confirmDialog').classList.remove('active');
-                if (confirmResolve) confirmResolve(true);
+                closeConfirmDialog(true);
             });
 
             // Close on overlay click
             document.getElementById('confirmDialog').addEventListener('click', (e) => {
                 if (e.target.id === 'confirmDialog') {
-                    document.getElementById('confirmDialog').classList.remove('active');
-                    if (confirmResolve) confirmResolve(false);
+                    closeConfirmDialog(false);
                 }
             });
         });
@@ -1177,21 +1307,23 @@
         function renderBook(book) {
             const coverUrl = `${API_BASE}/books/${book.id}/cover`;
             const escapedTitle = book.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const escapedAuthor = (book.author || 'Unknown').replace(/'/g, "\\'").replace(/"/g, '&quot;');
             const contentType = book.content_type || 'book';
             const readStatus = book.read_status || 'unread';
             const showTypeBadge = document.getElementById('typeSelect').value === ''; // Show badge only when viewing "All Items"
             const showStatusBadge = document.getElementById('statusSelect').value === ''; // Show status badge only when viewing "All Status"
-            const typeBadgeHtml = showTypeBadge ? `<span class="content-type-badge ${contentType}">${contentType}</span>` : '';
-            const statusBadgeHtml = showStatusBadge && readStatus !== 'unread' ? `<span class="read-status-badge ${readStatus}">${readStatus}</span>` : '';
+            const typeBadgeHtml = showTypeBadge ? `<span class="content-type-badge ${contentType}" aria-hidden="true">${contentType}</span>` : '';
+            const statusBadgeHtml = showStatusBadge && readStatus !== 'unread' ? `<span class="read-status-badge ${readStatus}" aria-hidden="true">${readStatus}</span>` : '';
             const coverIcon = contentType === 'comic' ? '📚' : '📖';
-            const ratingHtml = book.rating > 0 ? `<div class="star-rating-display">${renderStarsHtml(book.rating)}</div>` : '';
+            const ratingHtml = book.rating > 0 ? `<div class="star-rating-display" aria-label="Rating: ${book.rating} out of 5 stars">${renderStarsHtml(book.rating)}</div>` : '';
+            const ariaLabel = `Read ${escapedTitle} by ${escapedAuthor}`;
             return `
-                <div class="book-card" data-book-id="${book.id}" onclick="handleBookClick(event, '${book.id}')">
+                <div class="book-card" data-book-id="${book.id}" onclick="handleBookClick(event, '${book.id}')" role="button" tabindex="0" aria-label="${ariaLabel}" onkeypress="if(event.key==='Enter')handleBookClick(event,'${book.id}')">
                     <div class="book-cover">
                         ${typeBadgeHtml}
                         ${statusBadgeHtml}
-                        <img src="${coverUrl}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                        <div class="no-cover" style="display:none">${coverIcon}</div>
+                        <img src="${coverUrl}" alt="Cover of ${escapedTitle}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="no-cover" style="display:none" aria-hidden="true">${coverIcon}</div>
                     </div>
                     <div class="book-info">
                         <div class="book-title">${book.title}</div>
@@ -1285,13 +1417,19 @@
             currentBookId = bookId;
             const modal = document.getElementById('bookDetailModal');
             modal.classList.add('active');
+            FocusTrap.activate(modal);
 
-            // Show loading state
-            document.getElementById('detailTitle').textContent = 'Loading...';
-            document.getElementById('detailAuthor').textContent = '';
-            document.getElementById('detailSeries').textContent = '';
-            document.getElementById('detailCover').innerHTML = '<div class="no-cover">⏳</div>';
-            document.getElementById('metadataGrid').innerHTML = '';
+            // Show skeleton loading state
+            document.getElementById('detailCover').innerHTML = '<div class="skeleton-detail-cover"></div>';
+            document.getElementById('detailTitle').innerHTML = '<div class="skeleton-detail-title"></div>';
+            document.getElementById('detailAuthor').innerHTML = '<div class="skeleton-detail-author"></div>';
+            document.getElementById('detailSeries').innerHTML = '<div class="skeleton-detail-series"></div>';
+            document.getElementById('metadataGrid').innerHTML = `
+                <div class="skeleton-metadata-row"></div>
+                <div class="skeleton-metadata-row"></div>
+                <div class="skeleton-metadata-row"></div>
+                <div class="skeleton-metadata-row"></div>
+            `;
             document.getElementById('metadataSource').textContent = '';
             document.getElementById('metadataUpdated').textContent = '';
 
@@ -1515,7 +1653,9 @@
         }
 
         function closeBookDetailModal() {
-            document.getElementById('bookDetailModal').classList.remove('active');
+            const modal = document.getElementById('bookDetailModal');
+            FocusTrap.deactivate(modal);
+            modal.classList.remove('active');
             document.getElementById('refreshResult').innerHTML = '';
             currentBookId = null;
             // Reset reading list buttons
@@ -2015,11 +2155,15 @@
             document.querySelectorAll('.form-group.error').forEach(el => el.classList.remove('error'));
             document.querySelectorAll('.error-message').forEach(el => el.remove());
 
-            document.getElementById('editMetadataModal').classList.add('active');
+            const editModal = document.getElementById('editMetadataModal');
+            editModal.classList.add('active');
+            FocusTrap.activate(editModal);
         }
 
         function closeEditModal() {
-            document.getElementById('editMetadataModal').classList.remove('active');
+            const editModal = document.getElementById('editMetadataModal');
+            FocusTrap.deactivate(editModal);
+            editModal.classList.remove('active');
         }
 
         function validateISBN(isbn) {
@@ -2233,11 +2377,15 @@
             document.getElementById('selectedPreview').style.display = 'none';
             document.getElementById('resultsContainer').innerHTML = '';
 
-            document.getElementById('searchMetadataModal').classList.add('active');
+            const searchModal = document.getElementById('searchMetadataModal');
+            searchModal.classList.add('active');
+            FocusTrap.activate(searchModal);
         }
 
         function closeSearchModal() {
-            document.getElementById('searchMetadataModal').classList.remove('active');
+            const searchModal = document.getElementById('searchMetadataModal');
+            FocusTrap.deactivate(searchModal);
+            searchModal.classList.remove('active');
             searchResults = [];
             selectedMetadata = null;
         }
@@ -2262,7 +2410,11 @@
             btn.textContent = 'Searching...';
             resultsDiv.style.display = 'block';
             document.getElementById('selectedPreview').style.display = 'none';
-            container.innerHTML = '<div class="search-loading">Searching for metadata...</div>';
+            container.innerHTML = `
+                <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+                <div class="skeleton-list-item"><div class="skeleton-list-icon"></div><div class="skeleton-list-text"><div class="skeleton-list-title"></div><div class="skeleton-list-subtitle"></div></div></div>
+            `;
 
             try {
                 const params = new URLSearchParams();
@@ -2614,7 +2766,9 @@
         }
 
         function closeUploadModal() {
-            document.getElementById('uploadModal').classList.remove('active');
+            const uploadModal = document.getElementById('uploadModal');
+            FocusTrap.deactivate(uploadModal);
+            uploadModal.classList.remove('active');
             // Don't reset immediately in case user wants to see results
             if (!batchUploadState.isUploading) {
                 setTimeout(resetUploadModal, 300);
@@ -2753,8 +2907,12 @@
 
         async function openViewCollection(collectionId) {
             currentViewingCollectionId = collectionId;
-            document.getElementById('collectionsModal').classList.remove('active');
-            document.getElementById('viewCollectionModal').classList.add('active');
+            const collectionsModal = document.getElementById('collectionsModal');
+            const viewModal = document.getElementById('viewCollectionModal');
+            FocusTrap.deactivate(collectionsModal);
+            collectionsModal.classList.remove('active');
+            viewModal.classList.add('active');
+            FocusTrap.activate(viewModal);
 
             const booksContainer = document.getElementById('viewCollectionBooks');
             booksContainer.innerHTML = generateSkeletonCards(4);
@@ -2920,33 +3078,49 @@
 
         // Collections Event Listeners
         document.getElementById('collectionsBtn').addEventListener('click', () => {
-            document.getElementById('collectionsModal').classList.add('active');
+            const modal = document.getElementById('collectionsModal');
+            modal.classList.add('active');
+            FocusTrap.activate(modal);
             loadCollections();
         });
 
         document.getElementById('closeCollectionsBtn').addEventListener('click', () => {
-            document.getElementById('collectionsModal').classList.remove('active');
+            const modal = document.getElementById('collectionsModal');
+            FocusTrap.deactivate(modal);
+            modal.classList.remove('active');
         });
 
         document.getElementById('collectionsModal').addEventListener('click', (e) => {
             if (e.target.id === 'collectionsModal') {
-                document.getElementById('collectionsModal').classList.remove('active');
+                const modal = document.getElementById('collectionsModal');
+                FocusTrap.deactivate(modal);
+                modal.classList.remove('active');
             }
         });
 
         document.getElementById('newCollectionBtn').addEventListener('click', () => {
-            document.getElementById('collectionsModal').classList.remove('active');
-            document.getElementById('newCollectionModal').classList.add('active');
+            const collectionsModal = document.getElementById('collectionsModal');
+            const newCollectionModal = document.getElementById('newCollectionModal');
+            FocusTrap.deactivate(collectionsModal);
+            collectionsModal.classList.remove('active');
+            newCollectionModal.classList.add('active');
+            FocusTrap.activate(newCollectionModal);
         });
 
         document.getElementById('cancelNewCollectionBtn').addEventListener('click', () => {
-            document.getElementById('newCollectionModal').classList.remove('active');
-            document.getElementById('collectionsModal').classList.add('active');
+            const newCollectionModal = document.getElementById('newCollectionModal');
+            const collectionsModal = document.getElementById('collectionsModal');
+            FocusTrap.deactivate(newCollectionModal);
+            newCollectionModal.classList.remove('active');
+            collectionsModal.classList.add('active');
+            FocusTrap.activate(collectionsModal);
         });
 
         document.getElementById('newCollectionModal').addEventListener('click', (e) => {
             if (e.target.id === 'newCollectionModal') {
-                document.getElementById('newCollectionModal').classList.remove('active');
+                const modal = document.getElementById('newCollectionModal');
+                FocusTrap.deactivate(modal);
+                modal.classList.remove('active');
             }
         });
 
@@ -2966,12 +3140,16 @@
         });
 
         document.getElementById('closeViewCollectionBtn').addEventListener('click', () => {
-            document.getElementById('viewCollectionModal').classList.remove('active');
+            const modal = document.getElementById('viewCollectionModal');
+            FocusTrap.deactivate(modal);
+            modal.classList.remove('active');
         });
 
         document.getElementById('viewCollectionModal').addEventListener('click', (e) => {
             if (e.target.id === 'viewCollectionModal') {
-                document.getElementById('viewCollectionModal').classList.remove('active');
+                const modal = document.getElementById('viewCollectionModal');
+                FocusTrap.deactivate(modal);
+                modal.classList.remove('active');
             }
         });
 
@@ -3069,23 +3247,31 @@
 
         // Stats button event listener
         document.getElementById('statsBtn').addEventListener('click', () => {
-            document.getElementById('statsModal').classList.add('active');
+            const modal = document.getElementById('statsModal');
+            modal.classList.add('active');
+            FocusTrap.activate(modal);
             loadStatistics();
         });
 
         document.getElementById('closeStatsBtn').addEventListener('click', () => {
-            document.getElementById('statsModal').classList.remove('active');
+            const modal = document.getElementById('statsModal');
+            FocusTrap.deactivate(modal);
+            modal.classList.remove('active');
         });
 
         document.getElementById('statsModal').addEventListener('click', (e) => {
             if (e.target.id === 'statsModal') {
-                document.getElementById('statsModal').classList.remove('active');
+                const modal = document.getElementById('statsModal');
+                FocusTrap.deactivate(modal);
+                modal.classList.remove('active');
             }
         });
 
         // Upload Modal Event Listeners
         document.getElementById('uploadBtn').addEventListener('click', () => {
-            document.getElementById('uploadModal').classList.add('active');
+            const modal = document.getElementById('uploadModal');
+            modal.classList.add('active');
+            FocusTrap.activate(modal);
         });
 
         document.getElementById('cancelBtn').addEventListener('click', closeUploadModal);
@@ -3644,6 +3830,7 @@
             document.getElementById('mobileActionAuthor').textContent = `by ${book.author || 'Unknown'}`;
 
             menu.classList.add('active');
+            FocusTrap.activate(menu);
 
             // Close on backdrop click
             menu.onclick = (e) => {
@@ -3772,15 +3959,19 @@
             mobileActionBookId = bookId;
             mobileActionBookData = book;
 
+            const menu = document.getElementById('mobileActionMenu');
             document.getElementById('mobileActionTitle').textContent = book.title;
             document.getElementById('mobileActionAuthor').textContent = `by ${book.author}`;
-            document.getElementById('mobileActionMenu').classList.add('active');
+            menu.classList.add('active');
+            FocusTrap.activate(menu);
         }
 
         function closeMobileActionMenu() {
             // Light haptic feedback on close
             HapticFeedback.light();
-            document.getElementById('mobileActionMenu').classList.remove('active');
+            const menu = document.getElementById('mobileActionMenu');
+            FocusTrap.deactivate(menu);
+            menu.classList.remove('active');
             mobileActionBookId = null;
             mobileActionBookData = null;
         }
