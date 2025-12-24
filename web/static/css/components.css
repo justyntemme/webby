@@ -82,11 +82,12 @@
 /* Warning button */
 .btn-warning {
     background-color: var(--warning-color);
-    color: #000;
+    color: #1a1a2e; /* Dark text for yellow background */
 }
 
 .btn-warning:hover {
     background-color: var(--warning-dark);
+    color: #1a1a2e;
 }
 
 /* Info button */
@@ -192,6 +193,64 @@
     font-size: var(--font-size-base);
 }
 
+/* ==================== GLASSMORPHISM UTILITIES ==================== */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+}
+
+/* ==================== THEME TOGGLE ==================== */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-4);
+}
+
+.theme-toggle-label {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color);
+}
+
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-1);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-color);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.theme-toggle-btn:hover {
+    background: var(--surface-3);
+    border-color: var(--accent-color);
+}
+
+.theme-toggle-btn .icon {
+    font-size: 16px;
+}
+
 /* ==================== USER SECTION ==================== */
 .user-section {
     display: flex;
@@ -270,20 +329,36 @@
 .book-card {
     background: var(--card-bg);
     border-radius: var(--radius-md);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, box-shadow;
 }
 
 .book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 20px -4px rgba(0,0,0,0.12), 0 4px 8px -2px rgba(0,0,0,0.08);
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Add subtle glow on hover in dark mode */
+html[data-theme="dark"] .book-card:hover,
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .book-card:hover {
+        box-shadow: var(--shadow-lg), var(--glow-sm);
+    }
 }
 
 .book-card:active {
     transform: translateY(-2px) scale(0.98);
     transition-duration: 0.1s;
+}
+
+/* Focus state for keyboard navigation */
+.book-card:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-md), 0 0 0 3px var(--accent-color);
 }
 
 .book-cover {
