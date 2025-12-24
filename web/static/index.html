@@ -3822,8 +3822,7 @@
 
                 // Build the collection options HTML
                 const collectionOptions = cachedCollections.map(c => {
-                    const icon = c.is_smart ? '✨' : '📁';
-                    return `<option value="collection-${c.id}">${icon} ${c.name} (${c.book_count})</option>`;
+                    return `<option value="collection-${c.id}">${c.name} (${c.book_count})</option>`;
                 }).join('');
 
                 const optgroupHTML = `<optgroup label="Collections">${collectionOptions}</optgroup>`;
