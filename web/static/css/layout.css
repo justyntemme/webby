@@ -255,17 +255,23 @@
 
 .filter-toggle-group button {
     flex: 1;
-    padding: 12px;
+    padding: 12px 16px;
     border: none;
     background: var(--card-bg);
+    color: var(--text-color);
     font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
 }
 
+.filter-toggle-group button:hover:not(.active) {
+    background: var(--surface-3);
+}
+
 .filter-toggle-group button.active {
     background: var(--accent-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .filter-drawer-footer {
@@ -290,7 +296,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--text-inverse);
     font-weight: 600;
 }
 
@@ -358,7 +364,7 @@
     height: 56px;
     border-radius: 50%;
     background: var(--gradient-accent);
-    color: white;
+    color: var(--text-inverse);
     border: none;
     font-size: 28px;
     cursor: pointer;
@@ -455,23 +461,29 @@
 }
 
 .view-toggle button {
-    padding: 10px 16px;
+    padding: 12px 16px;
     border: none;
     background: var(--card-bg);
+    color: var(--text-color);
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 500;
     transition: var(--transition);
+}
+
+.view-toggle button:hover:not(.active) {
+    background: var(--surface-3);
 }
 
 .view-toggle button.active {
     background: var(--accent-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .upload-btn {
     padding: 12px 20px;
     background: var(--gradient-accent);
-    color: white;
+    color: var(--text-inverse);
     border: none;
     border-radius: var(--radius);
     cursor: pointer;

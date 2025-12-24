@@ -124,6 +124,7 @@
             <h1>Webby</h1>
         </div>
         <div class="header-right">
+            <button class="header-icon-btn" id="headerThemeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">🌙</button>
             <button class="header-icon-btn mobile-only" id="searchToggleBtn" aria-label="Search">&#128269;</button>
             <div class="user-section" id="userSection"></div>
         </div>
@@ -164,7 +165,7 @@
                 <button id="groupSeriesBtn">Group Series</button>
             </div>
             <button class="btn btn-info btn-lg" id="statsBtn">Stats</button>
-            <button class="btn btn-secondary btn-lg" id="collectionsBtn">Collections</button>
+            <button class="btn btn-info btn-lg" id="collectionsBtn">Collections</button>
             <button class="btn btn-gradient btn-lg" id="uploadBtn">+ Upload</button>
         </div>
     </header>
@@ -702,10 +703,16 @@
                 const theme = this.getInitialTheme();
                 this.applyTheme(theme);
 
-                // Set up toggle button
+                // Set up drawer toggle button
                 const toggleBtn = document.getElementById('themeToggleBtn');
                 if (toggleBtn) {
                     toggleBtn.addEventListener('click', () => this.toggle());
+                }
+
+                // Set up header toggle button (desktop)
+                const headerToggle = document.getElementById('headerThemeToggle');
+                if (headerToggle) {
+                    headerToggle.addEventListener('click', () => this.toggle());
                 }
 
                 // Listen for system theme changes
@@ -729,6 +736,7 @@
             },
 
             updateUI(theme) {
+                // Update drawer toggle
                 const icon = document.getElementById('themeIcon');
                 const label = document.getElementById('themeLabel');
                 if (icon && label) {
@@ -739,6 +747,12 @@
                         icon.textContent = '🌙';
                         label.textContent = 'Dark';
                     }
+                }
+                // Update header toggle
+                const headerToggle = document.getElementById('headerThemeToggle');
+                if (headerToggle) {
+                    headerToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+                    headerToggle.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
                 }
             },
 
@@ -913,7 +927,8 @@
             clearAuthToken();
             currentUser = null;
             renderUserSection(null);
-            loadBooks(); // Reload to show public books only
+            // Redirect to login page
+            window.location.href = '/auth';
         }
 
         async function loadBooks() {

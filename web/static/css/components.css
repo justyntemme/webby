@@ -368,7 +368,7 @@ html[data-theme="dark"] .book-card:hover,
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--text-inverse);
     font-size: 13px;
     padding: 12px;
     text-align: center;
@@ -404,17 +404,17 @@ html[data-theme="dark"] .book-card:hover,
 
 .content-type-badge.comic {
     background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-dark) 100%);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .content-type-badge.book {
     background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .content-type-badge.series-badge {
     background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-    color: white;
+    color: var(--text-inverse);
 }
 
 /* ==================== READ STATUS BADGES ==================== */
@@ -433,12 +433,12 @@ html[data-theme="dark"] .book-card:hover,
 
 .read-status-badge.reading {
     background: linear-gradient(135deg, var(--warning-color) 0%, var(--warning-dark) 100%);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .read-status-badge.completed {
     background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .read-status-badge.unread {
@@ -760,7 +760,7 @@ html[data-theme="dark"] .book-card:hover,
 /* ==================== CONFIDENCE INDICATORS ==================== */
 .confidence-bar {
     height: 6px;
-    background: #e0e0e0;
+    background: var(--border-color);
     border-radius: 3px;
     overflow: hidden;
     margin-top: 5px;
@@ -816,7 +816,7 @@ html[data-theme="dark"] .book-card:hover,
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 10px;
-    background: #e0e0e0;
+    background: var(--surface-3);
     color: var(--text-secondary);
     font-weight: normal;
 }
@@ -1160,7 +1160,7 @@ html[data-theme="dark"] .book-card:hover,
     gap: 8px;
     padding: 12px 24px;
     background: var(--accent-color);
-    color: white;
+    color: var(--text-inverse);
     border: none;
     border-radius: var(--radius);
     font-size: 14px;
@@ -1416,7 +1416,7 @@ html[data-theme="dark"] .book-card:hover,
 
 .dialog-btn.primary {
     background: var(--accent-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .dialog-btn.primary:hover {
@@ -1425,7 +1425,7 @@ html[data-theme="dark"] .book-card:hover,
 
 .dialog-btn.danger {
     background: var(--danger-color);
-    color: white;
+    color: var(--text-inverse);
 }
 
 .dialog-btn.danger:hover {
