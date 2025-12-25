@@ -262,6 +262,157 @@ html[data-theme="dark"] {
     --btn-active-hover: hsl(217, 70%, 40%);
 }
 
+/* ==================== UI ACCENT THEMES ==================== */
+/* These accent themes change button colors, links, and UI highlights */
+/* They work with both light and dark modes */
+
+/* Gruvbox - Warm yellow/orange accent */
+.ui-accent-gruvbox {
+    --accent-color: #d79921;
+    --accent-hover: #b57614;
+    --accent-light: rgba(215, 153, 33, 0.15);
+    --accent-secondary: #cc241d;
+    --gradient-accent: linear-gradient(135deg, #d79921 0%, #cc241d 100%);
+}
+.ui-accent-gruvbox .header,
+.ui-accent-gruvbox .bottom-nav,
+.ui-accent-gruvbox .filter-drawer {
+    background: #f5f0e6;
+    border-color: #d5c4a1;
+}
+.ui-accent-gruvbox .modal-content {
+    background: #fbf1c7;
+    border-color: #d5c4a1;
+}
+
+[data-theme="dark"].ui-accent-gruvbox,
+[data-theme="dark"] .ui-accent-gruvbox {
+    --accent-color: #fabd2f;
+    --accent-hover: #d79921;
+    --accent-light: rgba(250, 189, 47, 0.15);
+}
+[data-theme="dark"] .ui-accent-gruvbox .header,
+[data-theme="dark"] .ui-accent-gruvbox .bottom-nav,
+[data-theme="dark"] .ui-accent-gruvbox .filter-drawer {
+    background: #3c3836;
+    border-color: #504945;
+}
+[data-theme="dark"] .ui-accent-gruvbox .modal-content {
+    background: #282828;
+    border-color: #504945;
+    color: #ebdbb2;
+}
+[data-theme="dark"] .ui-accent-gruvbox .modal-content h2,
+[data-theme="dark"] .ui-accent-gruvbox .modal-content label,
+[data-theme="dark"] .ui-accent-gruvbox .modal-content .settings-label {
+    color: #ebdbb2;
+}
+[data-theme="dark"] .ui-accent-gruvbox .modal-content input,
+[data-theme="dark"] .ui-accent-gruvbox .modal-content select,
+[data-theme="dark"] .ui-accent-gruvbox .modal-content textarea {
+    background: #3c3836;
+    border-color: #504945;
+    color: #ebdbb2;
+}
+
+/* Solarized - Golden/yellow accent */
+.ui-accent-solarized {
+    --accent-color: #b58900;
+    --accent-hover: #946d00;
+    --accent-light: rgba(181, 137, 0, 0.15);
+    --accent-secondary: #cb4b16;
+    --gradient-accent: linear-gradient(135deg, #b58900 0%, #cb4b16 100%);
+}
+.ui-accent-solarized .header,
+.ui-accent-solarized .bottom-nav,
+.ui-accent-solarized .filter-drawer {
+    background: #eee8d5;
+    border-color: #e9e2cb;
+}
+.ui-accent-solarized .modal-content {
+    background: #fdf6e3;
+    border-color: #e9e2cb;
+}
+
+[data-theme="dark"].ui-accent-solarized,
+[data-theme="dark"] .ui-accent-solarized {
+    --accent-color: #b58900;
+    --accent-hover: #d79921;
+    --accent-light: rgba(181, 137, 0, 0.2);
+}
+[data-theme="dark"] .ui-accent-solarized .header,
+[data-theme="dark"] .ui-accent-solarized .bottom-nav,
+[data-theme="dark"] .ui-accent-solarized .filter-drawer {
+    background: #073642;
+    border-color: #094959;
+}
+[data-theme="dark"] .ui-accent-solarized .modal-content {
+    background: #002b36;
+    border-color: #094959;
+    color: #93a1a1;
+}
+[data-theme="dark"] .ui-accent-solarized .modal-content h2,
+[data-theme="dark"] .ui-accent-solarized .modal-content label,
+[data-theme="dark"] .ui-accent-solarized .modal-content .settings-label {
+    color: #93a1a1;
+}
+[data-theme="dark"] .ui-accent-solarized .modal-content input,
+[data-theme="dark"] .ui-accent-solarized .modal-content select,
+[data-theme="dark"] .ui-accent-solarized .modal-content textarea {
+    background: #073642;
+    border-color: #094959;
+    color: #93a1a1;
+}
+
+/* Ayu - Amber/orange accent */
+.ui-accent-ayu {
+    --accent-color: #ff9940;
+    --accent-hover: #e67e22;
+    --accent-light: rgba(255, 153, 64, 0.15);
+    --accent-secondary: #f07171;
+    --gradient-accent: linear-gradient(135deg, #ffcc66 0%, #f07171 100%);
+}
+.ui-accent-ayu .header,
+.ui-accent-ayu .bottom-nav,
+.ui-accent-ayu .filter-drawer {
+    background: #fafafa;
+    border-color: #e7e7e7;
+}
+.ui-accent-ayu .modal-content {
+    background: #ffffff;
+    border-color: #e7e7e7;
+}
+
+[data-theme="dark"].ui-accent-ayu,
+[data-theme="dark"] .ui-accent-ayu {
+    --accent-color: #ffcc66;
+    --accent-hover: #ff9940;
+    --accent-light: rgba(255, 204, 102, 0.15);
+}
+[data-theme="dark"] .ui-accent-ayu .header,
+[data-theme="dark"] .ui-accent-ayu .bottom-nav,
+[data-theme="dark"] .ui-accent-ayu .filter-drawer {
+    background: #2d3440;
+    border-color: #343f4c;
+}
+[data-theme="dark"] .ui-accent-ayu .modal-content {
+    background: #212733;
+    border-color: #343f4c;
+    color: #d9d7ce;
+}
+[data-theme="dark"] .ui-accent-ayu .modal-content h2,
+[data-theme="dark"] .ui-accent-ayu .modal-content label,
+[data-theme="dark"] .ui-accent-ayu .modal-content .settings-label {
+    color: #d9d7ce;
+}
+[data-theme="dark"] .ui-accent-ayu .modal-content input,
+[data-theme="dark"] .ui-accent-ayu .modal-content select,
+[data-theme="dark"] .ui-accent-ayu .modal-content textarea {
+    background: #2d3440;
+    border-color: #343f4c;
+    color: #d9d7ce;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-color);

@@ -202,7 +202,7 @@
         let lineSpacing = 1.8;
         let fontFamily = 'Georgia';
         let theme = 'day'; // day, night, sepia (reading mode only)
-        let uiTheme = 'default'; // default, gruvbox, solarized, ayu (UI chrome only)
+        // UI accent is shared with main library via localStorage('uiAccent')
         let uiVisible = true;
         let savedScrollPosition = 0;
 
@@ -1148,10 +1148,10 @@
                 lineSpacing = settings.lineSpacing || 1.8;
                 fontFamily = settings.fontFamily || 'Georgia';
                 theme = settings.theme || 'day';
-                uiTheme = settings.uiTheme || 'default';
                 // Migrate old theme values to reading mode
                 if (['gruvbox', 'solarized', 'ayu'].includes(theme)) {
-                    uiTheme = theme;
+                    // Save accent to shared localStorage and reset theme
+                    localStorage.setItem('uiAccent', theme);
                     theme = 'day';
                 }
             }
@@ -1160,7 +1160,7 @@
 
         function saveSettings() {
             localStorage.setItem('webby-reader-settings', JSON.stringify({
-                fontSize, lineSpacing, fontFamily, theme, uiTheme
+                fontSize, lineSpacing, fontFamily, theme
             }));
         }
 
@@ -1182,17 +1182,18 @@
                 document.body.classList.add('sepia-mode');
             }
 
-            // Apply UI theme (affects chrome only - buttons, header, footer)
-            document.body.classList.remove('ui-theme-gruvbox', 'ui-theme-solarized', 'ui-theme-ayu');
-            if (uiTheme !== 'default') {
-                document.body.classList.add(`ui-theme-${uiTheme}`);
+            // Apply UI accent (shared with main library - affects chrome only)
+            const uiAccent = localStorage.getItem('uiAccent') || 'default';
+            document.body.classList.remove('ui-accent-gruvbox', 'ui-accent-solarized', 'ui-accent-ayu');
+            if (uiAccent !== 'default') {
+                document.body.classList.add(`ui-accent-${uiAccent}`);
             }
 
-            // Update UI theme selects
+            // Update UI accent selects
             const uiThemeSelect = document.getElementById('uiThemeSelect');
             const popoverUiThemeSelect = document.getElementById('popoverUiThemeSelect');
-            if (uiThemeSelect) uiThemeSelect.value = uiTheme;
-            if (popoverUiThemeSelect) popoverUiThemeSelect.value = uiTheme;
+            if (uiThemeSelect) uiThemeSelect.value = uiAccent;
+            if (popoverUiThemeSelect) popoverUiThemeSelect.value = uiAccent;
 
             // Update reading mode button styles (modal)
             document.querySelectorAll('.reading-mode-btn').forEach(btn => {
@@ -1551,7 +1552,7 @@
                 document.getElementById('popoverFontSize').textContent = fontSize;
                 document.getElementById('popoverLineSpacing').textContent = lineSpacing;
                 document.getElementById('popoverFontFamily').value = fontFamily;
-                document.getElementById('popoverUiThemeSelect').value = uiTheme;
+                document.getElementById('popoverUiThemeSelect').value = localStorage.getItem('uiAccent') || 'default';
             }
 
             // Popover reading mode buttons
@@ -1561,9 +1562,8 @@
 
             // Popover UI theme selector
             document.getElementById('popoverUiThemeSelect').addEventListener('change', (e) => {
-                uiTheme = e.target.value;
+                localStorage.setItem('uiAccent', e.target.value);
                 applySettings();
-                saveSettings();
             });
 
             // Popover font size controls
@@ -1658,9 +1658,8 @@
 
             // UI theme selector (modal)
             document.getElementById('uiThemeSelect').addEventListener('change', (e) => {
-                uiTheme = e.target.value;
+                localStorage.setItem('uiAccent', e.target.value);
                 applySettings();
-                saveSettings();
             });
 
             // Initialize progress bar

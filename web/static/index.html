@@ -757,6 +757,10 @@
                 const theme = this.getInitialTheme();
                 this.applyTheme(theme);
 
+                // Apply initial UI accent
+                const accent = this.getInitialAccent();
+                this.applyAccent(accent);
+
                 // Set up drawer toggle (checkbox)
                 const drawerToggle = document.getElementById('drawerThemeToggle');
                 if (drawerToggle) {
@@ -775,6 +779,15 @@
                     themeDarkBtn.addEventListener('click', () => this.setTheme('dark'));
                 }
 
+                // Set up UI accent selector
+                const uiAccentSelect = document.getElementById('uiAccentSelect');
+                if (uiAccentSelect) {
+                    uiAccentSelect.value = accent;
+                    uiAccentSelect.addEventListener('change', (e) => {
+                        this.setAccent(e.target.value);
+                    });
+                }
+
                 // Listen for system theme changes
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
                     if (!localStorage.getItem('theme')) {
@@ -790,14 +803,37 @@
                 return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             },
 
+            getInitialAccent() {
+                return localStorage.getItem('uiAccent') || 'default';
+            },
+
             setTheme(theme) {
                 localStorage.setItem('theme', theme);
                 this.applyTheme(theme);
             },
 
+            setAccent(accent) {
+                localStorage.setItem('uiAccent', accent);
+                this.applyAccent(accent);
+            },
+
             applyTheme(theme) {
                 document.documentElement.setAttribute('data-theme', theme);
                 this.syncToggles(theme);
+            },
+
+            applyAccent(accent) {
+                // Remove all accent classes
+                document.body.classList.remove('ui-accent-gruvbox', 'ui-accent-solarized', 'ui-accent-ayu');
+                // Add new accent class if not default
+                if (accent !== 'default') {
+                    document.body.classList.add(`ui-accent-${accent}`);
+                }
+                // Sync select
+                const uiAccentSelect = document.getElementById('uiAccentSelect');
+                if (uiAccentSelect) {
+                    uiAccentSelect.value = accent;
+                }
             },
 
             syncToggles(theme) {

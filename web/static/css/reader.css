@@ -66,94 +66,95 @@
     --reader-border: #c9b99a;
 }
 
-/* ==================== UI THEMES (Chrome/Buttons Only) ==================== */
-/* These themes only affect UI elements, not the reading content area */
+/* ==================== UI ACCENT THEMES (Chrome/Buttons Only) ==================== */
+/* These accent themes only affect UI elements, not the reading content area */
+/* Uses same class names as main library for consistency */
 
-/* Gruvbox Theme - Warm accents */
-.ui-theme-gruvbox {
+/* Gruvbox Accent - Warm accents */
+.ui-accent-gruvbox {
     --reader-accent: #fabd2f;
     --reader-header-bg: #3c3836;
     --reader-border: #504945;
 }
-.ui-theme-gruvbox .header,
-.ui-theme-gruvbox .footer,
-.ui-theme-gruvbox .modal-content,
-.ui-theme-gruvbox .settings-popover {
+.ui-accent-gruvbox .header,
+.ui-accent-gruvbox .footer,
+.ui-accent-gruvbox .modal-content,
+.ui-accent-gruvbox .settings-popover {
     background: #3c3836;
     border-color: #504945;
     color: #ebdbb2;
 }
-.ui-theme-gruvbox .modal-content h2,
-.ui-theme-gruvbox .settings-popover span,
-.ui-theme-gruvbox .settings-option span {
+.ui-accent-gruvbox .modal-content h2,
+.ui-accent-gruvbox .settings-popover span,
+.ui-accent-gruvbox .settings-option span {
     color: #ebdbb2;
 }
-.ui-theme-gruvbox .nav-btn,
-.ui-theme-gruvbox .mode-btn.active {
+.ui-accent-gruvbox .nav-btn,
+.ui-accent-gruvbox .mode-btn.active {
     background: #fabd2f;
     color: #282828;
 }
-.ui-theme-gruvbox .header-btn {
+.ui-accent-gruvbox .header-btn {
     color: #ebdbb2;
 }
-.ui-theme-gruvbox select,
-.ui-theme-gruvbox .font-size-control button {
+.ui-accent-gruvbox select,
+.ui-accent-gruvbox .font-size-control button {
     background: #504945;
     color: #ebdbb2;
     border-color: #665c54;
 }
 
-/* Solarized Theme - Golden accents */
-.ui-theme-solarized {
+/* Solarized Accent - Golden accents */
+.ui-accent-solarized {
     --reader-accent: #af8700;
     --reader-header-bg: #eee8d5;
     --reader-border: #e9e2cb;
 }
-.ui-theme-solarized .header,
-.ui-theme-solarized .footer,
-.ui-theme-solarized .modal-content,
-.ui-theme-solarized .settings-popover {
+.ui-accent-solarized .header,
+.ui-accent-solarized .footer,
+.ui-accent-solarized .modal-content,
+.ui-accent-solarized .settings-popover {
     background: #eee8d5;
     border-color: #e9e2cb;
 }
-.ui-theme-solarized .nav-btn,
-.ui-theme-solarized .mode-btn.active {
+.ui-accent-solarized .nav-btn,
+.ui-accent-solarized .mode-btn.active {
     background: #af8700;
     color: white;
 }
-.ui-theme-solarized .header-btn {
+.ui-accent-solarized .header-btn {
     color: #52676f;
 }
 
-/* Ayu Theme - Cool cyan accents */
-.ui-theme-ayu {
+/* Ayu Accent - Amber accents */
+.ui-accent-ayu {
     --reader-accent: #ffcc66;
     --reader-header-bg: #2d3440;
     --reader-border: #343f4c;
 }
-.ui-theme-ayu .header,
-.ui-theme-ayu .footer,
-.ui-theme-ayu .modal-content,
-.ui-theme-ayu .settings-popover {
+.ui-accent-ayu .header,
+.ui-accent-ayu .footer,
+.ui-accent-ayu .modal-content,
+.ui-accent-ayu .settings-popover {
     background: #2d3440;
     border-color: #343f4c;
     color: #d9d7ce;
 }
-.ui-theme-ayu .modal-content h2,
-.ui-theme-ayu .settings-popover span,
-.ui-theme-ayu .settings-option span {
+.ui-accent-ayu .modal-content h2,
+.ui-accent-ayu .settings-popover span,
+.ui-accent-ayu .settings-option span {
     color: #d9d7ce;
 }
-.ui-theme-ayu .nav-btn,
-.ui-theme-ayu .mode-btn.active {
+.ui-accent-ayu .nav-btn,
+.ui-accent-ayu .mode-btn.active {
     background: #ffcc66;
     color: #212733;
 }
-.ui-theme-ayu .header-btn {
+.ui-accent-ayu .header-btn {
     color: #d9d7ce;
 }
-.ui-theme-ayu select,
-.ui-theme-ayu .font-size-control button {
+.ui-accent-ayu select,
+.ui-accent-ayu .font-size-control button {
     background: #343f4c;
     color: #d9d7ce;
     border-color: #3e4a59;
